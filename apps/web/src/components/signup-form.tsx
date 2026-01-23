@@ -24,6 +24,7 @@ import {
 import {
   PasswordInput,
   PasswordInputStrengthChecker,
+  PasswordInputRequirements,
 } from "@repo/ui/components/password-input";
 import {
   InputGroup,
@@ -128,11 +129,11 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Google sign up failed. Please try again."
+          "Google sign up failed. Please try again.",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during Google sign up"
+          "An error occurred during Google sign up",
       );
     } finally {
       setGoogleSignupLoading(false);
@@ -189,11 +190,11 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to send OTP. Please try again."
+          "Failed to send OTP. Please try again.",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred while sending OTP"
+          "An error occurred while sending OTP",
       );
     } finally {
       setIsSendingOtp(false);
@@ -222,10 +223,10 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Sign up failed. Please check your credentials"
+          "Sign up failed. Please check your credentials",
       );
       console.error(
-        axiosError.response?.data.message || "An error occurred during Sign up"
+        axiosError.response?.data.message || "An error occurred during Sign up",
       );
     } finally {
       setEmailSignupLoading(false);
@@ -274,7 +275,7 @@ export function SignupForm({
                         onSuccess={async (credentialResponse) => {
                           if (!credentialResponse.credential) {
                             toast.error(
-                              "Google signup failed. Please try again."
+                              "Google signup failed. Please try again.",
                             );
                             return;
                           }
@@ -283,7 +284,7 @@ export function SignupForm({
                         }}
                         onError={() => {
                           toast.error(
-                            "Google signup failed. Please try again."
+                            "Google signup failed. Please try again.",
                           );
                         }}
                         logo_alignment="center"
@@ -374,6 +375,7 @@ export function SignupForm({
                                   setPasswordScore(score)
                                 }
                               />
+                              <PasswordInputRequirements />
                             </PasswordInput>
                           </FormControl>
                           <FormMessage />
@@ -419,7 +421,7 @@ export function SignupForm({
                       onClick={() => setSignupStep(1)}
                       className={cn(
                         "w-min mr-auto bg-transparent hover:bg-primary/10 text-primary",
-                        signupStep === 2 ? "" : "hidden"
+                        signupStep === 2 ? "" : "hidden",
                       )}
                       type="button"
                     >
@@ -463,7 +465,7 @@ export function SignupForm({
                           >
                             <RotateCcw
                               className={cn(
-                                isSendingOtp ? "animate-spin-reverse" : ""
+                                isSendingOtp ? "animate-spin-reverse" : "",
                               )}
                             />{" "}
                             {resendTimer

@@ -2,7 +2,7 @@
 
 import { Input } from "@repo/ui/components/input";
 import { cn } from "@repo/ui/lib/utils";
-import { EyeIcon, EyeOffIcon, LockKeyhole } from "lucide-react";
+import { Check, EyeIcon, EyeOffIcon, LockKeyhole, X } from "lucide-react";
 import {
   useState,
   createContext,
@@ -58,6 +58,7 @@ export function PasswordInput({
           </InputGroupAddon>
           <InputGroupInput
             {...props}
+            data-slot="input-group-control"
             value={value}
             defaultValue={defaultValue}
             type={showPassword ? "text" : "password"}
@@ -90,11 +91,14 @@ export function PasswordInputStrengthChecker({
   const deferredPassword = useDeferredValue(password);
   const strengthResult = useMemo(() => {
     if (!optionsLoaded || deferredPassword.length === 0) {
-      return { score: 0, feedback: { warning: undefined } } as const;
+      return {
+        score: 0,
+        feedback: { warning: null, suggestions: [] },
+      } as const;
     }
 
     const PASSWORD_POLICY_REGEX =
-      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;'"<>?() [\] {}|\\/~`_^+-]{8,}$/;
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;'"<>?() [\] {}|\\/~`_^+#=-]{8,}$/;
 
     const PASSWORD_POLICY_MESSAGE =
       "Password must contain at least one uppercase letter, one lowercase letter, one special character, and one number";
@@ -102,7 +106,7 @@ export function PasswordInputStrengthChecker({
     if (!PASSWORD_POLICY_REGEX.test(deferredPassword)) {
       return {
         score: 2,
-        feedback: { warning: PASSWORD_POLICY_MESSAGE },
+        feedback: { warning: PASSWORD_POLICY_MESSAGE, suggestions: [] },
       } as const;
     }
 
@@ -176,18 +180,19 @@ export function PasswordInputStrengthChecker({
             <div
               key={i}
               className={cn(
-                "h-1 flex-1 rounded-full",
+                "h-1 flex-1 rounded-full transition-colors duration-200 ease-in-out",
                 strengthResult.score > i ||
                   (deferredPassword.length > 0 && i === 0)
                   ? color
-                  : "bg-muted"
+                  : "bg-muted",
               )}
             />
           );
         })}
       </div>
       <div className="flex justify-end text-sm text-muted-foreground">
-        {strengthResult.feedback.warning == null ? (
+        {strengthResult.feedback.warning == null &&
+        strengthResult.feedback.suggestions.length === 0 ? (
           label
         ) : (
           <Tooltip>
@@ -195,7 +200,8 @@ export function PasswordInputStrengthChecker({
               {label}
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={4} className="">
-              {strengthResult.feedback.warning}
+              {strengthResult.feedback.warning ??
+                strengthResult.feedback.suggestions[0]}
             </TooltipContent>
           </Tooltip>
         )}
@@ -204,11 +210,62 @@ export function PasswordInputStrengthChecker({
   );
 }
 
+export function PasswordInputRequirements() {
+  const { password } = usePasswordInput();
+
+  const requirements = [
+    {
+      label: "At least 8 characters",
+      met: password.length >= 8,
+    },
+    {
+      label: "At least one uppercase letter",
+      met: /[A-Z]/.test(password),
+    },
+    {
+      label: "At least one lowercase letter",
+      met: /[a-z]/.test(password),
+    },
+    {
+      label: "At least one number",
+      met: /\d/.test(password),
+    },
+    {
+      label: "At least one special character",
+      met: /[@$!%*?&.,:;'"<>?() [\] {}|\\/~`_^+#=-]/.test(password),
+    },
+  ];
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-muted-foreground">
+        Password must contain:
+      </p>
+      <ul className="text-sm space-y-1">
+        {requirements.map((req, i) => (
+          <li
+            key={i}
+            className={cn(
+              "transition-colors duration-200 flex items-center gap-2 [&_svg]:size-[16px]",
+              req.met
+                ? "text-green-600 dark:text-green-400"
+                : "[&_svg]:text-red-600 dark:[&_svg]:text-red-400 text-muted-foreground",
+            )}
+          >
+            {req.met ? <Check /> : <X />}
+            <span className="text-xs">{req.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const usePasswordInput = () => {
   const context = useContext(PasswordInputContext);
   if (context == null) {
     throw new Error(
-      "usePasswordInput must be used within a PasswordInputContext"
+      "usePasswordInput must be used within a PasswordInputContext",
     );
   }
   return context;

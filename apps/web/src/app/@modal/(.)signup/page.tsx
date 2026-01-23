@@ -8,12 +8,15 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 
 export default function SignupModal() {
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
+  const pathname = usePathname();
   const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(
+    pathname === "/signup" || pathname.includes("/signup"),
+  );
   return (
     <>
       <Dialog
@@ -21,7 +24,7 @@ export default function SignupModal() {
         onOpenChange={(open) => {
           setDrawerOpen(open);
           if (!open) {
-            router.back();
+            router.replace("/");
           }
         }}
       >
@@ -31,7 +34,10 @@ export default function SignupModal() {
             <DialogHeader>
               <DialogTitle className="sr-only">Sign Up</DialogTitle>
             </DialogHeader>
-            <SignupForm setDrawerOpen={setDrawerOpen} cardClassName="border-0" />
+            <SignupForm
+              setDrawerOpen={setDrawerOpen}
+              cardClassName="border-0"
+            />
           </ScrollArea>
         </DialogContent>
       </Dialog>
