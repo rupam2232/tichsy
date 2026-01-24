@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { SigninForm } from "@/components/signin-form";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: `Sign In | ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    description: `Sign in to ${process.env.NEXT_PUBLIC_APP_NAME}`,
+  };
+}
 
 export default function SigninPage() {
   return (

@@ -12,12 +12,15 @@ import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import sendEmail from "../utils/sendEmail.js";
 import {
   newLoginDeviceTemplate,
+  passwordResetSuccessTemplate,
   signupEmailTemplate,
 } from "../utils/emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 const options = getCookieOptions();
+const passwordRegex =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/;
 
 // Handles user registration with email/password, device/session logging, security event, and trial subscription creation. Sends welcome email and sets auth cookies.
 export const signup = async (
@@ -59,11 +62,7 @@ export const signup = async (
     }
 
     // Validate password strength
-    if (
-      !/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;'"<>?() \[\] {}|\\/~`_^+-]{8,}$/.test(
-        password
-      )
-    ) {
+    if (!passwordRegex.test(password)) {
       throw new ApiError(
         400,
         "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
@@ -635,3 +634,42 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, null, "Logout successful"));
 });
+
+// Handles password reset for unauthenticated users. Verifies email, validates new password, updates it, and sends a success email.
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.body || !req.body.email || !req.body.password) {
+      throw new ApiError(400, "Email and password are required");
+    }
+
+    const { email, password } = req.body;
+
+    // Validate password strength (reusing the central regex)
+    if (!passwordRegex.test(password)) {
+      throw new ApiError(
+        400,
+        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
+      );
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Update password (pre-save hook will handle hashing)
+    user.password = password;
+    await user.save();
+
+    // Send success email (non-blocking)
+    sendEmail(
+      email,
+      "password-reset-success",
+      passwordResetSuccessTemplate(user.firstName ?? "User")
+    );
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Password reset successful"));
+  }
+);

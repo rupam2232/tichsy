@@ -391,7 +391,7 @@ const CreateRestaurantDialog = ({
                           <Input
                             id="restaurant-name"
                             type="text"
-                            placeholder="E.g., Dominos"
+                            placeholder="E.g., Restro"
                             autoComplete="restaurant-name"
                             required
                             {...field}
@@ -419,7 +419,7 @@ const CreateRestaurantDialog = ({
                           <Input
                             id="slug"
                             type="text"
-                            placeholder="E.g., dominos"
+                            placeholder="E.g., restro"
                             autoComplete="slug"
                             required
                             {...field}
@@ -463,7 +463,7 @@ const CreateRestaurantDialog = ({
                           <Input
                             id="description"
                             type="text"
-                            placeholder="E.g., Best pizza in town"
+                            placeholder="E.g., Best restaurant in town"
                             autoComplete="description"
                             {...field}
                           />
@@ -487,7 +487,7 @@ const CreateRestaurantDialog = ({
                           <Input
                             id="address"
                             type="text"
-                            placeholder="E.g., 123 Pizza St, City"
+                            placeholder="E.g., 123 Restaurant St, City"
                             autoComplete="address"
                             {...field}
                           />

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const signUpSchema = z
+export const forgotPasswordSchema = z
   .object({
     email: z.email("Invalid email address"),
     password: z
@@ -9,15 +9,20 @@ export const signUpSchema = z
       .regex(
         /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/,
         "Password must contain at least one uppercase letter, one lowercase letter, one special character, and one number",
-      ),
+      )
+      .optional(),
     confirmPassword: z
       .string()
-      .min(8, "Password must be at least 8 characters long"),
+      .min(8, "Password must be at least 8 characters long")
+      .optional(),
     otp: z.string().optional(),
-    fullName: z.string().min(1, "Full name is required"),
   })
   .superRefine((data, ctx) => {
-    if (data.password !== data.confirmPassword) {
+    if (
+      data.password &&
+      data.confirmPassword &&
+      data.password !== data.confirmPassword
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["confirmPassword"],

@@ -486,7 +486,7 @@ export function SignupForm({
                   </div>
                   <Button
                     type="button"
-                    className={`w-full ${signupStep === 2 ? "hidden" : ""}`}
+                    className={cn("w-full", signupStep === 2 ? "hidden" : "")}
                     onClick={() => {
                       if (signupStep === 1) {
                         // Validate the first step
@@ -510,7 +510,7 @@ export function SignupForm({
 
                   <Button
                     type="submit"
-                    className={`w-full ${signupStep === 1 ? "hidden" : ""}`}
+                    className={cn("w-full", signupStep === 1 ? "hidden" : "")}
                     disabled={emailSignupLoading || googleSignupLoading}
                   >
                     {emailSignupLoading ? (
@@ -526,6 +526,7 @@ export function SignupForm({
                     Already have an account?{" "}
                     <Link
                       href={`/signin?redirect=${redirectTo}`}
+                      onClick={()=> setDrawerOpen && setDrawerOpen(false)}
                       className="underline underline-offset-4"
                     >
                       Sign in

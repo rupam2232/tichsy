@@ -4,6 +4,7 @@ import {
   signin,
   signout,
   signup,
+  forgotPassword,
 } from "../controllers/auth.controller.js";
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
@@ -29,6 +30,7 @@ if (isProduction) router.use(limiter);
 
 router.post("/signup", verifyOtp, signup);
 router.post("/signin", signin);
+router.post("/forgot-password", verifyOtp, forgotPassword);
 router.post("/google", google);
 router.post("/signout", verifyAuth, signout);
 

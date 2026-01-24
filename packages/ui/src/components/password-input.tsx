@@ -98,7 +98,7 @@ export function PasswordInputStrengthChecker({
     }
 
     const PASSWORD_POLICY_REGEX =
-      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;'"<>?() [\] {}|\\/~`_^+#=-]{8,}$/;
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/;
 
     const PASSWORD_POLICY_MESSAGE =
       "Password must contain at least one uppercase letter, one lowercase letter, one special character, and one number";

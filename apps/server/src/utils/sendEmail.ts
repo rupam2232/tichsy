@@ -20,21 +20,40 @@ const optionsArray = [
     context: "change-password",
     emailCategory: "Change password",
     subject: "Password change request",
-  }, {
+  },
+  {
+    context: "forgot-password",
+    emailCategory: "Forgot password",
+    subject: "Forgot password request",
+  },
+  {
     context: "new-login",
     emailCategory: "New Login",
     subject: "New login detected",
-  }, {
+  },
+  {
     context: "restaurant-created",
     emailCategory: "Restaurant Created",
     subject: "Your restaurant has been created",
+  },
+  {
+    context: "password-reset-success",
+    emailCategory: "Password Reset",
+    subject: "Password reset successful",
   },
 ];
 
 async function sendEmail(
   email: string,
-  context: "signup" | "signup-success" | "change-password" | "new-login" | "restaurant-created",
-  template: string,
+  context:
+    | "signup"
+    | "signup-success"
+    | "change-password"
+    | "new-login"
+    | "restaurant-created"
+    | "password-reset-success"
+    | "forgot-password",
+  template: string
 ): Promise<T> {
   try {
     const transporter = nodemailer.createTransport({
@@ -73,4 +92,4 @@ async function sendEmail(
   }
 }
 
-export default sendEmail
+export default sendEmail;

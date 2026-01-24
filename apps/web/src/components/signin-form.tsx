@@ -236,10 +236,11 @@ export function SigninForm({
                       )}
                     />
                     <Link
-                      href="#"
+                      href="/forgot-password"
+                      onClick={()=> setDrawerOpen && setDrawerOpen(false)}
                       className="ml-auto text-sm underline-offset-2 hover:underline"
                     >
-                      Forgot your password?
+                      Forgot password?
                     </Link>
                   </div>
                   <Button
@@ -260,6 +261,7 @@ export function SigninForm({
                     Don&apos;t have an account?{" "}
                     <Link
                       href={`/signup?redirect=${redirectTo}`}
+                      onClick={()=> setDrawerOpen && setDrawerOpen(false)}
                       className="underline underline-offset-4"
                     >
                       Sign up

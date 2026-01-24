@@ -115,7 +115,8 @@ export const passwordResetSuccessTemplate = (name: string): string => {
 
 export const passwordResetRequestTemplate = (
   name: string,
-  verificationCode: string
+  verificationCode: string,
+  codeExpiryTime: number = 5 // in minutes
 ): string => {
   return `
 <!DOCTYPE html>
@@ -136,7 +137,7 @@ export const passwordResetRequestTemplate = (
     <div style="text-align: center; margin: 30px 0;">
       <p style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4CAF50;">${verificationCode}</p>
     </div>
-    <p>This OTP will expire in 5 minutes for security reasons.</p>
+    <p>This OTP will expire in ${codeExpiryTime} minutes for security reasons.</p>
     <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">

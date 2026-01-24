@@ -7,16 +7,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 
 export default function SigninModal() {
   const pathname = usePathname();
   const router = useRouter();
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(
-    pathname === "/signin" || pathname.includes("/signin"),
-  );
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    setDrawerOpen(pathname === "/signin" || pathname.includes("/signin"));
+  }, [pathname]);
+
   return (
     <>
       <Dialog

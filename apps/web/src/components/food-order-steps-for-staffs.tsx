@@ -242,8 +242,8 @@ const FoodOrderStepsForStaffs = ({
                       className={cn(
                         "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate",
                         t.isOccupied
-                          ? "bg-red-50 text-red-700 border border-red-100"
-                          : "bg-green-50 text-green-700 border border-green-100"
+                          ? "dark:bg-red-100 bg-red-200/70 text-red-700 border border-red-200"
+                          : "dark:bg-green-100 bg-green-200/70 text-green-700 border border-green-200"
                       )}
                     >
                       <h3 className="font-medium">{t.tableName}</h3>
@@ -291,7 +291,7 @@ const FoodOrderStepsForStaffs = ({
                     <Button
                       className="bg-primary hover:bg-primary/90"
                       onClick={() => {
-                        window.history.back();
+                        setStep(2);
                       }}
                     >
                       Browse Menu
