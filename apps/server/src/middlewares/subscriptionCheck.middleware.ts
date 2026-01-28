@@ -70,7 +70,6 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
     );
   }
   if (
-    !subscription.isTrial &&
     !subscription.trialExpiresAt &&
     !subscription.subscriptionEndDate
   ) {

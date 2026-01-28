@@ -27,8 +27,12 @@ export const initSubscriptionCron = () => {
       for (const sub of expiredSubscriptions) {
         // Mark as inactive
         sub.isSubscriptionActive = false;
-        // Optional: Save why it expired or status
-        await sub.save();
+        sub.plan = undefined;
+        if (sub.isTrial) sub.isTrial = false;
+        sub.trialExpiresAt = undefined;
+        sub.subscriptionEndDate = undefined;
+        sub.subscriptionStartDate = undefined;
+        await sub.save({ validateBeforeSave: false });
 
         console.log(`Expired subscription for user: ${sub.userId}`);
 

@@ -28,8 +28,6 @@ export async function archiveExcessResources(
   }).sort({ createdAt: 1 }); // Oldest first
 
   if (restaurants.length > limits.maxRestaurants) {
-    const excessCount = restaurants.length - limits.maxRestaurants;
-    // We want to keep the first N (maxRestaurants), so we archive from index N onwards
     const restaurantsToArchive = restaurants.slice(limits.maxRestaurants);
 
     for (const rest of restaurantsToArchive) {

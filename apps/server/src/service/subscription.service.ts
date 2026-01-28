@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_PLANS } from "../config/subscriptionPlans.js";
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "../config/subscriptionPlans.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { type Restaurant as RestaurantType } from "../models/restaurant.models.js";
@@ -27,11 +27,9 @@ export async function checkStaffLimit(
 
 export async function checkCouponLimit(restaurantId: string, user: User) {
   const subscription = await Subscription.findOne({ userId: user._id });
-  const plan = (subscription?.plan as string) || "starter";
+  const plan = (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
 
-  const maxActiveCoupons = SUBSCRIPTION_PLANS[plan]
-    ? SUBSCRIPTION_PLANS[plan].maxActiveCouponsPerRestaurant
-    : SUBSCRIPTION_PLANS["starter"].maxActiveCouponsPerRestaurant;
+  const maxActiveCoupons = SUBSCRIPTION_PLANS[plan].maxActiveCouponsPerRestaurant;
 
   const count = await Coupon.countDocuments({
     restaurantId,

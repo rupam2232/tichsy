@@ -47,7 +47,6 @@ if (
   );
 }
 if (
-  !subscription.isTrial &&
   !subscription.trialExpiresAt &&
   !subscription.subscriptionEndDate
 ) {
