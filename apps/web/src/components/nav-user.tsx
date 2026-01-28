@@ -4,8 +4,6 @@ import {
   IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  // IconNotification,
-  // IconUserCircle,
 } from "@tabler/icons-react";
 
 import {
@@ -153,20 +151,11 @@ export function NavUser({ user }: { user: UserState["user"] }) {
             </div>
             <DropdownMenuSeparator className="bg-accent" />
             <DropdownMenuGroup>
-              {/* <DropdownMenuItem>
-                <Link href="/account" className="absolute inset-0" />
-                  <IconUserCircle />
-                  Account
-              </DropdownMenuItem> */}
               <DropdownMenuItem>
                 <Link href="/billing" className="absolute inset-0" />
                 <IconCreditCard />
                 Billing
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-accent" />
 

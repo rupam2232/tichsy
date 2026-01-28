@@ -1,18 +1,6 @@
 import type { Metadata } from "next";
-// import localFont from "next/font/local";
-import { Geist, Geist_Mono } from "next/font/google";
 import "@repo/ui/styles/globals.css";
 import { Providers } from "./providers";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
@@ -28,9 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body>
         <Providers>
           {modal}
           {children}

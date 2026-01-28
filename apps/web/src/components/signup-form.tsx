@@ -2,7 +2,6 @@
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Card, CardContent } from "@repo/ui/components/card";
-import { Input } from "@repo/ui/components/input";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -22,6 +21,17 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@repo/ui/components/input-otp";
+import {
+  PasswordInput,
+  PasswordInputStrengthChecker,
+  PasswordInputRequirements,
+} from "@repo/ui/components/password-input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@repo/ui/components/input-group";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
@@ -33,7 +43,16 @@ import { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, Loader2, RotateCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  Mail,
+  RotateCcw,
+  User,
+} from "lucide-react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import Link from "next/link";
 
@@ -57,6 +76,9 @@ export function SignupForm({
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
   const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
   const [resendTimer, setResendTimer] = useState<number | null>(null);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState<boolean>(false);
+  const [passwordScore, setPasswordScore] = useState<number>(0);
 
   const startResendTimer = () => {
     let delay = 60; // seconds
@@ -107,11 +129,11 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Google sign up failed. Please try again."
+          "Google sign up failed. Please try again.",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during Google sign up"
+          "An error occurred during Google sign up",
       );
     } finally {
       setGoogleSignupLoading(false);
@@ -164,14 +186,15 @@ export function SignupForm({
       startResendTimer();
       setIsOtpSent(true);
     } catch (error) {
+      setSignupStep(1);
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to send OTP. Please try again."
+          "Failed to send OTP. Please try again.",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred while sending OTP"
+          "An error occurred while sending OTP",
       );
     } finally {
       setIsSendingOtp(false);
@@ -200,10 +223,10 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Sign up failed. Please check your credentials"
+          "Sign up failed. Please check your credentials",
       );
       console.error(
-        axiosError.response?.data.message || "An error occurred during Sign up"
+        axiosError.response?.data.message || "An error occurred during Sign up",
       );
     } finally {
       setEmailSignupLoading(false);
@@ -252,7 +275,7 @@ export function SignupForm({
                         onSuccess={async (credentialResponse) => {
                           if (!credentialResponse.credential) {
                             toast.error(
-                              "Google signup failed. Please try again."
+                              "Google signup failed. Please try again.",
                             );
                             return;
                           }
@@ -261,7 +284,7 @@ export function SignupForm({
                         }}
                         onError={() => {
                           toast.error(
-                            "Google signup failed. Please try again."
+                            "Google signup failed. Please try again.",
                           );
                         }}
                         logo_alignment="center"
@@ -279,27 +302,28 @@ export function SignupForm({
                       Or continue with
                     </span>
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid gap-4">
                     <FormField
                       control={form.control}
                       name="fullName"
                       render={({ field }) => (
                         <FormItem
-                          className={cn(
-                            "mt-4",
-                            signupStep === 1 ? "" : "hidden"
-                          )}
+                          className={cn(signupStep !== 1 ? "hidden" : "")}
                         >
-                          <FormLabel htmlFor="full-name">Full Name</FormLabel>
                           <FormControl>
-                            <Input
-                              id="full-name"
-                              type="text"
-                              placeholder="E.g., Rupam Mondal"
-                              autoComplete="name"
-                              required
-                              {...field}
-                            />
+                            <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+                              <InputGroupAddon>
+                                <User />
+                              </InputGroupAddon>
+                              <InputGroupInput
+                                id="full-name"
+                                placeholder="Full Name"
+                                type="text"
+                                autoComplete="name"
+                                required
+                                {...field}
+                              />
+                            </InputGroup>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -310,21 +334,22 @@ export function SignupForm({
                       name="email"
                       render={({ field }) => (
                         <FormItem
-                          className={cn(
-                            "mt-4",
-                            signupStep === 1 ? "" : "hidden"
-                          )}
+                          className={cn(signupStep === 1 ? "" : "hidden")}
                         >
-                          <FormLabel htmlFor="email">Email</FormLabel>
                           <FormControl>
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="abc@example.com"
-                              autoComplete="username"
-                              required
-                              {...field}
-                            />
+                            <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+                              <InputGroupAddon>
+                                <Mail />
+                              </InputGroupAddon>
+                              <InputGroupInput
+                                id="email"
+                                placeholder="Email"
+                                type="email"
+                                autoComplete="username"
+                                required
+                                {...field}
+                              />
+                            </InputGroup>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -335,21 +360,23 @@ export function SignupForm({
                       name="password"
                       render={({ field }) => (
                         <FormItem
-                          className={cn(
-                            "mt-4",
-                            signupStep === 1 ? "" : "hidden"
-                          )}
+                          className={cn(signupStep === 1 ? "" : "hidden")}
                         >
-                          <FormLabel htmlFor="password">Password</FormLabel>
                           <FormControl>
-                            <Input
+                            <PasswordInput
                               id="password"
-                              placeholder="••••••••"
-                              type="password"
+                              placeholder="Password"
                               autoComplete="new-password"
                               required
                               {...field}
-                            />
+                            >
+                              <PasswordInputStrengthChecker
+                                onScoreChange={(score) =>
+                                  setPasswordScore(score)
+                                }
+                              />
+                              <PasswordInputRequirements />
+                            </PasswordInput>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -360,23 +387,31 @@ export function SignupForm({
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem
-                          className={cn(
-                            "mt-4",
-                            signupStep === 1 ? "" : "hidden"
-                          )}
+                          className={cn(signupStep === 1 ? "" : "hidden")}
                         >
-                          <FormLabel htmlFor="confirm-password">
-                            Confirm Password
-                          </FormLabel>
                           <FormControl>
-                            <Input
-                              id="confirm-password"
-                              placeholder="••••••••"
-                              type="password"
-                              autoComplete="new-password"
-                              required
-                              {...field}
-                            />
+                            <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+                              <InputGroupAddon>
+                                <LockKeyhole />
+                              </InputGroupAddon>
+                              <InputGroupInput
+                                id="confirm-password"
+                                placeholder="Confirm Password"
+                                type={showConfirmPassword ? "text" : "password"}
+                                autoComplete="new-password"
+                                required
+                                {...field}
+                              />
+                              <InputGroupAddon align="inline-end">
+                                <InputGroupButton
+                                  onClick={() =>
+                                    setShowConfirmPassword(!showConfirmPassword)
+                                  }
+                                >
+                                  {showConfirmPassword ? <Eye /> : <EyeOff />}
+                                </InputGroupButton>
+                              </InputGroupAddon>
+                            </InputGroup>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -386,7 +421,7 @@ export function SignupForm({
                       onClick={() => setSignupStep(1)}
                       className={cn(
                         "w-min mr-auto bg-transparent hover:bg-primary/10 text-primary",
-                        signupStep === 2 ? "" : "hidden"
+                        signupStep === 2 ? "" : "hidden",
                       )}
                       type="button"
                     >
@@ -430,7 +465,7 @@ export function SignupForm({
                           >
                             <RotateCcw
                               className={cn(
-                                isSendingOtp ? "animate-spin-reverse" : ""
+                                isSendingOtp ? "animate-spin-reverse" : "",
                               )}
                             />{" "}
                             {resendTimer
@@ -451,11 +486,19 @@ export function SignupForm({
                   </div>
                   <Button
                     type="button"
-                    className={`w-full ${signupStep === 2 ? "hidden" : ""}`}
+                    className={cn("w-full", signupStep === 2 ? "hidden" : "")}
                     onClick={() => {
                       if (signupStep === 1) {
                         // Validate the first step
                         form.handleSubmit(() => {
+                          if (passwordScore < 3) {
+                            form.setError("password", {
+                              type: "manual",
+                              message:
+                                "Password is too weak. Please use a stronger password.",
+                            });
+                            return;
+                          }
                           sendOtp();
                           setSignupStep(2);
                         })();
@@ -467,7 +510,7 @@ export function SignupForm({
 
                   <Button
                     type="submit"
-                    className={`w-full ${signupStep === 1 ? "hidden" : ""}`}
+                    className={cn("w-full", signupStep === 1 ? "hidden" : "")}
                     disabled={emailSignupLoading || googleSignupLoading}
                   >
                     {emailSignupLoading ? (
@@ -481,7 +524,11 @@ export function SignupForm({
                   </Button>
                   <div className="text-center text-sm">
                     Already have an account?{" "}
-                    <Link href={`/signin?redirect=${redirectTo}`} className="underline underline-offset-4">
+                    <Link
+                      href={`/signin?redirect=${redirectTo}`}
+                      onClick={()=> setDrawerOpen && setDrawerOpen(false)}
+                      className="underline underline-offset-4"
+                    >
                       Sign in
                     </Link>
                   </div>

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
@@ -55,6 +55,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
 const FoodDetails = ({
   children,
@@ -78,9 +79,11 @@ const FoodDetails = ({
   const [carouselCurrent, setCarouselCurrent] = useState<number>(0);
   const [carouselCount, setCarouselCount] = useState<number>(0);
   const [foodVariant, setFoodVariant] = useState<FoodVariant | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const sheetCloseRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
 
   const fetchFoodItemDetails = useCallback(async () => {
     if (!foodItem || !foodItem._id) {
@@ -127,6 +130,31 @@ const FoodDetails = ({
       setCarouselCurrent(carouselApi.selectedScrollSnap() + 1);
     });
   }, [carouselApi]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setIsSheetOpen(true);
+      fetchFoodItemDetails();
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      setFoodVariant(null);
+      window.history.back();
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsSheetOpen(false);
+      setFoodVariant(null);
+    };
+
+    if (isSheetOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isSheetOpen]);
 
   const toggleAvailableStatus = async () => {
     if (!foodItemDetails) return;
@@ -183,7 +211,7 @@ const FoodDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setIsFoodItemAvailable((prev) => !prev); // Toggle back the status on error
     } finally {
@@ -259,7 +287,7 @@ const FoodDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setFoodVariant((prev) => {
         if (!prev || prev._id !== foodVariant._id) return prev;
@@ -321,7 +349,7 @@ const FoodDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setFormLoading(false);
@@ -330,13 +358,8 @@ const FoodDetails = ({
 
   return (
     <Sheet
-      onOpenChange={(open) => {
-        if (open) {
-          fetchFoodItemDetails();
-        } else {
-          setFoodVariant(null);
-        }
-      }}
+      open={isSheetOpen}
+      onOpenChange={handleOpenChange}
     >
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-full">
@@ -549,13 +572,7 @@ const FoodDetails = ({
                   </p>
                   <div className="flex items-center gap-1">
                     Food Type:{" "}
-                    <div
-                      className={`w-min border ${foodItemDetails.foodType === "veg" ? "border-green-500" : ""} ${foodItemDetails.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 ml-1`}
-                    >
-                      <span
-                        className={`${foodItemDetails.foodType === "veg" ? "bg-green-500" : ""} ${foodItemDetails.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                      ></span>
-                    </div>
+                    <VegNonVegTooltip foodType={foodItemDetails.foodType} innerClassName="size-1.5" />
                     <span className="font-bold">
                       {foodItemDetails.foodType === "veg"
                         ? "Veg"
@@ -641,7 +658,7 @@ const FoodDetails = ({
             <SheetFooter className="flex flex-row items-center justify-between">
               <SheetClose asChild ref={sheetCloseRef} />
 
-              {(user?.role === "owner" && !foodVariant) && (
+              {user?.role === "owner" && !foodVariant && (
                 <>
                   <CreateUpdateFoodItem
                     isEditing={true}
@@ -671,7 +688,11 @@ const FoodDetails = ({
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                           This action cannot be undone. This will permanently
-                          delete the food item <span className="font-bold">{foodItemDetails?.foodName}</span> and all its associated data.
+                          delete the food item{" "}
+                          <span className="font-bold">
+                            {foodItemDetails?.foodName}
+                          </span>{" "}
+                          and all its associated data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>

@@ -13,6 +13,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@repo/ui/components/tabs";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@repo/ui/components/input-group";
 import axios from "@/utils/axiosInstance";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
@@ -23,12 +29,10 @@ import type {
   Order,
 } from "@repo/ui/types/Order";
 import OrderCard from "@/components/order-card";
-import { Input } from "@repo/ui/components/input";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Card, CardFooter } from "@repo/ui/components/card";
 import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
-import { Button } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
 import { useSocket } from "@/context/SocketContext";
 
@@ -38,7 +42,7 @@ const Page = () => {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
   const search = searchParams.get("search");
-  const pathName = usePathname();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [tabName, setTabName] = useState<string>(tab || "all");
   const [allOrders, setAllOrders] = useState<OrderDetailsType>(null);
@@ -151,13 +155,13 @@ const Page = () => {
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setIsPageChanging(false);
       setIsLoading(false);
     }
-  }, [slug, router, dispatch, currentPage, tabName, searchInput]);
+  }, [slug, router, dispatch, currentPage, tabName, searchInput, pathname]);
 
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -232,25 +236,25 @@ const Page = () => {
   }, [tabName]);
 
   useEffect(() => {
-   const currentParams = new URLSearchParams(searchParams);
+    const currentParams = new URLSearchParams(searchParams);
     currentParams.set("tab", tabName);
     if (tabName !== "search") {
       currentParams.delete("search");
       setSearchInput("");
-      if(searchInputRef.current){
+      if (searchInputRef.current) {
         searchInputRef.current.value = "";
       }
     } else {
       currentParams.set("search", searchInput);
     }
-    router.replace(`${pathName}?${currentParams.toString()}`);
-  }, [tabName, searchInput, pathName, searchParams, router])
+    router.replace(`${pathname}?${currentParams.toString()}`);
+  }, [tabName, searchInput, pathname, searchParams, router]);
 
   return (
     <div className="flex flex-1 flex-col p-4 md:gap-6 lg:p-6">
       <Tabs defaultValue="all" value={tabName} onValueChange={setTabName}>
-        <ScrollArea className="w-full pb-3">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
+          <ScrollArea className="w-full sm:w-0 flex-1 pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
             <TabsList>
               {[
                 {
@@ -287,66 +291,59 @@ const Page = () => {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div className="flex items-center mr-1">
-              <div
-                className="flex items-center gap-2 *:flex flex-wrap pl-2 py-1 rounded-lg overflow-hidden border-zinc-400 cursor-text focus-within:ring-1 border focus-within:border-foreground aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 bg-transparent"
+            <ScrollBar orientation="horizontal" className="h-2" />
+          </ScrollArea>
+          <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+            <InputGroupInput
+              placeholder="Search orders by ID, table name, food item name..."
+              type="search"
+              onChange={(e) => {
+                debouncedSearchInput(e.target.value);
+                if (e.target.value.trim() === "") {
+                  setTabName("all");
+                  setSearchInput("");
+                } else {
+                  setTabName("search");
+                }
+              }}
+              ref={searchInputRef}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (searchInputRef.current?.value.trim() === "") {
+                    toast.error("Search input cannot be empty");
+                    return;
+                  }
+                  debouncedSearchInput.cancel();
+                  setTabName("search");
+                  setSearchInput(searchInputRef.current?.value || "");
+                }
+              }}
+            />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                className={cn(
+                  "hover:opacity-100 hover:bg-accent h-6 w-6",
+                  searchInputRef.current && searchInputRef.current.value !== ""
+                    ? ""
+                    : "hidden"
+                )}
                 onClick={() => {
                   if (searchInputRef.current) {
-                    searchInputRef.current.focus();
+                    setSearchInput("");
+                    searchInputRef.current.value = "";
+                    setTabName("all");
                   }
                 }}
               >
-                <Search className="size-4 shrink-0 opacity-50" />
-                <Input
-                  className="w-60 placeholder:text-muted-foreground placeholder:truncate flex rounded-md bg-transparent text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50 outline-0 border-none h-6 min-w-fit flex-1 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 px-1 shadow-none dark:bg-transparent"
-                  placeholder="Search orders by ID, table name, food item name..."
-                  type="search"
-                  onChange={(e) => {
-                    debouncedSearchInput(e.target.value);
-                    if (e.target.value.trim() === "") {
-                      setTabName("all");
-                      setSearchInput("");
-                    } else {
-                      setTabName("search");
-                    }
-                  }}
-                  ref={searchInputRef}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (searchInputRef.current?.value.trim() === "") {
-                        toast.error("Search input cannot be empty");
-                        return;
-                      }
-                      debouncedSearchInput.cancel();
-                      setTabName("search");
-                      setSearchInput(searchInputRef.current?.value || "");
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    if (searchInputRef.current) {
-                      setSearchInput("");
-                      searchInputRef.current.value = "";
-                      setTabName("all");
-                    }
-                  }}
-                  className={cn(
-                    "hover:opacity-100 hover:bg-accent h-6 w-6",
-                    searchInput === "" && "invisible"
-                  )}
-                >
-                  <X />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
 
         <TabsContent value={tabName}>
           {isLoading ? (
@@ -382,20 +379,21 @@ const Page = () => {
                   restaurantSlug={slug}
                 />
               ))}
-              {isPageChanging || allOrders.totalPages > currentPage &&
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className={`animate-pulse ${index > 0 ? `delay-${(index + 1) * 100}` : ""} h-80 border border-accent shadow-md rounded-md flex flex-col justify-between p-4`}
-                  >
-                    <div className="flex flex-col gap-2 w-full">
-                      <div className="animate-pulse bg-accent h-6 w-full rounded-md"></div>
-                      <div className="animate-pulse bg-accent h-4 w-4/5 rounded-md"></div>
+              {isPageChanging ||
+                (allOrders.totalPages > currentPage &&
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className={`animate-pulse ${index > 0 ? `delay-${(index + 1) * 100}` : ""} h-80 border border-accent shadow-md rounded-md flex flex-col justify-between p-4`}
+                    >
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="animate-pulse bg-accent h-6 w-full rounded-md"></div>
+                        <div className="animate-pulse bg-accent h-4 w-4/5 rounded-md"></div>
+                      </div>
+                      <div className="animate-pulse bg-accent h-15 w-full rounded-md"></div>
+                      <div className="animate-pulse bg-accent h-8 w-1/3 rounded-md"></div>
                     </div>
-                    <div className="animate-pulse bg-accent h-15 w-full rounded-md"></div>
-                    <div className="animate-pulse bg-accent h-8 w-1/3 rounded-md"></div>
-                  </div>
-                ))}
+                  )))}
             </div>
           ) : (
             <Card className="@container/card mt-4">

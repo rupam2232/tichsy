@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -64,7 +63,7 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   AlertDialog,
@@ -84,6 +83,7 @@ import {
   AccordionTrigger,
 } from "@repo/ui/components/accordion";
 import CreateRestaurantCategory from "./create-restaurant-category";
+import { NonVegIcon, VegIcon } from "./veg-nonveg-tooltip";
 
 type CreateUpdateFoodItemProps = {
   isEditing?: boolean; // Optional prop to indicate if it's for editing an existing item
@@ -112,7 +112,6 @@ const CreateUpdateFoodItem = ({
   setCategories, // Optional prop to update categories after creation or update
   setTabName, // Optional prop to set the current tab name
 }: CreateUpdateFoodItemProps) => {
-  const closeDialog = useRef<HTMLButtonElement>(null);
   const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
   const [imageFiles, setImageFiles] = useState<File[] | null>(null);
   const [imageErrorMessage, setImageErrorMessage] = useState<string>("");
@@ -126,9 +125,14 @@ const CreateUpdateFoodItem = ({
   const [openChildAccordion, setOpenChildAccordion] = useState<string[] | null>(
     null
   ); // Child accordion state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const pathname = usePathname();
+  const remoteCategories = foodItemDetails?.restaurantDetails?.categories ?? [];
+  const effectiveCategories =
+    remoteCategories.length > 0 ? remoteCategories : categories;
 
   const form = useForm<z.infer<typeof foodItemSchema>>({
     resolver: zodResolver(foodItemSchema),
@@ -194,6 +198,23 @@ const CreateUpdateFoodItem = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foodItemDetails, form]);
 
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setIsDialogOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      if (tempImages && tempImages.length > 0) {
+        tempImages.forEach((url) => handleImageRemove(url));
+      }
+      form.reset();
+      setImageFiles(null);
+      setImageErrorMessage("");
+      setOpenParentAccordion(null);
+      setOpenChildAccordion(null);
+      window.history.back();
+    }
+  };
+
   const handleImageRemove = useCallback(
     async (url: string) => {
       if (!imageUrls || imageUrls.length === 0) {
@@ -254,7 +275,7 @@ const CreateUpdateFoodItem = ({
             setImageFiles(tempImageFiles);
             if (axiosError.response?.status === 401) {
               dispatch(signOut());
-              router.push("/signin");
+              router.push(`/signin?redirect=${pathname}`);
             }
             reject(error);
           }
@@ -274,6 +295,7 @@ const CreateUpdateFoodItem = ({
       router,
       setFoodItemDetails,
       pendingImageOperations,
+      pathname,
     ]
   );
 
@@ -286,9 +308,6 @@ const CreateUpdateFoodItem = ({
             files.forEach((file) => {
               formData.append("foodItemImages", file);
             });
-            // if (isEditing && foodItemDetails?._id) {
-            //   formData.append("foodItemId", foodItemDetails._id);
-            // }
             const response = await axios.post("/media/food-item", formData, {
               headers: {
                 "Content-Type": "multipart/form-data",
@@ -323,7 +342,7 @@ const CreateUpdateFoodItem = ({
             );
             if (axiosError.response?.status === 401) {
               dispatch(signOut());
-              router.push("/signin");
+              router.push(`/signin?redirect=${pathname}`);
             }
             reject(error);
           }
@@ -332,8 +351,38 @@ const CreateUpdateFoodItem = ({
 
       setPendingImageOperations((prev) => [...prev, uploadPromise]);
     },
-    [imageUrls, form, dispatch, router]
+    [imageUrls, form, dispatch, router, pathname]
   );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsDialogOpen(false);
+      if (tempImages && tempImages.length > 0) {
+        tempImages.forEach((url) => handleImageRemove(url));
+      }
+      form.reset();
+      setImageFiles(null);
+      setImageErrorMessage("");
+      setOpenParentAccordion(null);
+      setOpenChildAccordion(null);
+    };
+
+    if (isDialogOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [
+    isDialogOpen,
+    tempImages,
+    form,
+    setImageFiles,
+    setImageErrorMessage,
+    setOpenParentAccordion,
+    setOpenChildAccordion,
+    handleImageRemove,
+  ]);
 
   const onImageDrop = (
     acceptedFiles: File[],
@@ -483,7 +532,7 @@ const CreateUpdateFoodItem = ({
           return updated;
         });
       }
-      if(setTabName) {
+      if (setTabName) {
         setTabName("all"); // Reset tab name to "all"
       }
       setAllFoodItems((prev) => {
@@ -509,9 +558,7 @@ const CreateUpdateFoodItem = ({
       });
       setTempImages([]);
       form.reset();
-      if (closeDialog.current) {
-        closeDialog.current.click(); // Close the dialog if the ref is set
-      }
+      setIsDialogOpen(false);
 
       toast.success(
         response.data.message ||
@@ -535,7 +582,7 @@ const CreateUpdateFoodItem = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setFormLoading(false);
@@ -583,28 +630,31 @@ const CreateUpdateFoodItem = ({
     }
   }, [form.formState.errors, fields, form, hasVariants]);
 
+  useEffect(() => {
+    if (!imageErrorMessage) return;
+
+    const timer = setTimeout(() => {
+      setImageErrorMessage("");
+    }, 5000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [imageErrorMessage]);
+
+
   return (
-    <Dialog
-      onOpenChange={(open) => {
-        if (!open) {
-          if (tempImages && tempImages.length > 0) {
-            tempImages.forEach((url) => handleImageRemove(url));
-          }
-          form.reset();
-          setImageFiles(null);
-          setImageErrorMessage("");
-          setOpenParentAccordion(null);
-          setOpenChildAccordion(null);
-        }
-      }}
-    >
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       {isEditing ? (
         <DialogTrigger className="w-2/4" type="button">
           <Pen />
           Edit
         </DialogTrigger>
       ) : (
-        <DialogTrigger type="button">Create a Food Item</DialogTrigger>
+        <DialogTrigger type="button">
+          <Plus />
+          New Food Item
+        </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-md">
         <ScrollArea className="max-h-[90vh]">
@@ -910,15 +960,11 @@ const CreateUpdateFoodItem = ({
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="veg">
-                              <div className="w-min border border-green-500 bg-white outline outline-white p-0.5 ml-1">
-                                <span className="bg-green-500 w-1.5 h-1.5 block rounded-full"></span>
-                              </div>
+                              <VegIcon className="ml-1"/>
                               Veg
                             </SelectItem>
                             <SelectItem value="non-veg">
-                              <div className="w-min border border-red-500 bg-white outline outline-white p-0.5 ml-1">
-                                <span className="bg-red-500 w-1.5 h-1.5 block rounded-full"></span>
-                              </div>
+                              <NonVegIcon className="ml-1"/>
                               Non Veg
                             </SelectItem>
                           </SelectContent>
@@ -950,11 +996,13 @@ const CreateUpdateFoodItem = ({
                                   )}
                                 >
                                   {field.value
-                                    ? categories.length > 0 ? 
-                                    categories.find((category) => category === field.value)
-                                    : foodItemDetails?.restaurantDetails.categories.find(
-                                        (category) => category === field.value
-                                      )
+                                    ? categories.length > 0
+                                      ? categories.find(
+                                          (category) => category === field.value
+                                        )
+                                      : foodItemDetails?.restaurantDetails.categories.find(
+                                          (category) => category === field.value
+                                        )
                                     : "Select category"}
                                   <ChevronsUpDown className="opacity-50" />
                                 </Button>
@@ -971,10 +1019,16 @@ const CreateUpdateFoodItem = ({
                                     No category found.
                                   </CommandEmpty>
                                   <div className="p-1 pb-0 w-full space-y-1">
-                                    <CreateRestaurantCategory isLoading={formLoading} setIsLoading={setFormLoading} restaurantSlug={restaurantSlug} setCategories={setCategories} categories={categories} />
+                                    <CreateRestaurantCategory
+                                      isLoading={formLoading}
+                                      setIsLoading={setFormLoading}
+                                      restaurantSlug={restaurantSlug}
+                                      setCategories={setCategories}
+                                      categories={categories}
+                                    />
                                     <Button
-                                    variant="ghost"
-                                    className="w-full text-sm font-normal h-min py-1.5 px-2! hover:bg-accent!"
+                                      variant="ghost"
+                                      className="w-full text-sm font-normal h-min py-1.5 px-2! hover:bg-accent!"
                                       onClick={() => {
                                         form.setValue("category", undefined);
                                       }}
@@ -989,66 +1043,29 @@ const CreateUpdateFoodItem = ({
                                         )}
                                       />
                                     </Button>
-                                    </div>
+                                  </div>
                                   <CommandGroup>
-                                    {(Array.isArray(
-                                      foodItemDetails?.restaurantDetails
-                                        .categories
-                                    ) &&
-                                      foodItemDetails?.restaurantDetails
-                                        .categories.length > 0) ||
-                                    categories.length > 0 ? (
-                                      categories.length > 0 ? (
-                                        categories.map((category) => (
-                                          <CommandItem
-                                            value={category}
-                                            className="cursor-pointer"
-                                            key={category}
-                                            onSelect={() => {
-                                              form.setValue(
-                                                "category",
-                                                category
-                                              );
-                                            }}
-                                          >
-                                            {category}
-                                            <Check
-                                              className={cn(
-                                                "ml-auto",
-                                                category === field.value
-                                                  ? "opacity-100"
-                                                  : "opacity-0"
-                                              )}
-                                            />
-                                          </CommandItem>
-                                        ))
-                                      ) : (
-                                        foodItemDetails?.restaurantDetails.categories.map(
-                                          (category) => (
-                                            <CommandItem
-                                              value={category}
-                                              className="cursor-pointer"
-                                              key={category}
-                                              onSelect={() => {
-                                                form.setValue(
-                                                  "category",
-                                                  category
-                                                );
-                                              }}
-                                            >
-                                              {category}
-                                              <Check
-                                                className={cn(
-                                                  "ml-auto",
-                                                  category === field.value
-                                                    ? "opacity-100"
-                                                    : "opacity-0"
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          )
-                                        )
-                                      )
+                                    {effectiveCategories.length > 0 ? (
+                                      effectiveCategories.map((category) => (
+                                        <CommandItem
+                                          key={category}
+                                          value={category}
+                                          className="cursor-pointer"
+                                          onSelect={() =>
+                                            form.setValue("category", category)
+                                          }
+                                        >
+                                          {category}
+                                          <Check
+                                            className={cn(
+                                              "ml-auto",
+                                              category === field.value
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                          />
+                                        </CommandItem>
+                                      ))
                                     ) : (
                                       <CommandItem disabled>
                                         No category available
@@ -1110,7 +1127,7 @@ const CreateUpdateFoodItem = ({
                                 ? "Add another tag"
                                 : "E.g., spicy, smoky, cheesy"
                             }
-                            className="resize-none pb-4 whitespace-pre-wrap break-all"
+                            className="resize-none pb-4 whitespace-pre-wrap break-all focus-within:border-input focus-within:ring-1"
                           />
                         </FormControl>
                         <FormMessage />
@@ -1398,7 +1415,6 @@ const CreateUpdateFoodItem = ({
           </DialogHeader>
         </ScrollArea>
       </DialogContent>
-      <DialogClose ref={closeDialog} className="hidden" />
     </Dialog>
   );
 };

@@ -5,8 +5,8 @@ import { User } from "../models/user.model.js";
 import type { accessTokenUser } from "../utils/jwt.js";
 import type { User as UserType } from "../models/user.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
-import requestIp from "request-ip";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { getCookieOptions } from "../utils/cookieOptions.js";
 
 // Extend Express Request interface to include 'user'
 declare module "express-serve-static-core" {
@@ -16,6 +16,7 @@ declare module "express-serve-static-core" {
 }
 
 export const verifyAuth = asyncHandler(async (req, res, next) => {
+  const options = getCookieOptions();
   const accessToken =
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");
@@ -33,33 +34,31 @@ export const verifyAuth = asyncHandler(async (req, res, next) => {
   }
   const decodedToken = decoded as accessTokenUser;
 
-  const user: UserType = await User.findById(decodedToken._id).select("-password -__v");
+  const user: UserType = await User.findById(decodedToken._id).select(
+    "-password -__v"
+  );
 
   if (!user) {
     throw new ApiError(401, "Invalid Access Token");
   }
 
+  // Find session by refresh token
   const deviceSession = await DeviceSession.findOne({
     userId: user._id,
-    ipAddress: requestIp.getClientIp(req),
-    userAgent: req.header("user-agent"),
+    refreshToken,
   });
 
-  if (
-    !deviceSession ||
-    deviceSession.refreshToken !== refreshToken ||
-    deviceSession.revoked
-  ) {
-    // If the device session is not found, or the refresh token does not match, or the session is revoked
-    throw res
+  if (!deviceSession || deviceSession.revoked) {
+    res
       .status(401)
-      .clearCookie("accessToken")
-      .clearCookie("refreshToken")
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
       .json(new ApiResponse(401, null, "Unauthorized request", false));
+    return;
   }
   // Update the last active time of the device session
   deviceSession.lastActiveAt = new Date();
-  deviceSession.save();
+  await deviceSession.save();
 
   // Attach user to the request object
 

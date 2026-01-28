@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);
@@ -14,6 +15,7 @@ export function SiteHeader() {
   const activeRestaurant = useSelector(
     (state: RootState) => state.restaurantsSlice.activeRestaurant
   );
+  const isMobile = useIsMobile();
 
   const updateTime = () => {
     const now = new Date();
@@ -21,9 +23,12 @@ export function SiteHeader() {
   };
 
   useEffect(() => {
+    if (isMobile) {
+      return;
+    }
     const intervalId = setInterval(updateTime, 1000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     (() => {
@@ -71,12 +76,11 @@ export function SiteHeader() {
               />
             </Avatar>
             <div className="flex items-center">
-              <span>{activeRestaurant?.restaurantName}</span>
+              <span className="line-clamp-1">{activeRestaurant?.restaurantName}</span>
               <Separator
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
               />
-              <span>{pageTitle.current}</span>
             </div>
             {activeRestaurant?.isCurrentlyOpen ? (
               <div className="flex items-center gap-1.5">

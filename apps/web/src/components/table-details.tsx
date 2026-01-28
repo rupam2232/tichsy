@@ -10,12 +10,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@repo/ui/components/sheet";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "@/store/store";
 import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
@@ -79,6 +79,40 @@ const TableDetails = ({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const sheetCloseRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      fetchTableDetails();
+      setIsOpen(true);
+      window.history.pushState(
+        { tableSlug: table.qrSlug },
+        "",
+        window.location.href
+      );
+    } else {
+      window.history.back();
+      setIsEditing(false);
+      handleDeselectTable();
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsOpen(false);
+      setIsEditing(false);
+      handleDeselectTable();
+    };
+
+    if (isOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const fetchTableDetails = useCallback(async () => {
     if (!table || !table.qrSlug) {
@@ -94,6 +128,24 @@ const TableDetails = ({
       );
       setIsTableOccupied(response.data.data.isOccupied);
       setTableDetails(response.data.data);
+      setAllTables((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          tables: prev.tables.map((table) => {
+            if (table.qrSlug === response.data.data.qrSlug) {
+              return {
+                ...table,
+                isOccupied: response.data.data.isOccupied ?? table.isOccupied,
+                qrSlug: response.data.data.qrSlug ?? table.qrSlug,
+                tableName: response.data.data.tableName ?? table.tableName,
+                seatCount: response.data.data.seatCount ?? table.seatCount,
+              };
+            }
+            return table;
+          }),
+        };
+      });
     } catch (error) {
       console.error(
         "Failed to fetch table details. Please try again later:",
@@ -106,13 +158,13 @@ const TableDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setTableDetails(null);
     } finally {
       setIsLoading(false);
     }
-  }, [dispatch, restaurantSlug, router, table]);
+  }, [dispatch, restaurantSlug, router, table, pathname, setAllTables]);
 
   const form = useForm<z.infer<typeof tableSchema>>({
     resolver: zodResolver(tableSchema),
@@ -199,7 +251,7 @@ const TableDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setFormLoading(false);
@@ -271,7 +323,7 @@ const TableDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setIsTableOccupied((prev) => !prev); // Toggle back the status on error
     } finally {
@@ -317,7 +369,7 @@ const TableDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setFormLoading(false);
@@ -327,14 +379,8 @@ const TableDetails = ({
   return (
     <Sheet
       defaultOpen={isSelected}
-      onOpenChange={(e) => {
-        if (!e) {
-          setIsEditing(false);
-          handleDeselectTable();
-        } else {
-          fetchTableDetails();
-        }
-      }}
+      open={isOpen}
+      onOpenChange={handleOpenChange}
     >
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-full">
@@ -448,7 +494,6 @@ const TableDetails = ({
                   "/upload/r_max/"
                 )}
                 qrCodeName={tableDetails.tableName + "-qrcode"}
-                // slug={tableDetails.qrSlug}
               />
             </div>
             <p>
@@ -476,6 +521,10 @@ const TableDetails = ({
                   <SelectItem value="occupied">Occupied</SelectItem>
                 </SelectContent>
               </Select>
+            </p>
+
+            <p>
+              slug: <span className="font-bold">{tableDetails.qrSlug}</span>
             </p>
 
             {tableDetails.currentOrder &&

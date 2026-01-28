@@ -50,7 +50,6 @@ const cartSlice = createSlice({
       const backendMap = new Map<string, CartItem>();
 
       backendItems.forEach((item) => {
-        // Use foodId + variantName + restaurantSlug as unique key if variants exist
         const key = item.foodId + (item.variantName || "") + item.restaurantSlug;
         backendMap.set(key, item);
       });

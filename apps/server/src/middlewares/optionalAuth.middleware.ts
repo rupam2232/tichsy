@@ -5,7 +5,6 @@ import { User } from "../models/user.model.js";
 import type { accessTokenUser } from "../utils/jwt.js";
 import type { User as UserType } from "../models/user.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
-import requestIp from "request-ip";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
@@ -26,7 +25,7 @@ export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
       const decodedToken = decoded as accessTokenUser;
 
       const user: UserType = await User.findById(decodedToken._id).select(
-        "-password"
+        "-password -__v"
       );
 
       if (!user) {
@@ -34,25 +33,21 @@ export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
       } else {
         const deviceSession = await DeviceSession.findOne({
           userId: user._id,
-          ipAddress: requestIp.getClientIp(req),
-          userAgent: req.header("user-agent"),
+          refreshToken
         });
 
-        if (
-          !deviceSession ||
-          deviceSession.refreshToken !== refreshToken ||
-          deviceSession.revoked
-        ) {
+        if (!deviceSession || deviceSession.revoked) {
           // If the device session is not found, or the refresh token does not match, or the session is revoked
-          throw res
+          res
             .status(401)
             .clearCookie("accessToken")
             .clearCookie("refreshToken")
             .json(new ApiResponse(401, null, "Unauthorized request", false));
+          return;
         }
         // Update the last active time of the device session
         deviceSession.lastActiveAt = new Date();
-        deviceSession.save();
+        await deviceSession.save();
 
         // Attach user to the request object
         req.user = user;

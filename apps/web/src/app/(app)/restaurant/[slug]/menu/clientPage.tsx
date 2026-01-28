@@ -6,7 +6,7 @@ import { AllFoodItems } from "@repo/ui/types/FoodItem";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
@@ -28,11 +28,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "@repo/ui/components/tabs";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@repo/ui/components/input-group";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
-import { Input } from "@repo/ui/components/input";
 import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
-import { Button } from "@repo/ui/components/button";
+import VegNonVegTooltip from "@/components/veg-nonveg-tooltip";
 
 const MenuPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -54,6 +59,7 @@ const MenuPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const debouncedSearchInput = useDebounceCallback(setSearchInput, 300);
   const currentPage = tabPages[tabName] || 1;
+  const pathname = usePathname();
 
   const fetchFoodItems = useCallback(async () => {
     if (!slug) {
@@ -98,14 +104,14 @@ const MenuPage = () => {
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setAllFoodItems(null);
     } finally {
       setIsPageChanging(false);
       setIsPageLoading(false);
     }
-  }, [slug, router, dispatch, tabName, currentPage, searchInput]);
+  }, [slug, router, dispatch, tabName, currentPage, searchInput, pathname]);
 
   const fetchRestaurantCategories = useCallback(async () => {
     if (!slug) {
@@ -127,11 +133,11 @@ const MenuPage = () => {
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setRestaurantCategories([]);
     }
-  }, [slug, router, dispatch]);
+  }, [slug, router, dispatch, pathname]);
 
   useEffect(() => {
     fetchRestaurantCategories();
@@ -186,8 +192,8 @@ const MenuPage = () => {
           setTabName(value);
         }}
       >
-        <ScrollArea className="w-full pb-3">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
+          <ScrollArea className="w-full sm:w-0 flex-1 pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
             <TabsList>
               <TabsTrigger
                 value="all"
@@ -221,90 +227,79 @@ const MenuPage = () => {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex items-center gap-2 *:flex flex-wrap pl-2 py-1 rounded-lg overflow-hidden border-zinc-400 cursor-text focus-within:ring-1 border focus-within:border-foreground aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 bg-transparent"
+            <ScrollBar orientation="horizontal" className="h-2" />
+          </ScrollArea>
+          <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+            <InputGroupInput
+              placeholder="Search food items by name, category, tags..."
+              type="search"
+              onChange={(e) => {
+                debouncedSearchInput(e.target.value);
+                if (e.target.value.trim() === "") {
+                  setTabName("all");
+                  setSearchInput("");
+                } else {
+                  setTabName("search");
+                }
+              }}
+              ref={searchInputRef}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (searchInputRef.current?.value.trim() === "") {
+                    toast.error("Search input cannot be empty");
+                    return;
+                  }
+                  debouncedSearchInput.cancel();
+                  setTabName("search");
+                  setSearchInput(searchInputRef.current?.value || "");
+                }
+              }}
+            />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                className={cn(
+                  "hover:opacity-100 hover:bg-accent h-6 w-6",
+                  searchInputRef.current && searchInputRef.current.value !== ""
+                    ? ""
+                    : "hidden"
+                )}
                 onClick={() => {
                   if (searchInputRef.current) {
-                    searchInputRef.current.focus();
+                    searchInputRef.current.value = "";
+                    setSearchInput("");
+                    setTabName("all");
                   }
                 }}
               >
-                <Search className="size-4 shrink-0 opacity-50" />
-                <Input
-                  className="w-60 placeholder:text-muted-foreground flex rounded-md bg-transparent text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50 outline-0 border-none h-6 min-w-fit flex-1 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 px-1 shadow-none dark:bg-transparent"
-                  placeholder="Search food items by name, category, tags..."
-                  type="search"
-                  onChange={(e) => {
-                    debouncedSearchInput(e.target.value);
-                    if (e.target.value.trim() === "") {
-                      setTabName("all");
-                      setSearchInput("");
-                    } else {
-                      setTabName("search");
-                    }
-                  }}
-                  ref={searchInputRef}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (searchInputRef.current?.value.trim() === "") {
-                        toast.error("Search input cannot be empty");
-                        return;
-                      }
-                      debouncedSearchInput.cancel();
-                      setTabName("search");
-                      setSearchInput(searchInputRef.current?.value || "");
-                    }
-                  }}
-                />
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    if (searchInputRef.current) {
-                      searchInputRef.current.value = "";
-                      setSearchInput("");
-                      setTabName("all");
-                    }
-                  }}
-                  className={cn(
-                    "hover:opacity-100 hover:bg-accent h-6 w-6",
-                    searchInputRef.current &&
-                      searchInputRef.current.value !== ""
-                      ? ""
-                      : "invisible"
-                  )}
-                >
-                  <X />
-                </Button>
-              </div>
-
-              {(isPageLoading ||
-                isPageChanging ||
-                tabName !== "all" ||
-                (allFoodItems &&
-                  Array.isArray(allFoodItems.foodItems) &&
-                  allFoodItems.foodItems.length > 0 &&
-                  user?.role === "owner")) && (
-                <div className="flex justify-end">
-                  <CreateUpdateFoodItem
-                    setAllFoodItems={setAllFoodItems}
-                    setTabName={setTabName}
-                    formLoading={isPageLoading}
-                    setFormLoading={setIsPageLoading}
-                    restaurantSlug={slug}
-                    categories={restaurantCategories}
-                    setCategories={setRestaurantCategories}
-                  />
-                </div>
-              )}
+          {(isPageLoading ||
+            isPageChanging ||
+            tabName !== "all" ||
+            (allFoodItems &&
+              Array.isArray(allFoodItems.foodItems) &&
+              allFoodItems.foodItems.length > 0 &&
+              user?.role === "owner")) && (
+            <div className="flex justify-end">
+              <CreateUpdateFoodItem
+                setAllFoodItems={setAllFoodItems}
+                setTabName={setTabName}
+                formLoading={isPageLoading}
+                setFormLoading={setIsPageLoading}
+                restaurantSlug={slug}
+                categories={restaurantCategories}
+                setCategories={setRestaurantCategories}
+              />
             </div>
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+          )}
+        </div>
         <TabsContent value={tabName} className="mt-2">
           {isPageLoading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
@@ -336,7 +331,7 @@ const MenuPage = () => {
                 >
                   <Card
                     ref={
-                      index === allFoodItems.foodItems.length - 1
+                      index === allFoodItems.foodItems.length - 3
                         ? lastElementRef
                         : null
                     }
@@ -365,31 +360,7 @@ const MenuPage = () => {
                       </Tooltip>
                     </div>
                     <div className="absolute top-2 left-2 z-10">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <div
-                            className={`border ${foodItem.foodType === "veg" ? "border-green-500" : ""} ${foodItem.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 cursor-help`}
-                          >
-                            <span
-                              className={`${foodItem.foodType === "veg" ? "bg-green-500" : ""} ${foodItem.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                            ></span>
-                            <span className="sr-only">
-                              {foodItem.foodType === "veg"
-                                ? "Veg"
-                                : foodItem.foodType === "non-veg"
-                                  ? "Non Veg"
-                                  : "Vegan"}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {foodItem.foodType === "veg"
-                            ? "Veg"
-                            : foodItem.foodType === "non-veg"
-                              ? "Non Veg"
-                              : "Vegan"}
-                        </TooltipContent>
-                      </Tooltip>
+                      <VegNonVegTooltip foodType={foodItem.foodType} innerClassName="size-1.5" />
                     </div>
                     <div className="relative aspect-square">
                       {foodItem.imageUrls?.length === 0 ? (
@@ -401,7 +372,7 @@ const MenuPage = () => {
                           src={foodItem.imageUrls?.[0] || "/placeholder.svg"}
                           alt={foodItem.foodName}
                           fill
-                          priority={index < 3} // Load first 3 images with priority
+                          priority={index < 3}
                           loading={index < 3 ? "eager" : "lazy"}
                           draggable={false}
                           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"

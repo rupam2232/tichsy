@@ -42,10 +42,14 @@ const restaurantsSlice = createSlice({
       const index = state.restaurants.findIndex(
         (restaurant) => restaurant._id === action.payload._id
       );
-      if (index !== -1 && state.restaurants[index]) {
-        state.restaurants[index]._id = action.payload._id;
-        state.restaurants[index].restaurantName = action.payload.restaurantName;
-        state.restaurants[index].slug = action.payload.slug;
+
+      if (index !== -1) {
+        const restaurant = state.restaurants[index];
+        if (restaurant) {
+          restaurant._id = action.payload._id;
+          restaurant.restaurantName = action.payload.restaurantName;
+          restaurant.slug = action.payload.slug;
+        }
       }
     },
     setActiveRestaurant(

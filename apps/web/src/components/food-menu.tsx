@@ -7,11 +7,6 @@ import axios from "@/utils/axiosInstance";
 import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
 import Image from "next/image";
 import { cn } from "@repo/ui/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@repo/ui/components/tooltip";
 import { IconSalad } from "@tabler/icons-react";
 import {
   Tabs,
@@ -19,8 +14,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@repo/ui/components/tabs";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@repo/ui/components/input-group";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
-import { Input } from "@repo/ui/components/input";
 import { Loader2, Minus, Plus, Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
 import { Button } from "@repo/ui/components/button";
@@ -28,6 +28,8 @@ import CustomerFoodDetails from "./customer-food-details";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { Table } from "@repo/ui/types/Table";
+import { useIsMobile } from "@/hooks/use-mobile";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
 const ClinetFoodMenu = ({
   slug,
@@ -56,6 +58,7 @@ const ClinetFoodMenu = ({
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(
     null
   );
+  const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const observer = useRef<IntersectionObserver>(null);
   const debounced = useDebounceCallback(setSearchInput, 300);
@@ -254,8 +257,10 @@ const ClinetFoodMenu = ({
           setTabName(value);
         }}
       >
-        <ScrollArea className={cn("w-full pb-3", scrollClassName)}>
-          <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center sm:items-baseline justify-between gap-2 pt-2">
+          <ScrollArea
+            className={cn("w-full sm:w-0 flex-1 pb-2 rounded-md", scrollClassName)}
+          >
             <TabsList>
               <TabsTrigger
                 value="all"
@@ -275,45 +280,44 @@ const ClinetFoodMenu = ({
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div
-              className="flex items-center gap-2 *:flex flex-wrap pl-2 py-1 rounded-lg overflow-hidden border-zinc-400 cursor-text focus-within:ring-1 border focus-within:border-foreground aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 bg-transparent mr-1"
-              onClick={() => {
-                if (searchInputRef.current) {
-                  searchInputRef.current.focus();
+            <ScrollBar orientation="horizontal" className="h-2" />
+          </ScrollArea>
+          <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+            <InputGroupInput
+              type="search"
+              placeholder="Search food items by name, category, tags..."
+              onChange={(e) => {
+                debounced(e.target.value);
+                if (e.target.value.trim() === "") {
+                  setTabName("all");
+                  setSearchInput("");
+                } else {
+                  setTabName("search");
                 }
               }}
-            >
-              <Search className="size-4 shrink-0 opacity-50" />
-              <Input
-                className="w-60 placeholder:text-muted-foreground flex rounded-md bg-transparent text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50 outline-0 border-none h-6 min-w-fit flex-1 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 px-1 shadow-none dark:bg-transparent"
-                placeholder="Search food items by name, category, tags..."
-                type="search"
-                onChange={(e) => {
-                  debounced(e.target.value);
-                  if (e.target.value.trim() === "") {
-                    setTabName("all");
-                    setSearchInput("");
-                  } else {
-                    setTabName("search");
+              ref={searchInputRef}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (searchInput.trim() === "") {
+                    return;
                   }
-                }}
-                ref={searchInputRef}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (searchInput.trim() === "") {
-                      return;
-                    }
-                    setTabName("search");
-                    fetchFoodItems();
-                  }
-                }}
-              />
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
+                  setTabName("search");
+                  fetchFoodItems();
+                }
+              }}
+            />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                className={cn(
+                  "hover:opacity-100 hover:bg-accent h-6 w-6",
+                  searchInputRef.current && searchInputRef.current.value !== ""
+                    ? ""
+                    : "hidden"
+                )}
                 onClick={() => {
                   if (searchInputRef.current) {
                     searchInputRef.current.value = "";
@@ -321,19 +325,12 @@ const ClinetFoodMenu = ({
                     setTabName("all");
                   }
                 }}
-                className={cn(
-                  "hover:opacity-100 hover:bg-accent h-6 w-6",
-                  searchInputRef.current && searchInputRef.current.value !== ""
-                    ? ""
-                    : "invisible"
-                )}
               >
                 <X />
-              </Button>
-            </div>
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
         <TabsContent value={tabName} className="mt-2">
           {isPageLoading ? (
             <div
@@ -368,7 +365,7 @@ const ClinetFoodMenu = ({
                 <Card
                   key={foodItem._id}
                   ref={
-                    index === allFoodItems.foodItems.length - 1
+                    index === allFoodItems.foodItems.length - 3
                       ? lastElementRef
                       : null
                   }
@@ -385,31 +382,7 @@ const ClinetFoodMenu = ({
                   }}
                 >
                   <div className="absolute top-2 left-2 z-10">
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <div
-                          className={`border ${foodItem.foodType === "veg" ? "border-green-500" : ""} ${foodItem.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 cursor-help`}
-                        >
-                          <span
-                            className={`${foodItem.foodType === "veg" ? "bg-green-500" : ""} ${foodItem.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                          ></span>
-                          <span className="sr-only">
-                            {foodItem.foodType === "veg"
-                              ? "Veg"
-                              : foodItem.foodType === "non-veg"
-                                ? "Non Veg"
-                                : "Vegan"}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {foodItem.foodType === "veg"
-                          ? "Veg"
-                          : foodItem.foodType === "non-veg"
-                            ? "Non Veg"
-                            : "Vegan"}
-                      </TooltipContent>
-                    </Tooltip>
+                    <VegNonVegTooltip foodType={foodItem.foodType} innerClassName="size-1.5" />
                   </div>
                   <div className="relative aspect-square">
                     {foodItem.imageUrls &&
@@ -419,7 +392,7 @@ const ClinetFoodMenu = ({
                         src={foodItem.imageUrls[0]}
                         alt={foodItem.foodName}
                         fill
-                        priority={index < 3} // Load first 3 images with priority
+                        priority={index < 3}
                         loading={index < 3 ? "eager" : "lazy"}
                         draggable={false}
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
@@ -431,7 +404,7 @@ const ClinetFoodMenu = ({
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-3 relative">
+                  <CardContent className="p-3">
                     <div className="space-y-1">
                       <h3 className="font-semibold line-clamp-1">
                         {foodItem.foodName}
@@ -453,7 +426,7 @@ const ClinetFoodMenu = ({
                         cartItems.some(
                           (item) => item.foodId === foodItem._id
                         ) ? (
-                          <div className="flex items-center justify-between gap-2 dark:border-zinc-600 border rounded-md w-full">
+                          <div className="flex items-center justify-between dark:border-zinc-600 border rounded-md w-full">
                             <Button
                               type="button"
                               variant="ghost"
@@ -559,7 +532,15 @@ const ClinetFoodMenu = ({
                               }
                             }}
                           >
-                            <Plus /> Add to Cart
+                            {isMobile ? (
+                              <>
+                                <Plus /> Add
+                              </>
+                            ) : (
+                              <>
+                                <Plus /> Add to Cart
+                              </>
+                            )}
                           </Button>
                         )
                       ) : (
@@ -572,7 +553,7 @@ const ClinetFoodMenu = ({
                         </Button>
                       )}
                       {foodItem.hasVariants && (
-                        <p className="text-[10px] text-muted-foreground text-center absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <p className="text-[10px] text-muted-foreground text-center absolute bottom-0 sm:left-1/2 sm:-translate-x-1/2 truncate">
                           *Variants available
                         </p>
                       )}

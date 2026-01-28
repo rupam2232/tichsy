@@ -27,16 +27,28 @@ import { Label } from "@repo/ui/components/label";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import Link from "next/link";
 import { RootState } from "@/store/store";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
-const ClientPage = () => {
+const FoodOrderStepsForStaffs = ({
+  step,
+  setStep,
+  onClose,
+  className,
+  footerClassName,
+}: {
+  step: number;
+  setStep: React.Dispatch<React.SetStateAction<number>>;
+  onClose?: () => void;
+  className?: string;
+  footerClassName?: string;
+}) => {
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
-  const [step, setStep] = useState<number>(1);
   const [page, setPage] = useState<number>(1);
   const [allTables, setAllTables] = useState<AllTables | null>(null);
-  const [isTablePageLoading, setIsTablePageLoading] = useState<boolean>(true);
+  const [isTablePageLoading, setIsTablePageLoading] = useState<boolean>(false);
   const [isTablePageChanging, setIsTablePageChanging] =
     useState<boolean>(false);
   const [tableId, setTableId] = useState<string | null>(null);
@@ -83,7 +95,7 @@ const ClientPage = () => {
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${window.location.pathname}`);
       }
       setAllTables(null);
     } finally {
@@ -159,7 +171,11 @@ const ClientPage = () => {
         id: toastId,
       });
       clearCart();
-      router.back();
+      if (onClose) {
+        onClose();
+      } else {
+        router.back();
+      }
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
       console.error(axiosError.response?.data.message || axiosError.message);
@@ -173,16 +189,17 @@ const ClientPage = () => {
     }
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.back();
+    }
+  };
+
   return (
-    <div className="max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto py-2 h-[calc(100vh-4rem)] relative">
-      <h1 className="text-2xl font-bold mb-4 px-4">
-        {step === 1
-          ? "Select Table"
-          : step === 2
-            ? "Select Food Items"
-            : "Confirm Order"}
-      </h1>
-      <div className="overflow-y-auto h-[calc(100vh-14rem)] sm:h-[calc(100vh-11rem)] px-3 custom-scrollbar">
+    <div className={cn("flex flex-col h-full", className)}>
+      <div className="flex-1 px-6 custom-scrollbar overflow-y-auto">
         {step === 1 && (
           <>
             {isTablePageLoading ? (
@@ -192,7 +209,7 @@ const ClientPage = () => {
                 ))}
               </div>
             ) : allTables && allTables.tables.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 px-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-2 mb-20">
                 {allTables.tables.map((t, index) => (
                   <div
                     ref={
@@ -225,14 +242,11 @@ const ClientPage = () => {
                       className={cn(
                         "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate",
                         t.isOccupied
-                          ? "bg-red-50 text-red-700 border border-red-100"
-                          : "bg-green-50 text-green-700 border border-green-100"
+                          ? "dark:bg-red-100 bg-red-200/70 text-red-700 border border-red-200"
+                          : "dark:bg-green-100 bg-green-200/70 text-green-700 border border-green-200"
                       )}
                     >
                       <h3 className="font-medium">{t.tableName}</h3>
-                      <div className="text-xs">
-                        {t.isOccupied ? "Occupied" : "Available"}
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -260,6 +274,7 @@ const ClientPage = () => {
             slug={slug}
             tableId={tableId}
             isStaffCreatingOrder={true}
+            scrollClassName="max-w-[calc(100vw-3rem)] overflow-y-auto"
           />
         )}
         {step === 3 && (
@@ -273,7 +288,12 @@ const ClientPage = () => {
                     <p className="text-muted-foreground mb-6">
                       Add some delicious items from {slug}&apos;s menu
                     </p>
-                    <Button className="bg-primary hover:bg-primary/90">
+                    <Button
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={() => {
+                        setStep(2);
+                      }}
+                    >
                       Browse Menu
                     </Button>
                   </div>
@@ -329,20 +349,7 @@ const ClientPage = () => {
                             )}
                           >
                             <div className="flex items-center space-x-2">
-                              <div
-                                className={`border ${item.foodType === "veg" ? "border-green-500" : ""} ${item.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5`}
-                              >
-                                <span
-                                  className={`${item.foodType === "veg" ? "bg-green-500" : ""} ${item.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                                ></span>
-                                <span className="sr-only">
-                                  {item.foodType === "veg"
-                                    ? "Veg"
-                                    : item.foodType === "non-veg"
-                                      ? "Non Veg"
-                                      : "Vegan"}
-                                </span>
-                              </div>
+                              <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
                               <h4 className="font-medium line-clamp-3">
                                 {item.foodName}{" "}
                                 {item.variantName && `(${item.variantName})`}
@@ -513,13 +520,22 @@ const ClientPage = () => {
           </>
         )}
       </div>
-      <div className="rounded-b-lg px-4 pt-0 pb-0 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto w-full absolute bottom-0 right-0 bg-background flex items-center sm:justify-between flex-col-reverse gap-2 sm:flex-row z-10 [&_button]:w-full [&_button]:sm:w-auto">
+
+      <div className="h-[6rem] sm:h-[4rem]"></div>
+
+      <div
+        className={cn(
+          "bg-background border-t p-4 flex items-center justify-between sm:justify-between flex-col-reverse gap-2 sm:flex-row fixed bottom-0 left-0 right-0 z-15",
+          footerClassName
+        )}
+      >
         {step === 1 && (
           <>
             <Button
-              onClick={() => router.back()}
+              onClick={handleClose}
               type="button"
               variant="outline"
+              className="w-full sm:w-auto"
             >
               Close
             </Button>
@@ -527,6 +543,7 @@ const ClientPage = () => {
               type="button"
               disabled={!tableId}
               onClick={() => setStep(2)}
+              className="w-full sm:w-auto"
             >
               Go to Menu
             </Button>
@@ -534,13 +551,19 @@ const ClientPage = () => {
         )}
         {step === 2 && (
           <>
-            <Button type="button" variant="outline" onClick={() => setStep(1)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep(1)}
+              className="w-full sm:w-auto"
+            >
               Go back to Tables
             </Button>
             <Button
               type="button"
               disabled={cartItems.length === 0}
               onClick={() => setStep(3)}
+              className="w-full sm:w-auto"
             >
               View Cart ({cartItems.length})
             </Button>
@@ -548,10 +571,19 @@ const ClientPage = () => {
         )}
         {step === 3 && (
           <>
-            <Button type="button" variant="outline" onClick={() => setStep(2)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep(2)}
+              className="w-full sm:w-auto"
+            >
               Go back to Menu
             </Button>
-            <Button type="button" onClick={confirmOrder}>
+            <Button
+              type="button"
+              onClick={confirmOrder}
+              className="w-full sm:w-auto"
+            >
               Place Order
             </Button>
           </>
@@ -561,4 +593,4 @@ const ClientPage = () => {
   );
 };
 
-export default ClientPage;
+export default FoodOrderStepsForStaffs;

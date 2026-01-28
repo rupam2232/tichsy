@@ -25,7 +25,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
 import type { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
 import CreateRestaurantDialog from "@/components/create-restaurant-dialog";
-import * as orderSound from "@/utils/orderSound";
+import "@/utils/orderSound";
+import { Plus } from "lucide-react";
 
 export default function Page() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -142,7 +143,7 @@ export default function Page() {
                   setOwnersRestaurant={setOwnersRestaurant}
                   isLoading={isLoading}
                 >
-                  Create Restaurant
+                  <Plus /> New Restaurant
                 </CreateRestaurantDialog>
               </div>
             )}
@@ -199,7 +200,6 @@ export default function Page() {
                           variant="outline"
                           className="text-sm"
                           onClick={async () => {
-                            await orderSound.enableSoundByUserGesture();
                             dispatch(
                               setActiveRestaurant({
                                 _id: restaurant._id,
@@ -268,7 +268,6 @@ export default function Page() {
                       variant="outline"
                       className="text-sm"
                       onClick={async () => {
-                        await orderSound.enableSoundByUserGesture();
                         dispatch(
                           setActiveRestaurant({
                             _id: staffsrestaurant._id,

@@ -15,6 +15,7 @@ import TableDetails from "@/components/table-details";
 import type { Table, AllTables } from "@repo/ui/types/Table";
 import CreateTableDialog from "@/components/create-table";
 import type { AppDispatch, RootState } from "@/store/store";
+import { Plus } from "lucide-react";
 
 export default function SelectTable() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
@@ -98,7 +99,7 @@ export default function SelectTable() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+      <div className="flex flex-col-reverse sm:flex-row gap-y-2 items-center justify-between px-4 py-3 border-b border-border bg-background">
         {/* Status Legend - Center */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
@@ -123,17 +124,19 @@ export default function SelectTable() {
                 isLoading={isPageLoading}
                 restaurantSlug={slug}
                 setAllTables={setAllTables}
-              />
+              >
+                <Plus /> New Table
+              </CreateTableDialog>
             </div>
           )}
       </div>
 
       {/* Main Content Area */}
       {isPageLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-y-12 gap-x-4 p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
           {Array.from({ length: 12 }).map((_, index) => (
             <div key={index} className="flex items-center justify-center">
-              <Card className="flex items-center justify-center h-20 w-20 bg-muted text-muted-foreground animate-pulse"></Card>
+              <Card className="flex items-center justify-center h-[4rem] w-full bg-muted text-muted-foreground animate-pulse"></Card>
             </div>
           ))}
         </div>
@@ -145,8 +148,8 @@ export default function SelectTable() {
             const isSelected = selectedTable?._id === table._id;
 
             return (
+              <>
               <TableDetails
-                key={table._id}
                 table={table}
                 setAllTables={setAllTables}
                 isSelected={isSelected}
@@ -154,6 +157,7 @@ export default function SelectTable() {
                 restaurantSlug={slug}
               >
                 <div
+                key={table._id}
                   ref={
                     allTables.tables.length - 1 === index
                       ? lastElementRef
@@ -179,6 +183,7 @@ export default function SelectTable() {
                   </Card>
                 </div>
               </TableDetails>
+              </>
             );
           })}
           {isPageChanging &&

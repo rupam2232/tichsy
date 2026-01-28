@@ -24,8 +24,12 @@ function ensureAudio() {
   audio.volume = 0.95;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext ||
+      (
+        window as unknown as Window & {
+          webkitAudioContext: typeof AudioContext;
+        }
+      ).webkitAudioContext)();
     fetch(SOUND_PATH)
       .then((r) => r.arrayBuffer())
       .then((buf) => ctx.decodeAudioData(buf))
@@ -39,7 +43,7 @@ function ensureAudio() {
 }
 
 export async function enableSoundByUserGesture(): Promise<boolean> {
-  // call this from a click handler to "unlock" audio playback
+  // calling this from a click handler to "unlock" audio playback
   ensureAudio();
   if (!audio) return false;
   try {
@@ -97,4 +101,39 @@ export function play() {
       console.warn("Playback failed:", err);
     });
   }
+}
+
+// Automatically enable sound on any user interaction or when tab becomes visible
+if (typeof window !== "undefined") {
+  const cleanup = () => {
+    document.removeEventListener("click", tryEnable);
+    document.removeEventListener("touchstart", tryEnable);
+    document.removeEventListener("visibilitychange", tryEnable);
+    document.removeEventListener("DOMContentLoaded", tryEnable);
+    window.removeEventListener("load", tryEnable);
+    window.removeEventListener("focus", tryEnable);
+    window.removeEventListener("pageshow", tryEnable);
+  };
+
+  const tryEnable = () => {
+    if (!enabled) {
+      enableSoundByUserGesture()
+        .then((success) => {
+          if (success) {
+            cleanup();
+          }
+        })
+        .catch(() => {});
+    } else {
+      cleanup();
+    }
+  };
+
+  document.addEventListener("click", tryEnable, { once: true });
+  document.addEventListener("touchstart", tryEnable, { once: true });
+  document.addEventListener("visibilitychange", tryEnable);
+  document.addEventListener("DOMContentLoaded", tryEnable);
+  window.addEventListener("load", tryEnable);
+  window.addEventListener("focus", tryEnable);
+  window.addEventListener("pageshow", tryEnable);
 }

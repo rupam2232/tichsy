@@ -1,4 +1,4 @@
-import { useState, useCallback, JSX } from "react";
+import { useState, useCallback, useEffect, JSX } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,17 +10,13 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
-import type {
-  Order,
-  // OrderDetails as OrderDetailsType,
-  FullOrderDetailsType,
-} from "@repo/ui/types/Order";
+import type { Order, FullOrderDetailsType } from "@repo/ui/types/Order";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
@@ -47,11 +43,11 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
 const OrderDetails = ({
   children,
   order,
-  // setOrders,
   restaurantSlug,
   orderStatusIcons,
   status,
@@ -59,7 +55,6 @@ const OrderDetails = ({
 }: {
   children: React.ReactNode;
   order: Order;
-  // setOrders: React.Dispatch<React.SetStateAction<OrderDetailsType>>;
   restaurantSlug: string;
   orderStatusIcons: {
     status: string;
@@ -78,6 +73,8 @@ const OrderDetails = ({
   const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch();
   const router = useRouter();
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
 
   const fetchOrderDetails = useCallback(async () => {
     setIsLoading(true);
@@ -104,12 +101,34 @@ const OrderDetails = ({
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [restaurantSlug, order._id, dispatch, router]);
+  }, [restaurantSlug, order._id, dispatch, router, pathname]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setIsOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      window.history.back();
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsOpen(false);
+    };
+
+    if (isOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isOpen]);
 
   const onChildBtnClick = () => {
     if (order._id !== orderDetails?._id) {
@@ -124,7 +143,7 @@ const OrderDetails = ({
   // Only show statuses after current one (excluding itself)
   const availableNextStatuses = orderStatusIcons.slice(currentStatusIndex + 1);
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={() => onChildBtnClick()}>
         {children}
       </DialogTrigger>
@@ -144,7 +163,7 @@ const OrderDetails = ({
           ) : error ? (
             <div className="text-red-500 text-center">{error}</div>
           ) : orderDetails ? (
-            <div className="space-y-4 p-4">
+            <div className="space-y-3 p-4">
               <Button
                 variant="secondary"
                 size="sm"
@@ -218,7 +237,7 @@ const OrderDetails = ({
                       {status.charAt(0).toUpperCase() + status.slice(1)}
                     </Badge>
                   )}
-                  <div className="absolute -bottom-5 right-0 text-[10px] flex items-center gap-1 text-muted-foreground w-max">
+                  <div className={`absolute ${status === "completed" ? "-bottom-7.5" : "-bottom-5"} right-0 text-[10px] flex items-center gap-1 text-muted-foreground w-max whitespace-pre-line`}>
                     <span
                       className={`${
                         orderStatusIcons.find((icon) => icon.status === status)
@@ -233,13 +252,6 @@ const OrderDetails = ({
               <p className="text-muted-foreground text-xs mt-0.5">
                 Order #{orderDetails.orderNo}
               </p>
-
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium">Payment Method</p>
-                <Badge variant={"default"} className="text-xs">
-                  {orderDetails.paymentMethod === "online" ? "Online" : "Cash"}
-                </Badge>
-              </div>
 
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium">Payment Status</p>
@@ -275,7 +287,7 @@ const OrderDetails = ({
               </div>
 
               <div className="text-sm space-y-1">
-                <ScrollArea className="max-w-full overflow-x-auto">
+                <ScrollArea className="max-w-[calc(100vw-2rem)] sm:max-w-full overflow-x-auto">
                   <Table>
                     <TableHeader className="border-t">
                       <TableRow>
@@ -288,29 +300,11 @@ const OrderDetails = ({
                     <TableBody>
                       {orderDetails.orderedFoodItems.map((item, index) => (
                         <TableRow
-                          key={item.foodItemId + index}
+                          key={order._id + item.foodItemId + index}
                           className="text-foreground/80"
                         >
                           <TableCell className="font-medium flex items-center gap-2 text-left whitespace-pre-wrap">
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <div
-                                  className={`border ${item.foodType === "veg" ? "border-green-500" : ""} ${item.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 cursor-help`}
-                                >
-                                  <span
-                                    className={`${item.foodType === "veg" ? "bg-green-500" : ""} ${item.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                                  ></span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {item.foodType === "veg"
-                                  ? "Veg"
-                                  : item.foodType === "non-veg"
-                                    ? "Non Veg"
-                                    : "Vegan"}
-                              </TooltipContent>
-                            </Tooltip>
-
+                            <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
                             {item.firstImageUrl ? (
                               <Avatar>
                                 <AvatarImage
@@ -487,26 +481,6 @@ const OrderDetails = ({
                     </div>
                   </div>
                 )}
-
-                {/* Payment Attempts */}
-                {/* <div>
-                  <h3 className="text-sm font-medium mb-1">Payment Attempts</h3>
-                  <div
-                    className={`bg-muted px-3 py-1 rounded-md ${orderDetails.paymentAttempts.length === 0 ? "text-xs text-muted-foreground" : "text-sm"}`}
-                  >
-                    {orderDetails.paymentAttempts.length > 0 ? (
-                      <ul className="list-disc list-inside">
-                        {orderDetails.paymentAttempts.map((attempt, index) => (
-                          <li key={index}>
-                            {JSON.stringify(attempt)}{" "}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>No payment attempts recorded</p>
-                    )}
-                  </div>
-                </div> */}
               </div>
             </div>
           ) : (
@@ -518,7 +492,6 @@ const OrderDetails = ({
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>
-            {/* <Button type="submit">Save changes</Button> */}
           </DialogFooter>
         </ScrollArea>
       </DialogContent>

@@ -46,7 +46,7 @@ export function ChartAreaInteractive({data}: {
   const filteredData = data?.filter((item) => {
     if (!item?._id) return;
     const date = new Date(item?._id)
-    const referenceDate = new Date("2024-06-30")
+    const referenceDate = new Date()
     let daysToSubtract = 90
     if (timeRange === "30d") {
       daysToSubtract = 30
@@ -68,28 +68,6 @@ export function ChartAreaInteractive({data}: {
           </span>
           <span className="@[540px]/card:hidden">Last 30 days</span>
         </CardDescription>
-        {/* <CardAction>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-              size="sm"
-              aria-label="Select a value"
-            >
-              <SelectValue placeholder="Last 3 months" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
-              </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </CardAction> */}
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
@@ -143,13 +121,11 @@ export function ChartAreaInteractive({data}: {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              // minTickGap={32}
               tickFormatter={(value) => {
                 return value.toFixed(2)
               }}
             />
             <ChartTooltip
-              // cursor={false}
               defaultIndex={isMobile ? -1 : 10}
               content={
                 <ChartTooltipContent
@@ -160,14 +136,11 @@ export function ChartAreaInteractive({data}: {
                     })
                   }}
                   indicator="dot"
-                  // className="!bg-popover !shadow-lg"
                   color="var(--chart-1)"
                   hideIndicator
-                  // extraNameKey="orders"
                 />
               }
             />
-            {/* <Bar dataKey="total" radius={4} fill="var(--color-total)" type="natural" /> */}
             <Bar dataKey="total" radius={4} fill="url(#fillTotal)" stackId="a" type="natural" />
             <Bar dataKey="orders" barSize={0} radius={4} fill="url(#fillOrders)" stackId="a" type="natural" className="hidden" />
           </BarChart>

@@ -10,8 +10,6 @@ import {
   IconLayoutDashboard,
   IconChartBar,
   IconUser,
-  IconUsers,
-  IconCreditCard,
   IconHome,
 } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
@@ -24,11 +22,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar
 } from "@repo/ui/components/sidebar";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { X } from "lucide-react";
 
 const data = {
   navMain: [
@@ -38,18 +40,14 @@ const data = {
       showInSidebar: true,
       icon: IconHome,
     },
-    {
-      title: "Billing",
-      url: "/billing",
-      showInSidebar: true,
-      icon: IconCreditCard,
-    },
   ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const user = useSelector((state: RootState) => state.auth.user);
   const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const { toggleSidebar } = useSidebar();
 
   const isRestaurantPage = pathname?.slice(1).split("/")[0] === "restaurant";
 
@@ -94,11 +92,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: IconChartBar,
         },
         {
-          title: "Staff Management",
-          url: `/restaurant/${restaurantSlug}/staff-management`,
-          icon: IconUsers,
-        },
-        {
           title: "Settings",
           url: `/restaurant/${restaurantSlug}/settings`,
           icon: IconSettings,
@@ -111,18 +104,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem>
+          <SidebarMenuItem className="flex items-center justify-between gap-2">
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5 text-sidebar-accent-foreground"
+              className="data-[slot=sidebar-menu-button]:!p-1.5 text-sidebar-accent-foreground flex-1 hover:bg-sidebar"
             >
-              <a href="#">
+              <Link href="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">
                   {process.env.NEXT_PUBLIC_APP_NAME}
                 </span>
-              </a>
+              </Link>
             </SidebarMenuButton>
+            {isMobile && (
+              <SidebarMenuButton
+                className="data-[slot=sidebar-menu-button]:!p-1.5 text-sidebar-accent-foreground w-min cursor-pointer"
+                onClick={toggleSidebar}
+              >
+                <X />
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

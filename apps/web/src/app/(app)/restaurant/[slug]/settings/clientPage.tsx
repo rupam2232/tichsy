@@ -511,7 +511,7 @@ const ClientPage = () => {
                     <Input
                       id="restaurantName"
                       type="text"
-                      placeholder="E.g., Dominos"
+                      placeholder="E.g., Restro"
                       autoComplete="restaurant-name"
                       required
                       {...field}
@@ -538,7 +538,7 @@ const ClientPage = () => {
                     <Input
                       id="slug"
                       type="text"
-                      placeholder="E.g., dominos"
+                      placeholder="E.g., restro"
                       autoComplete="slug"
                       required
                       {...field}
@@ -584,7 +584,7 @@ const ClientPage = () => {
                     <Textarea
                       className="resize-none min-h-20 max-h-40"
                       id="description"
-                      placeholder="E.g., Best pizza in town"
+                      placeholder="E.g., Best restaurant in town"
                       autoComplete="description"
                       {...field}
                     />
@@ -606,7 +606,7 @@ const ClientPage = () => {
                     <Input
                       id="address"
                       type="text"
-                      placeholder="E.g., 123 Pizza St, City"
+                      placeholder="E.g., 123 Restaurant St, City"
                       autoComplete="address"
                       {...field}
                     />
@@ -634,7 +634,7 @@ const ClientPage = () => {
                       placeholder={
                         field.value && field.value?.length > 0
                           ? "Add another category"
-                          : "E.g., Italian, Pizza"
+                          : "E.g., Indian, Chinese"
                       }
                       className="resize-none pb-4 whitespace-pre-wrap break-all"
                     />

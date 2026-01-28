@@ -44,18 +44,21 @@ import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useState } from "react";
 import { cn } from "@repo/ui/lib/utils";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
 const OrderCard = ({
   order,
   restaurantSlug,
   ref,
   className,
+  cardContentClassName,
   setOrders,
 }: {
   order: Order;
   restaurantSlug: string;
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
+  cardContentClassName?: string;
   setOrders: React.Dispatch<React.SetStateAction<OrderDetailsType>>;
 }) => {
   const dispatch = useDispatch();
@@ -207,7 +210,7 @@ const OrderCard = ({
         className
       )}
     >
-      <CardContent className="flex flex-col justify-between h-full">
+      <CardContent className={cn("flex flex-col justify-between h-full", cardContentClassName)}>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm font-medium">
             <span>Table: {order.table.tableName}</span>
@@ -330,28 +333,11 @@ const OrderCard = ({
               <TableBody>
                 {order.orderedFoodItems.map((item, index) => (
                   <TableRow
-                    key={item.foodItemId + index}
+                    key={item.foodItemId + index + order._id}
                     className="text-foreground/80"
                   >
                     <TableCell className="font-medium flex items-center gap-2 text-left whitespace-pre-wrap">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <div
-                            className={`border ${item.foodType === "veg" ? "border-green-500" : ""} ${item.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 cursor-help`}
-                          >
-                            <span
-                              className={`${item.foodType === "veg" ? "bg-green-500" : ""} ${item.foodType === "non-veg" ? "bg-red-500" : ""} w-1.5 h-1.5 block rounded-full`}
-                            ></span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {item.foodType === "veg"
-                            ? "Veg"
-                            : item.foodType === "non-veg"
-                              ? "Non Veg"
-                              : "Vegan"}
-                        </TooltipContent>
-                      </Tooltip>
+                      <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
                       <span>
                         {item.foodName}
                         {item.isVariantOrder ? ` (${item.variantName})` : ""}
@@ -386,13 +372,12 @@ const OrderCard = ({
         <div className="flex gap-2 pt-3 justify-between sm:flex-row flex-col">
           <OrderDetails
             order={order}
-            // setOrders={setOrders}
             restaurantSlug={restaurantSlug}
             orderStatusIcons={orderStatusIcons}
             status={status}
             handleUpdateStatus={handleUpdateStatus}
           >
-            <Button variant="outline">See Details</Button>
+            <Button variant="outline" className="border bg-background hover:bg-accent">See Details</Button>
           </OrderDetails>
           {order.isPaid ? (
             <Button

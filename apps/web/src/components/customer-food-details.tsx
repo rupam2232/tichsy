@@ -27,13 +27,8 @@ import {
   type CarouselApi,
 } from "@repo/ui/components/carousel";
 import Image from "next/image";
-import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@repo/ui/components/tooltip";
 import { useCart } from "@/hooks/useCart";
 import { Label } from "@repo/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/radio-group";
@@ -45,6 +40,7 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import { Separator } from "@repo/ui/components/separator";
+import VegNonVegTooltip from "./veg-nonveg-tooltip";
 
 const CustomerFoodDetails = ({
   foodItem,
@@ -69,7 +65,8 @@ const CustomerFoodDetails = ({
   const [carouselCount, setCarouselCount] = useState<number>(0);
   const [variantName, setVariantName] = useState<string>("default");
   const [itemCount, setItemCount] = useState<number>(1);
-  const { cartItems, addItem, removeItem, editItem, syncCart } = useCart(restaurantSlug);
+  const { cartItems, addItem, removeItem, editItem, syncCart } =
+    useCart(restaurantSlug);
 
   const fetchFoodItemDetails = useCallback(async () => {
     if (!foodItem || !foodItem._id) {
@@ -144,7 +141,9 @@ const CustomerFoodDetails = ({
       }
     } else {
       const existingItem = cartItems.find(
-        (item) => item.foodId === foodItemDetails._id && (item.variantName === null || item.variantName === undefined)
+        (item) =>
+          item.foodId === foodItemDetails._id &&
+          (item.variantName === null || item.variantName === undefined)
       );
       if (existingItem) {
         editItem({
@@ -196,12 +195,12 @@ const CustomerFoodDetails = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen, foodItem._id]);
 
-    useEffect(() => {
-      if(showEditDrawer){
-        syncCart();
-      }
+  useEffect(() => {
+    if (showEditDrawer) {
+      syncCart();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showEditDrawer])
+  }, [showEditDrawer]);
 
   if (showEditDrawer) {
     const cartItemsFiltered = cartItems.filter(
@@ -225,20 +224,7 @@ const CustomerFoodDetails = ({
                           className="flex justify-between items-start gap-x-4"
                         >
                           <div>
-                            <div
-                              className={`border ${item.foodType === "veg" ? "border-green-500" : ""} ${item.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 w-min`}
-                            >
-                              <span
-                                className={`${item.foodType === "veg" ? "bg-green-500" : ""} ${item.foodType === "non-veg" ? "bg-red-500" : ""} w-1 h-1 block rounded-full`}
-                              ></span>
-                              <span className="sr-only">
-                                {item.foodType === "veg"
-                                  ? "Veg"
-                                  : item.foodType === "non-veg"
-                                    ? "Non Veg"
-                                    : "Vegan"}
-                              </span>
-                            </div>
+                            <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
                             <h3>
                               {item.foodName}{" "}
                               {item.variantName && `(${item.variantName})`}
@@ -370,8 +356,9 @@ const CustomerFoodDetails = ({
     >
       <DrawerTrigger className="hidden">Open</DrawerTrigger>
       <DrawerContent className="w-full h-full data-[vaul-drawer-direction=bottom]:max-h-[85vh]">
-        <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full">
-          <ScrollArea className="h-full pt-3 max-h-[80%]">
+        <DrawerTitle className="sr-only">Food Item Details</DrawerTitle>
+        <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full relative">
+          <ScrollArea className="h-full pt-3">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="animate-spin" />
@@ -379,9 +366,6 @@ const CustomerFoodDetails = ({
             ) : foodItemDetails ? (
               <>
                 <div className="space-y-3 p-4 pt-0">
-                  <DrawerTitle className="sr-only">
-                    Food Item Details
-                  </DrawerTitle>
                   <Card className="gap-2 py-3 bg-muted/50">
                     <CardContent className="px-3">
                       {foodItemDetails.imageUrls &&
@@ -432,31 +416,7 @@ const CustomerFoodDetails = ({
                       <CardHeader className="px-0 gap-0">
                         <div className="flex items-end justify-between gap-2">
                           <div>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <div
-                                  className={`border ${foodItemDetails.foodType === "veg" ? "border-green-500" : ""} ${foodItemDetails.foodType === "non-veg" ? "border-red-500" : ""} outline outline-white bg-white p-0.5 cursor-help`}
-                                >
-                                  <span
-                                    className={`${foodItemDetails.foodType === "veg" ? "bg-green-500" : ""} ${foodItemDetails.foodType === "non-veg" ? "bg-red-500" : ""} w-1 h-1 block rounded-full`}
-                                  ></span>
-                                  <span className="sr-only">
-                                    {foodItemDetails.foodType === "veg"
-                                      ? "Veg"
-                                      : foodItemDetails.foodType === "non-veg"
-                                        ? "Non Veg"
-                                        : "Vegan"}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {foodItemDetails.foodType === "veg"
-                                  ? "Veg"
-                                  : foodItemDetails.foodType === "non-veg"
-                                    ? "Non Veg"
-                                    : "Vegan"}
-                              </TooltipContent>
-                            </Tooltip>
+                            <VegNonVegTooltip foodType={foodItemDetails.foodType} innerClassName="size-1" />
                             <CardTitle className="whitespace-pre-wrap font-bold text-xl">
                               {foodItemDetails.foodName}
                             </CardTitle>
@@ -539,14 +499,16 @@ const CustomerFoodDetails = ({
                               />
                             </div>
                             {foodItemDetails.variants.map((variant, index) => (
+                              <div key={index}>
+                              <Separator className="mx-1" />
                               <div
-                                key={index}
-                                className="flex items-center justify-between space-x-4 w-full hover:bg-muted rounded-sm px-2 cursor-pointer"
+                                className={cn("flex justify-between space-x-4 w-full hover:bg-muted rounded-sm px-2 cursor-pointer py-2", variantName === variant.variantName ? "items-start" : "items-center")}
                               >
                                 <Label
                                   htmlFor={variant.variantName}
-                                  className="flex-1 justify-between py-2 cursor-pointer"
+                                  className="flex-1 cursor-pointer flex-col justify-start py-0"
                                 >
+                                  <div className="flex items-center justify-between w-full">
                                   {variant.variantName}
                                   <div className="text-right">
                                     {typeof variant.discountedPrice ===
@@ -565,13 +527,16 @@ const CustomerFoodDetails = ({
                                       </span>
                                     )}
                                   </div>
+                                  </div>
+                                  {variant.description && <p className={cn("text-sm pb-2 text-muted-foreground animate-in fade-in duration-300 w-full font-normal", variantName === variant.variantName ? "block" : "hidden h-0")}>{variant.description}</p>}
                                 </Label>
 
                                 <RadioGroupItem
                                   value={variant.variantName}
                                   id={variant.variantName}
-                                  className="border-primary cursor-pointer"
+                                  className="border-primary cursor-pointer mt-1"
                                 />
+                              </div>
                               </div>
                             ))}
                           </RadioGroup>
@@ -587,7 +552,11 @@ const CustomerFoodDetails = ({
                       <Separator className="mx-1" />
                       <CardContent className="px-3">
                         {foodItemDetails.tags.map((tag, index) => (
-                          <Badge variant="secondary" key={index} className="mx-1 my-1">
+                          <Badge
+                            variant="secondary"
+                            key={index}
+                            className="mx-1 my-1"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -601,9 +570,20 @@ const CustomerFoodDetails = ({
                 <p>No details available for this food item.</p>
               </div>
             )}
+            <div className="h-30"></div>
+            <ScrollBar className="w-1 z-20" />
           </ScrollArea>
           {!isLoading && (
-            <Card className="w-full md:w-2xl lg:w-3xl p-3 backdrop-blur-2xl bg-muted/50">
+            <Card
+              className={cn(
+                "w-full md:w-2xl lg:w-3xl p-3 backdrop-blur-sm bg-background/50 sticky ease-linear z-10",
+                !foodItemDetails?.description &&
+                  foodItemDetails?.variants?.length === 0 &&
+                  foodItemDetails.tags?.length === 0
+                  ? "bottom-0"
+                  : "bottom-0"
+              )}
+            >
               <CardDescription>
                 {foodItemDetails &&
                 (variantName === "default"
@@ -645,7 +625,7 @@ const CustomerFoodDetails = ({
                       className="w-3/6 md:w-2/5 whitespace-pre-wrap flex-wrap h-auto gap-y-0 px-2"
                       onClick={handleAddItem}
                     >
-                      Add Item
+                      Add
                       {typeof itemDiscountedPrice === "number" ? (
                         <>
                           <span className="text-xs line-through text-muted-foreground items-baseline">

@@ -5,9 +5,6 @@ import type { FullOrderDetailsType } from "@repo/ui/types/Order";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
-import { useDispatch } from "react-redux";
-import { signOut } from "@/store/authSlice";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import QRCodeStyling from "qr-code-styling";
 import { Loader2, Printer } from "lucide-react";
@@ -26,12 +23,9 @@ const BillReceipt = ({
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const dispatch = useDispatch();
-  const router = useRouter();
 
   const handlePrint = () => {
     window.print();
-    // window.open(window.location.href, "PRINT", "height=600,width=800");
   };
 
   const fetchOrderDetails = useCallback(async () => {
@@ -57,14 +51,10 @@ const BillReceipt = ({
         axiosError.response?.data.message ||
           "Failed to fetch all orders. Please try again later"
       );
-      if (axiosError.response?.status === 401) {
-        dispatch(signOut());
-        router.push("/signin");
-      }
     } finally {
       setIsLoading(false);
     }
-  }, [restaurantSlug, orderId, dispatch, router]);
+  }, [restaurantSlug, orderId]);
 
   useEffect(() => {
     fetchOrderDetails();
@@ -87,7 +77,7 @@ const BillReceipt = ({
           margin: 20,
         },
         qrOptions: {
-          errorCorrectionLevel: "H", // High error correction for logo overlay
+          errorCorrectionLevel: "H",
         },
       })
     );
@@ -150,7 +140,6 @@ const BillReceipt = ({
           {orderDetails.restaurant.address && (
             <p>{orderDetails.restaurant.address}</p>
           )}
-          {/* <p>GSTIN: 29ABCDE1234F1Z5</p> */}
         </div>
 
         {/* Bill Info */}
@@ -172,7 +161,6 @@ const BillReceipt = ({
           </span>
         </div>
         <div className="text-xs mb-2">
-          {/* <span>Table: 12</span> */}
           {orderDetails.kitchenStaff?.firstName && (
             <span>Staff: {orderDetails.kitchenStaff?.firstName}</span>
           )}

@@ -9,9 +9,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar
 } from "@repo/ui/components/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function NavMain({
   items,
@@ -29,6 +31,14 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const { openMobile, setOpenMobile } = useSidebar();
+
+  const closeSidebarForMobile = () => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  };
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -43,6 +53,7 @@ export function NavMain({
                     <SidebarMenuItem key={subItem.title + subItem.url}>
                       <Link
                         href={subItem.url}
+                        onClick={closeSidebarForMobile}
                       >
                         <SidebarMenuButton
                           className={`cursor-pointer ${pathname === subItem.url ? "bg-accent-foreground hover:bg-accent-foreground/90 font-medium text-sidebar-accent hover:text-sidebar-accent" : "text-sidebar-accent-foreground"}`}
@@ -59,6 +70,7 @@ export function NavMain({
                 <SidebarMenuItem key={item.title}>
                   <Link
                     href={item.url ?? "#"}
+                    onClick={closeSidebarForMobile}
                   >
                     <SidebarMenuButton
                       className={`cursor-pointer ${pathname === item.url ? "bg-accent-foreground hover:bg-accent-foreground/90 font-medium text-sidebar-accent hover:text-sidebar-accent" : "text-sidebar-accent-foreground"}`}

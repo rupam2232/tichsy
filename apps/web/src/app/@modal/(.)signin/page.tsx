@@ -7,13 +7,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 
 export default function SigninModal() {
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
+  const pathname = usePathname();
   const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    setDrawerOpen(pathname === "/signin" || pathname.includes("/signin"));
+  }, [pathname]);
+
   return (
     <>
       <Dialog
@@ -21,7 +27,7 @@ export default function SigninModal() {
         onOpenChange={(open) => {
           setDrawerOpen(open);
           if (!open) {
-            router.back();
+            router.replace("/");
           }
         }}
       >
@@ -31,7 +37,10 @@ export default function SigninModal() {
             <DialogHeader>
               <DialogTitle className="sr-only">Sign In</DialogTitle>
             </DialogHeader>
-            <SigninForm setDrawerOpen={setDrawerOpen} cardClassName="border-0" />
+            <SigninForm
+              setDrawerOpen={setDrawerOpen}
+              cardClassName="border-0"
+            />
           </ScrollArea>
         </DialogContent>
       </Dialog>

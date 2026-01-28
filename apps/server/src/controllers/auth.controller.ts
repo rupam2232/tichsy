@@ -12,10 +12,15 @@ import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import sendEmail from "../utils/sendEmail.js";
 import {
   newLoginDeviceTemplate,
-  signupEmailTemplate
+  passwordResetSuccessTemplate,
+  signupEmailTemplate,
 } from "../utils/emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { getCookieOptions } from "../utils/cookieOptions.js";
+const options = getCookieOptions();
+const passwordRegex =
+  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/;
 
 // Handles user registration with email/password, device/session logging, security event, and trial subscription creation. Sends welcome email and sets auth cookies.
 export const signup = async (
@@ -23,7 +28,7 @@ export const signup = async (
   res: Response,
   next: NextFunction
 ) => {
-  if(!req.body){
+  if (!req.body) {
     throw new ApiError(400, "Request body is required");
   }
   // Start a MongoDB session for transaction
@@ -56,17 +61,22 @@ export const signup = async (
       throw new ApiError(400, "Invalid email format");
     }
 
-    // Validate password strength 
-    if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;'"<>?() \[\] {}|\\/~`_^+-]{8,}$/.test(password)) {
-      throw new ApiError(400, "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number");
+    // Validate password strength
+    if (!passwordRegex.test(password)) {
+      throw new ApiError(
+        400,
+        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
+      );
     }
 
     // Split full name into first and last names
     const [firstName, ...lastNameParts] = fullName.split(" ");
     const lastName = lastNameParts.join(" ");
-    
+
     // Create user document
-    const user = await User.create([{ email, password, firstName, lastName }], { session });
+    const user = await User.create([{ email, password, firstName, lastName }], {
+      session,
+    });
 
     // Generate JWT tokens for authentication
     const refreshToken = generateRefreshToken(user[0]._id as string);
@@ -142,15 +152,6 @@ export const signup = async (
       signupEmailTemplate(user[0].firstName ?? "User")
     );
 
-    // Set secure cookies and send response
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("None" as "none")
-          : ("Strict" as "strict"),
-    };
     res
       .status(201)
       .cookie("accessToken", accessToken, {
@@ -177,7 +178,7 @@ export const signup = async (
       );
   } catch (err) {
     // Rollback transaction on error
-    if(session.inTransaction()){
+    if (session.inTransaction()) {
       await session.abortTransaction();
     }
     session.endSession();
@@ -256,7 +257,11 @@ export const signin = async (
       const { success } = await sendEmail(
         email,
         "new-login",
-        newLoginDeviceTemplate(user.firstName ?? "User", req.header("user-agent") || "Unknown Device", requestIp.getClientIp(req) || "Unknown IP")
+        newLoginDeviceTemplate(
+          user.firstName ?? "User",
+          req.header("user-agent") || "Unknown Device",
+          requestIp.getClientIp(req) || "Unknown IP"
+        )
       );
 
       // Log security event for new login
@@ -277,16 +282,6 @@ export const signin = async (
     // Commit transaction and end session
     await session.commitTransaction();
     session.endSession();
-
-    // Set secure cookies for tokens and send response
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("None" as "none")
-          : ("Strict" as "strict"),
-    };
 
     res
       .status(200)
@@ -314,7 +309,7 @@ export const signin = async (
       );
   } catch (err) {
     // Rollback transaction on error
-    if(session.inTransaction()){
+    if (session.inTransaction()) {
       await session.abortTransaction();
     }
     session.endSession();
@@ -367,15 +362,21 @@ export const google = async (
     const user = await User.findOne({ email }).session(session);
 
     if (user) {
-      if(!user.firstName || user.firstName === "" || !user.lastName || user.lastName === "" || !user.avatar) {
+      if (
+        !user.firstName ||
+        user.firstName === "" ||
+        !user.lastName ||
+        user.lastName === "" ||
+        !user.avatar
+      ) {
         // Update user details if they are missing
-        if(!user.firstName || user.firstName === "") {
+        if (!user.firstName || user.firstName === "") {
           user.firstName = given_name || name?.split(" ")[0] || "";
         }
-        if(!user.lastName || user.lastName === "") {
+        if (!user.lastName || user.lastName === "") {
           user.lastName = family_name || name?.split(" ")[1] || "";
         }
-        if(!user.avatar || user.avatar === "") {
+        if (!user.avatar || user.avatar === "") {
           user.avatar = picture || undefined;
         }
         await user.save({ session });
@@ -426,7 +427,11 @@ export const google = async (
         const { success } = await sendEmail(
           email,
           "new-login",
-          newLoginDeviceTemplate(user.firstName ?? "User", req.header("user-agent") || "Unknown Device", requestIp.getClientIp(req) || "Unknown IP")
+          newLoginDeviceTemplate(
+            user.firstName ?? "User",
+            req.header("user-agent") || "Unknown Device",
+            requestIp.getClientIp(req) || "Unknown IP"
+          )
         );
 
         // Create security event for new login
@@ -447,16 +452,6 @@ export const google = async (
       // Commit transaction and end session
       await session.commitTransaction();
       session.endSession();
-
-      // Set secure cookies for tokens and send response
-      const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite:
-          process.env.NODE_ENV === "production"
-            ? ("None" as "none")
-            : ("Strict" as "strict"),
-      };
 
       res
         .status(200)
@@ -608,7 +603,7 @@ export const google = async (
     }
   } catch (err) {
     // Rollback transaction on error
-    if(session.inTransaction()){
+    if (session.inTransaction()) {
       await session.abortTransaction();
     }
     session.endSession();
@@ -617,39 +612,64 @@ export const google = async (
 };
 
 // Handles user logout by removing refreshtoken from device session, clearing auth cookies, and sending a success response
-export const signout = asyncHandler(async (
-  req: Request,
-  res: Response
-) => {
-    // Get user ID from request which is set by authentication middleware
-    const userId = req.user?._id;
+export const signout = asyncHandler(async (req: Request, res: Response) => {
+  // Get user ID from request which is set by authentication middleware
+  const userId = req.user?._id;
 
-    // Find and revoke device session for the user
-    await DeviceSession.findOneAndUpdate(
-      {
-        userId,
-        ipAddress: requestIp.getClientIp(req),
-        userAgent: req.header("user-agent"),
-      },
-      { $unset: { refreshToken: 1 }, $set: { lastActiveAt: new Date() } },
-      { new: true }
+  // Find and revoke device session for the user
+  await DeviceSession.findOneAndUpdate(
+    {
+      userId,
+      ipAddress: requestIp.getClientIp(req),
+      userAgent: req.header("user-agent"),
+    },
+    { $unset: { refreshToken: 1 }, $set: { lastActiveAt: new Date() } },
+    { new: true }
+  );
+
+  // Clear auth cookies
+  res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, null, "Logout successful"));
+});
+
+// Handles password reset for unauthenticated users. Verifies email, validates new password, updates it, and sends a success email.
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.body || !req.body.email || !req.body.password) {
+      throw new ApiError(400, "Email and password are required");
+    }
+
+    const { email, password } = req.body;
+
+    // Validate password strength (reusing the central regex)
+    if (!passwordRegex.test(password)) {
+      throw new ApiError(
+        400,
+        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
+      );
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    // Update password (pre-save hook will handle hashing)
+    user.password = password;
+    await user.save();
+
+    // Send success email (non-blocking)
+    sendEmail(
+      email,
+      "password-reset-success",
+      passwordResetSuccessTemplate(user.firstName ?? "User")
     );
 
-    // cookies tokens
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("None" as "none")
-          : ("Strict" as "strict"),
-    };
-
-    // Clear auth cookies
     res
       .status(200)
-      .clearCookie("accessToken", options)
-      .clearCookie("refreshToken", options)
-      .json(new ApiResponse(200, null, "Logout successful"));
-}
-)
+      .json(new ApiResponse(200, null, "Password reset successful"));
+  }
+);
