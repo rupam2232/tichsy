@@ -1,15 +1,45 @@
 import { ApiError } from "../utils/ApiError.js";
 import { FoodItem } from "../models/foodItem.model.js";
 import type { Subscription as SubscriptionType } from "../models/subscription.model.js";
+import {
+  SUBSCRIPTION_PLANS,
+  SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
 
-export async function canCreateFoodItem(subscription: SubscriptionType, restaurantId: string) {
-const totalFoodItemCount = await FoodItem.countDocuments({ restaurantId });
+export async function canCreateFoodItem(
+  subscription: SubscriptionType,
+  restaurantId: string
+) {
+  const foodItemCount = await FoodItem.countDocuments({ restaurantId });
 
-  let maxFoodItem = 10;
-  if (subscription.plan === "medium") maxFoodItem = 25;
-  if (subscription.plan === "pro") maxFoodItem = 100000; // Unlimited for pro plan
+  const plan =
+    (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
 
-  if (totalFoodItemCount >= maxFoodItem) {
-    throw new ApiError(403, `Your plan allows to create max ${maxFoodItem} food items per restaurant`);
+  const maxFoodItems = SUBSCRIPTION_PLANS[plan].maxFoodItemsPerRestaurant;
+
+  if (foodItemCount >= maxFoodItems) {
+    throw new ApiError(
+      403,
+      `Your plan allows to create max ${maxFoodItems} food items per restaurant. Upgrade to create more.`
+    );
+  }
+}
+
+export async function checkVariantLimit(
+  variantCount: number,
+  subscription: SubscriptionType
+) {
+  if (variantCount <= 0) return;
+
+  const plan =
+    (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
+
+  const maxVariants = SUBSCRIPTION_PLANS[plan].maxVariantsPerFoodItem;
+
+  if (variantCount > maxVariants) {
+    throw new ApiError(
+      403,
+      `Your plan allows to create max ${maxVariants} variants per food item. Upgrade to create more.`
+    );
   }
 }

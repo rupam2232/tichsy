@@ -2,6 +2,7 @@ import {
   validatePaymentVerification,
   validateWebhookSignature,
 } from "razorpay/dist/utils/razorpay-utils.js";
+import { razorpay } from "../utils/razorpay.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Payment } from "../models/payment.model.js";
@@ -10,6 +11,10 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Subscription } from "../models/subscription.model.js";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import { startSession } from "mongoose";
+import {
+  SUBSCRIPTION_PLANS,
+  SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
 
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
@@ -46,9 +51,12 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
       webhookEvent !== "payment.captured" &&
       webhookEvent !== "payment.failed"
     ) {
+      await session.commitTransaction();
+      session.endSession();
       res
         .status(200)
         .json(new ApiResponse(200, true, "Event not relevant for processing"));
+      return;
     } else if (webhookEvent === "payment.captured") {
       if (paymentEntity.status !== "captured") {
         throw new ApiError(400, "Payment status is not captured");
@@ -56,29 +64,24 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
       if (paymentEntity.notes?.paymentType === "subscription") {
         const period = paymentEntity.notes.period ?? "monthly";
         if (period === "monthly") {
-          if (paymentEntity.notes?.plan === "starter") {
-            if (paymentEntity.amount !== 30000) {
-              throw new ApiError(
-                400,
-                "Payment amount does not match the plan selected"
-              );
-            }
-          } else if (paymentEntity.notes?.plan === "medium") {
-            if (paymentEntity.amount !== 50000) {
-              throw new ApiError(
-                400,
-                "Payment amount does not match the plan selected"
-              );
-            }
-          } else if (paymentEntity.notes?.plan === "pro") {
-            if (paymentEntity.amount !== 80000) {
-              throw new ApiError(
-                400,
-                "Payment amount does not match the plan selected"
-              );
-            }
-          } else {
+          const plan = paymentEntity.notes?.plan as SubscriptionPlan;
+          if (!SUBSCRIPTION_PLANS[plan]) {
             throw new ApiError(400, "Invalid plan selected");
+          }
+
+          const expectedAmount = SUBSCRIPTION_PLANS[plan].price * 100; // in paise
+          if (paymentEntity.amount !== expectedAmount) {
+            razorpay.payments.refund(paymentEntity.id,{
+              amount: paymentEntity.amount,
+              speed: "optimum",
+              notes: {
+                reason: "Payment amount does not match the plan selected",
+              },
+            });
+            throw new ApiError(
+              400,
+              "Payment amount does not match the plan selected"
+            );
           }
         } else {
           throw new ApiError(400, "Invalid period selected");
@@ -132,13 +135,19 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
 
         const order = await Order.findById(paymentDoc.orderId);
         if (!order) {
+          await session.commitTransaction();
+          session.endSession();
           res.status(200).json(new ApiResponse(200, true, "Order not found"));
+          return;
         } else if (order?.isPaid === true) {
           paymentDoc.status = "paid";
           await paymentDoc.save();
+          await session.commitTransaction();
+          session.endSession();
           res
             .status(200)
             .json(new ApiResponse(200, true, "Order already paid"));
+          return;
         } else {
           if (paymentEntity.status === "captured") {
             paymentDoc.status = "paid";
@@ -185,10 +194,12 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "paymentId, orderId and signature are required");
   }
 
+  const { paymentId, orderId, signature } = req.body;
+
   if (
     !validatePaymentVerification(
-      { order_id: req.body.orderId, payment_id: req.body.paymentId },
-      req.body.signature,
+      { order_id: orderId, payment_id: paymentId },
+      signature,
       process.env.RAZORPAY_KEY_SECRET!
     )
   ) {
@@ -197,37 +208,5 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, true, "Payment verification successful"));
-  // const paymentDoc = await Payment.findOne({
-  //   gatewayOrderId: req.body.orderId,
-  //   paymentGateway: "Razorpay",
-  //   status: "pending",
-  //   orderId: req.body.orderId,
-  // });
-  // if (!paymentDoc) {
-  //   throw new ApiError(404, "Payment record not found for this orderId");
-  // }
-  // if (paymentDoc.status === "paid") {
-  //    res
-  //     .status(200)
-  //     .json(new ApiResponse(200, paymentDoc, "Payment already verified"));
-  //     return;
-  // }
-  // const payment = await razorpay.payments.fetch(req.body.paymentId);
-  // if (payment.status === "captured") {
-  //   paymentDoc.status = "paid";
-  //   paymentDoc.gatewayPaymentId = payment.id;
-  //   paymentDoc.transactionId =
-  //     payment.acquirer_data?.upi_transaction_id ||
-  //     payment.acquirer_data?.rrn ||
-  //     null;
-  //   await paymentDoc.save();
-  // } else if (payment.status === "failed") {
-  //   paymentDoc.status = "failed";
-  //   await paymentDoc.save();
-  //   throw new ApiError(400, "Payment verification failed");
-  // }
-  // res
-  //   .status(200)
-  //   .json(new ApiResponse(200, paymentDoc, "Payment verified successfully"));
+    .json(new ApiResponse(200, true, "Payment verified successfully"));
 });

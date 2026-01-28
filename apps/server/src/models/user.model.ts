@@ -16,6 +16,9 @@ export interface User extends Document {
   restaurantIds?: Types.ObjectId[];
   oauthProvider?: string;
   oauthId?: string;
+  isArchived?: boolean; // Whether the user (staff) is archived
+  archivedAt?: Date; // When the user was archived
+  archivedReason?: string; // Reason for archiving
   isPasswordCorrect(password: string): Promise<boolean>;
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
@@ -64,6 +67,12 @@ const userSchema: Schema<User> = new Schema(
         return !!doc.oauthProvider;
       },
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: Date,
+    archivedReason: String,
     oauthId: {
       type: String,
       unique: true,

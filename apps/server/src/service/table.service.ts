@@ -1,15 +1,26 @@
 import { ApiError } from "../utils/ApiError.js";
 import { Table } from "../models/table.model.js";
 import type { Subscription as SubscriptionType } from "../models/subscription.model.js";
+import {
+  SUBSCRIPTION_PLANS,
+  SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
 
-export async function canCreateTable(subscription: SubscriptionType, restaurantId: string) {
-const totalTableCount = await Table.countDocuments({ restaurantId });
+export async function canCreateTable(
+  subscription: SubscriptionType,
+  restaurantId: string
+) {
+  const totalTableCount = await Table.countDocuments({ restaurantId });
 
-  let maxTables = 4;
-  if (subscription.plan === "medium") maxTables = 10;
-  if (subscription.plan === "pro") maxTables = 100000; // Unlimited for pro plan
+  const plan =
+    (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
+
+  const maxTables = SUBSCRIPTION_PLANS[plan].maxTablesPerRestaurant;
 
   if (totalTableCount >= maxTables) {
-    throw new ApiError(403, `Your plan allows to create max ${maxTables} tables per restaurant`);
+    throw new ApiError(
+      403,
+      `Your plan allows to create max ${maxTables} tables per restaurant. Upgrade to create more.`
+    );
   }
 }

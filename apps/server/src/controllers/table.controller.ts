@@ -5,6 +5,7 @@ import { canCreateTable } from "../service/table.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+const isProduction = process.env?.NODE_ENV === "production";
 
 export const createTable = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.tableName) {
@@ -46,7 +47,7 @@ export const createTable = asyncHandler(async (req, res) => {
   }
 
   const restaurantId = restaurant._id!.toString();
-  await canCreateTable(req.subscription!, restaurantId);
+  if (isProduction) await canCreateTable(req.subscription!, restaurantId);
 
   // Try to create a unique qrSlug, retry if duplicate key error
   let table;
@@ -214,6 +215,12 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
       400,
       "Cannot toggle occupied status while an order is active"
     );
+  }
+
+  if (table.isArchived) {
+    table.isOccupied = false;
+    await table.save({ validateBeforeSave: false });
+    throw new ApiError(400, "Cannot toggle occupied status of an archived table");
   }
 
   table.isOccupied = !table.isOccupied;

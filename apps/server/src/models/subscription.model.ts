@@ -12,6 +12,9 @@ export interface Subscription extends Document {
   trialExpiresAt?: Date; // When the trial expires
   subscriptionStartDate?: Date; // When the subscription starts
   subscriptionEndDate?: Date; // When the subscription ends
+  previousPlan?: "starter" | "medium" | "pro"; // Previous plan before downgrade
+  gracePeriodEndsAt?: Date; // When grace period ends
+  isOverLimit?: boolean; // Whether the subscription is over the limit
   isSubscriptionActive?: boolean; // Whether the subscription is currently active
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
@@ -43,6 +46,15 @@ const subscriptionSchema: Schema<Subscription> = new Schema(
     },
     subscriptionStartDate: Date,
     subscriptionEndDate: Date,
+    previousPlan: {
+      type: String,
+      enum: ["starter", "medium", "pro"],
+    },
+    gracePeriodEndsAt: Date,
+    isOverLimit: {
+      type: Boolean,
+      default: false,
+    },
     isSubscriptionActive: Boolean,
   },
   {

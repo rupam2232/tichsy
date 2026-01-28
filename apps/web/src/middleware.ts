@@ -22,7 +22,8 @@ export async function middleware(request: NextRequest) {
   if (
     accessToken &&
     (request.nextUrl.pathname.startsWith("/signin") ||
-      request.nextUrl.pathname.startsWith("/signup"))
+      request.nextUrl.pathname.startsWith("/signup") ||
+      request.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
     return NextResponse.redirect(new URL("/home", request.url));
   }
@@ -38,6 +39,7 @@ export const config = {
   matcher: [
     "/signin",
     "/signup",
+    "/forgot-password",
     "/",
     "/home/:path*",
     "/billing/:path*",

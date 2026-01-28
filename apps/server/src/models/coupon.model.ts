@@ -15,6 +15,9 @@ export interface Coupon extends Document {
   usageCount: number; // Number of times this coupon has been used
   validFrom: Date; // Start date/time for coupon validity
   validUntil?: Date; // End date/time for coupon validity (optional)
+  isArchived?: boolean; // Whether the coupon is archived
+  archivedAt?: Date; // When the coupon was archived
+  archivedReason?: string; // Reason for archiving
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
@@ -47,7 +50,7 @@ const couponSchema: Schema<Coupon> = new Schema(
       required: [true, "Discount percent is required"],
       min: 1,
       max: 100,
-      immutable: true
+      immutable: true,
     },
     isActive: {
       type: Boolean,
@@ -69,6 +72,12 @@ const couponSchema: Schema<Coupon> = new Schema(
       default: Date.now,
     },
     validUntil: Date,
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: Date,
+    archivedReason: String,
     createdAt: {
       type: Date,
       immutable: true,

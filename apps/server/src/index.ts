@@ -4,6 +4,7 @@ import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import http from "http";
 import { setupSocketIO } from "./socket/index.js";
+import { initSubscriptionCron } from "./cron/subscription.cron.js";
 
 // Load environment variables from .env file
 dotenv.config({
@@ -19,6 +20,9 @@ setupSocketIO(server);
 // Connect to the MongoDB database
 connectDB()
   .then(() => {
+    // Initialize Cron Jobs
+    initSubscriptionCron();
+
     // Listen for application-level errors
     app.on("error", (err) => {
       console.log("ERROR: ", err);

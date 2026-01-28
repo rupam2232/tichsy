@@ -1,7 +1,17 @@
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { Subscription, type Subscription as SubscriptionType } from "../models/subscription.model.js";
-import { Restaurant, type Restaurant as RestaurantType } from "../models/restaurant.models.js";
+import {
+  Subscription,
+  type Subscription as SubscriptionType,
+} from "../models/subscription.model.js";
+import {
+  Restaurant,
+  type Restaurant as RestaurantType,
+} from "../models/restaurant.models.js";
+import {
+  SUBSCRIPTION_PLANS,
+  type SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
 
 export async function canCreateRestaurant(
   user: User,
@@ -11,14 +21,13 @@ export async function canCreateRestaurant(
     ownerId: user._id,
   });
 
-  let maxRestaurants = 1;
-  if (subscription.plan === "medium") maxRestaurants = 2;
-  if (subscription.plan === "pro") maxRestaurants = 4;
+  const plan = (subscription.plan as SubscriptionPlan) || "starter";
+  const maxRestaurants = SUBSCRIPTION_PLANS[plan].maxRestaurants;
 
   if (restaurantCount >= maxRestaurants) {
     throw new ApiError(
       403,
-      `Your plan allows to create max ${maxRestaurants} restaurants`
+      `Your plan allows to create max ${maxRestaurants} restaurants. Upgrade your plan to create more`
     );
   }
 }
@@ -46,6 +55,10 @@ export async function canToggleOpeningStatus(
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
     subscription.isSubscriptionActive = false;
+    subscription.isTrial = false;
+    subscription.plan = undefined;
+    subscription.subscriptionStartDate = undefined;
+    subscription.subscriptionEndDate = undefined;
     subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
@@ -60,6 +73,10 @@ export async function canToggleOpeningStatus(
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
     subscription.isSubscriptionActive = false;
+    subscription.isTrial = false;
+    subscription.plan = undefined;
+    subscription.subscriptionStartDate = undefined;
+    subscription.subscriptionEndDate = undefined;
     subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
@@ -67,13 +84,16 @@ export async function canToggleOpeningStatus(
     );
   }
   if (
-    !subscription.isTrial &&
     !subscription.trialExpiresAt &&
     !subscription.subscriptionEndDate
   ) {
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
     subscription.isSubscriptionActive = false;
+    subscription.isTrial = false;
+    subscription.plan = undefined;
+    subscription.subscriptionStartDate = undefined;
+    subscription.subscriptionEndDate = undefined;
     subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
@@ -88,9 +108,8 @@ export async function canAddCategory(
 ) {
   const categoryCount = restaurant.categories.length;
 
-  let maxCategories = 5;
-  if (subscription.plan === "medium") maxCategories = 10;
-  if (subscription.plan === "pro") maxCategories = 20;
+  const plan = (subscription.plan as SubscriptionPlan) || "starter";
+  const maxCategories = SUBSCRIPTION_PLANS[plan].maxCategoriesPerRestaurant;
 
   if (categoryCount >= maxCategories) {
     throw new ApiError(

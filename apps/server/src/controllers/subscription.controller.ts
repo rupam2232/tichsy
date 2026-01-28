@@ -2,6 +2,10 @@ import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+  SUBSCRIPTION_PLANS,
+  SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
 import { razorpay } from "../utils/razorpay.js";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
@@ -108,16 +112,13 @@ export const createSubscription = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.plan) {
     throw new ApiError(400, "Plan is required to create a subscription");
   }
-  let amount = 300;
-  if (req.body.plan === "starter") {
-    amount = 300;
-  } else if (req.body.plan === "medium") {
-    amount = 500;
-  } else if (req.body.plan === "pro") {
-    amount = 800;
-  } else {
+
+  const plan = req.body.plan as SubscriptionPlan;
+  if (!SUBSCRIPTION_PLANS[plan]) {
     throw new ApiError(400, "Invalid plan selected");
   }
+
+  const amount = SUBSCRIPTION_PLANS[plan].price;
 
   const options = {
     amount: amount * 100, // amount in the smallest currency unit

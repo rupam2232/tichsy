@@ -42,11 +42,13 @@ router
   .patch(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
+    isProduction ? isSubscriptionActive : (req, res, next) => next(),
     updateFoodItem
   )
   .delete(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
+    isProduction ? isSubscriptionActive : (req, res, next) => next(),
     deleteFoodItem
   );
 

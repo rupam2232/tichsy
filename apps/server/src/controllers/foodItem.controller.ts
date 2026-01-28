@@ -3,10 +3,14 @@ import type { FoodVariant as FoodVariantType } from "../models/foodItem.model.js
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Restaurant } from "../models/restaurant.models.js";
-import { canCreateFoodItem } from "../service/foodItem.service.js";
+import {
+  canCreateFoodItem,
+  checkVariantLimit,
+} from "../service/foodItem.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
 import { isValidObjectId } from "mongoose";
+const isProduction = process.env?.NODE_ENV === "production";
 
 function hasDuplicates(arr: string[]): boolean {
   const lowerArr = arr.map((tag) => tag.trim().toLowerCase());
@@ -119,9 +123,12 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     );
   }
 
-  const isProduction = process.env?.NODE_ENV === "production";
-  if (isProduction) {
+  if (isProduction)
     await canCreateFoodItem(req.subscription!, restaurant._id!.toString());
+
+  if (hasVariants) {
+    if (isProduction)
+      await checkVariantLimit(variants.length, req.subscription!);
   }
   // Check if the food item already exists
   const existingFoodItem = await FoodItem.findOne({
@@ -265,7 +272,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
                   ],
                 },
               },
-            }
+            },
           ],
         }
       : {}), // Filter by search query if provided
@@ -291,34 +298,34 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       ...(category ? { category } : {}), // Filter by category if provided
       ...(foodType ? { foodType } : {}), // Filter by food type if provided
       ...(isAvailable ? { isAvailable: isAvailable === "true" } : {}), // Filter by availability if provided
-      
-    ...(decodedSearch
-      ? {
-          $or: [
-            { foodName: { $regex: decodedSearch, $options: "i" } }, // Case-insensitive search
-            { category: { $regex: decodedSearch, $options: "i" } },
-            { description: { $regex: decodedSearch, $options: "i" } },
-            {
-              tags: {
-                $elemMatch: {
-                  $regex: decodedSearch,
-                  $options: "i",
+
+      ...(decodedSearch
+        ? {
+            $or: [
+              { foodName: { $regex: decodedSearch, $options: "i" } }, // Case-insensitive search
+              { category: { $regex: decodedSearch, $options: "i" } },
+              { description: { $regex: decodedSearch, $options: "i" } },
+              {
+                tags: {
+                  $elemMatch: {
+                    $regex: decodedSearch,
+                    $options: "i",
+                  },
                 },
               },
-            },
-            {
-              variants: {
-                $elemMatch: {
-                  $or: [
-                    { variantName: { $regex: decodedSearch, $options: "i" } },
-                    { description: { $regex: decodedSearch, $options: "i" } },
-                  ],
+              {
+                variants: {
+                  $elemMatch: {
+                    $or: [
+                      { variantName: { $regex: decodedSearch, $options: "i" } },
+                      { description: { $regex: decodedSearch, $options: "i" } },
+                    ],
+                  },
                 },
               },
-            }
-          ],
-        }
-      : {}), // Filter by search query if provided
+            ],
+          }
+        : {}), // Filter by search query if provided
     })
       .sort({
         isAvailable: -1, // Sort by availability first (available items first)
@@ -327,9 +334,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       })
       .skip((pageNumber - 1) * limitNumber) // Pagination logic
       .limit(limitNumber) // Limit the number of results
-      .select(
-        "-restaurantId -__v -tags -category -variants"
-      ); // Exclude unnecessary fields;
+      .select("-restaurantId -__v -tags -category -variants"); // Exclude unnecessary fields;
 
     const totalPages = Math.ceil(foodItemCount / limitNumber);
 
@@ -449,6 +454,12 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
       403,
       "This food item does not belong to your restaurant"
     );
+  }
+
+  if (foodItem.isArchived) {
+    foodItem.isAvailable = false;
+    await foodItem.save({ validateBeforeSave: false });
+    throw new ApiError(403, "This food item is archived");
   }
 
   // Toggle availability
@@ -572,6 +583,12 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
 
   if (hasVariants && variants.length > 6) {
     throw new ApiError(400, "You can only create a maximum of 6 food variants");
+  }
+
+  // Check subscription limits if updating variants
+  if (hasVariants && variants.length > 0) {
+    if (isProduction)
+      await checkVariantLimit(variants.length, req.subscription!);
   }
 
   if (tags && !Array.isArray(tags)) {

@@ -7,6 +7,9 @@ import {
   canCreateRestaurant,
   canToggleOpeningStatus,
 } from "../service/restaurant.service.js";
+import {
+  checkStaffLimit,
+} from "../service/subscription.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -16,6 +19,7 @@ import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";
 import { startOfMonth, startOfDay, endOfDay } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { User } from "../models/user.model.js";
 const isProduction = process.env?.NODE_ENV === "production";
 
 export const createRestaurant = asyncHandler(async (req, res) => {
@@ -40,7 +44,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     );
   }
 
-  isProduction && (await canCreateRestaurant(req.user!, req.subscription!));
+  if (isProduction) await canCreateRestaurant(req.user!, req.subscription!);
 
   // Check if the restaurant already exists
   const existingRestaurant = await Restaurant.findOne({
@@ -272,7 +276,13 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found or you are not the owner.");
   }
 
-  isProduction && (await canToggleOpeningStatus(restaurant));
+  if (restaurant.isArchived) {
+    restaurant.isCurrentlyOpen = false;
+    restaurant.save({ validateBeforeSave: false });
+    throw new ApiError(403, "You cannot toggle the status of an archived restaurant.");
+  }
+
+  if (isProduction) await canToggleOpeningStatus(restaurant);
 
   restaurant.isCurrentlyOpen = !restaurant.isCurrentlyOpen;
   await restaurant.save();
@@ -316,7 +326,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  isProduction && canAddCategory(restaurant, req.subscription!);
+  if (isProduction) await canAddCategory(restaurant, req.subscription!);
 
   const categories = restaurant.categories || [];
   // Check if the category already exists
@@ -747,20 +757,28 @@ export const getOwnerDashboardStats = asyncHandler(async (req, res) => {
 
   const startOfToday = fromZonedTime(startOfDay(nowInTZ), timeZone);
 
-  const startOfYesterday = fromZonedTime(startOfDay(new Date(nowInTZ.getTime() - 24 * 60 * 60 * 1000)), timeZone);
-  const endOfYesterday = fromZonedTime(endOfDay(new Date(nowInTZ.getTime() - 24 * 60 * 60 * 1000)), timeZone);
+  const startOfYesterday = fromZonedTime(
+    startOfDay(new Date(nowInTZ.getTime() - 24 * 60 * 60 * 1000)),
+    timeZone
+  );
+  const endOfYesterday = fromZonedTime(
+    endOfDay(new Date(nowInTZ.getTime() - 24 * 60 * 60 * 1000)),
+    timeZone
+  );
 
   // Start of the current month in user's TZ -> back to UTC for query
   const startOfMonthVal = fromZonedTime(startOfMonth(nowInTZ), timeZone);
 
   // Start / end of the previous month in user's TZ -> back to UTC
-  const startOfLastMonth = fromZonedTime(startOfMonth(
-    new Date(nowInTZ.getFullYear(), nowInTZ.getMonth() - 1, 1)
-  ), timeZone);
+  const startOfLastMonth = fromZonedTime(
+    startOfMonth(new Date(nowInTZ.getFullYear(), nowInTZ.getMonth() - 1, 1)),
+    timeZone
+  );
 
-  const endOfLastMonth = fromZonedTime(endOfDay(
-    new Date(nowInTZ.getFullYear(), nowInTZ.getMonth(), 0)
-  ), timeZone);
+  const endOfLastMonth = fromZonedTime(
+    endOfDay(new Date(nowInTZ.getFullYear(), nowInTZ.getMonth(), 0)),
+    timeZone
+  );
 
   // Start of 30 days ago in user's TZ -> back to UTC
   const startOf30DaysAgoInTZ = startOfDay(
@@ -769,7 +787,13 @@ export const getOwnerDashboardStats = asyncHandler(async (req, res) => {
   const startOf30DaysAgoVal = fromZonedTime(startOf30DaysAgoInTZ, timeZone);
 
   // 1. Total sales (all time, this month, last month)
-  const [allTimeSales, thisMonthSales, lastMonthSales, todaySales, yesterdaySales] = await Promise.all([
+  const [
+    allTimeSales,
+    thisMonthSales,
+    lastMonthSales,
+    todaySales,
+    yesterdaySales,
+  ] = await Promise.all([
     Order.aggregate([
       {
         $match: {
@@ -881,7 +905,7 @@ export const getOwnerDashboardStats = asyncHandler(async (req, res) => {
     const month = String(dateInTZ.getMonth() + 1).padStart(2, "0");
     const day = String(dateInTZ.getDate()).padStart(2, "0");
     const dateString = `${year}-${month}-${day}`;
-    
+
     if (salesTrendMap.has(dateString)) {
       salesTrend.push(salesTrendMap.get(dateString));
     } else {
@@ -993,15 +1017,17 @@ export const getOwnerDashboardStats = asyncHandler(async (req, res) => {
           },
           thisMonthSales: {
             value: thisMonthSales[0]?.total || 0,
-            description: salesChangePercentofMonth !== null
-              ? `${salesChangePercentofMonth > 0 ? "+" : ""}${salesChangePercentofMonth.toFixed(1)}% from last month`
-              : "No data for last month",
+            description:
+              salesChangePercentofMonth !== null
+                ? `${salesChangePercentofMonth > 0 ? "+" : ""}${salesChangePercentofMonth.toFixed(1)}% from last month`
+                : "No data for last month",
           },
           todaySales: {
             value: todaySales[0]?.total || 0,
-            description: salesChangePercentofToday !== null
-              ? `${salesChangePercentofToday > 0 ? "+" : ""}${salesChangePercentofToday.toFixed(1)}% from yesterday`
-              : "No data for yesterday",
+            description:
+              salesChangePercentofToday !== null
+                ? `${salesChangePercentofToday > 0 ? "+" : ""}${salesChangePercentofToday.toFixed(1)}% from yesterday`
+                : "No data for yesterday",
           },
         },
         salesTrend,
@@ -1072,9 +1098,25 @@ export const addStaffToRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
+  if (req.user!.id === req.body.staffId) {
+    throw new ApiError(400, "You cannot add yourself as a staff member");
+  }
+
+  if (restaurant.isArchived) {
+    throw new ApiError(400, "Restaurant is archived");
+  }
+
   if (restaurant.staffIds?.includes(req.body.staffId)) {
     throw new ApiError(400, "Staff member is already added to this restaurant");
   }
+
+  const staff = await User.findById(req.body.staffId);
+  if (!staff) {
+    throw new ApiError(404, "Staff not found");
+  }
+
+  // Check subscription limits for staff
+  await checkStaffLimit(restaurant, restaurant.ownerId);
 
   restaurant.staffIds?.push(req.body.staffId);
   await restaurant.save();

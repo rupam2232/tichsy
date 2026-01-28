@@ -51,6 +51,9 @@ export interface FoodItem extends Document {
   description?: string; // Optional description of the food item
   tags?: string[]; // Optional tags for search/filtering (e.g., "Spicy", "Veg")
   isAvailable: boolean; // Whether the item is currently available
+  isArchived?: boolean; // Whether the item is archived
+  archivedAt?: Date; // When the item was archived
+  archivedReason?: string; // Reason for archiving
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
@@ -109,7 +112,7 @@ const foodItemSchema: Schema<FoodItem> = new Schema(
     },
     description: {
       type: String,
-      trim: true
+      trim: true,
     },
     tags: {
       type: [String],
@@ -120,6 +123,12 @@ const foodItemSchema: Schema<FoodItem> = new Schema(
       default: true,
       required: [true, "Is available is required"],
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: Date,
+    archivedReason: String,
   },
   {
     timestamps: true,

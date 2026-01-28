@@ -43,7 +43,7 @@ router
   .post(
     isProduction ? createLimit : (req, res, next) => next(),
     verifyAuth,
-    isSubscriptionActive,
+    isProduction ? isSubscriptionActive : (req, res, next) => next(),
     createTable
   );
 
