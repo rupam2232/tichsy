@@ -9,7 +9,7 @@ import { archiveExcessResources } from "../service/archive.service.js";
 export const initSubscriptionCron = () => {
   console.log("Initializing Subscription Cron Job...");
 
-  cron.schedule("0 0 * * *", async () => {
+  cron.schedule("0 0,12 * * *", async () => {
     console.log("Running Daily Subscription Expiry Check...");
     try {
       const now = new Date();

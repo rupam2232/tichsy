@@ -92,9 +92,7 @@ const TableDetails = ({
         window.location.href
       );
     } else {
-      window.history.back();
-      setIsEditing(false);
-      handleDeselectTable();
+      router.back();
     }
   };
 

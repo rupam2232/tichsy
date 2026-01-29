@@ -28,7 +28,7 @@ import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { tableSchema } from "@/schemas/tableSchema";
@@ -47,6 +47,7 @@ const CreateTableDialog = ({
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const [formLoading, setformLoading] = useState<boolean>(false);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const closeDialog = useRef<HTMLButtonElement>(null);
@@ -87,11 +88,11 @@ const CreateTableDialog = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during table creation"
+          "An error occurred during table creation",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during table creation"
+          "An error occurred during table creation",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -102,10 +103,32 @@ const CreateTableDialog = ({
     }
   };
 
+  function handleDialogClose(open: boolean) {
+    if (open) {
+      setIsDialogOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      router.back();
+    }
+  }
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsDialogOpen(false);
+    };
+
+    if (isDialogOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isDialogOpen]);
+
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <ScrollArea className="overflow-y-auto max-h-[90vh]">
           <DialogHeader className="p-6">
             <DialogTitle className="mb-4">Create a New Table</DialogTitle>

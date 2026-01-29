@@ -203,15 +203,7 @@ const CreateUpdateFoodItem = ({
       setIsDialogOpen(true);
       window.history.pushState(null, "", window.location.href);
     } else {
-      if (tempImages && tempImages.length > 0) {
-        tempImages.forEach((url) => handleImageRemove(url));
-      }
-      form.reset();
-      setImageFiles(null);
-      setImageErrorMessage("");
-      setOpenParentAccordion(null);
-      setOpenChildAccordion(null);
-      window.history.back();
+      router.back();
     }
   };
 

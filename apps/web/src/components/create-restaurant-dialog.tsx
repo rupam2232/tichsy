@@ -55,6 +55,7 @@ const CreateRestaurantDialog = ({
   >;
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageErrorMessage, setImageErrorMessage] = useState<string>("");
   const [formLoading, setformLoading] = useState<boolean>(false);
@@ -118,7 +119,7 @@ const CreateRestaurantDialog = ({
     checkUsernameUnique();
   }, [slug, checkUsernameUnique]);
 
-  const handleImageRemove = async () => {
+  const handleImageRemove = useCallback(async () => {
     setImageErrorMessage("");
     if (logoUrl) {
       // If logoUrl is set, remove the image from the server
@@ -146,7 +147,7 @@ const CreateRestaurantDialog = ({
         }
       }
     }
-  };
+  }, [logoUrl, form, dispatch, router]);
 
   const handleImageUpload = async (file: File) => {
     try {
@@ -305,16 +306,45 @@ const CreateRestaurantDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logoUrl]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsDialogOpen(false);
+      if (logoUrl) {
+        handleImageRemove();
+      }
+      form.reset();
+    };
+
+    if (isDialogOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [
+    isDialogOpen,
+    logoUrl,
+    form,
+    handleImageRemove,
+  ]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setIsDialogOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      router.back();
+    }
+  };
+  
+
   return (
     <Dialog
-      onOpenChange={(open) => {
-        if (!open && logoUrl) {
-          handleImageRemove();
-        }
-      }}
+      open={isDialogOpen}
+      onOpenChange={handleOpenChange}
     >
       <DialogTrigger>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <ScrollArea className="overflow-y-auto max-h-[90vh]">
           <DialogHeader className="p-6">
             <DialogTitle className="mb-4">Create a New Restaurant</DialogTitle>

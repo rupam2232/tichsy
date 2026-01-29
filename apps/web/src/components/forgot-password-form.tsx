@@ -174,8 +174,8 @@ const ForgotPasswordForm = () => {
   };
 
   return (
-    <div className="flex h-auto items-center justify-center overflow-x-hidden py-10 sm:px-6 lg:px-8">
-      <Card className="w-full border-none shadow-md sm:max-w-md max-h-[84vh] overflow-y-auto custom-scrollbar">
+    <div className="flex h-auto items-center justify-center py-10 sm:px-6 lg:px-8">
+      <Card className="w-full border-none shadow-md sm:max-w-md max-h-[84vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
         <CardHeader>
           <CardTitle className="mb-1.5 text-2xl">Forgot Password?</CardTitle>
           <CardDescription>

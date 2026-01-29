@@ -14,41 +14,41 @@ import { Plus } from "lucide-react";
 
 const StaffOrderDialog = () => {
   const [step, setStep] = useState<number>(1);
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const router = useRouter();
 
   function handleDialogClose(open: boolean) {
-    setDrawerOpen(open);
     if (open) {
+      setIsDialogOpen(true);
       window.history.pushState(null, "", window.location.href);
     } else {
-      setStep(1);
       router.back();
     }
   }
 
   useEffect(() => {
     const handlePopState = () => {
-      setDrawerOpen(false);
+      setIsDialogOpen(false);
+      setStep(1);
     };
 
-    if (drawerOpen) {
+    if (isDialogOpen) {
       window.addEventListener("popstate", handlePopState);
     }
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [drawerOpen]);
+  }, [isDialogOpen]);
 
   return (
-    <Dialog open={drawerOpen} onOpenChange={handleDialogClose}>
+    <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         <Button>
           <Plus />
           New Order
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-screen flex flex-col h-[90vh]">
+      <DialogContent className="max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-screen flex flex-col h-[90vh]" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="pb-2! px-6 pt-6">
             {step === 1

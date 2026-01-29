@@ -60,12 +60,12 @@ export default function SelectTable() {
     } catch (error) {
       console.error(
         "Failed to fetch all tables. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all tables. Please try again later"
+          "Failed to fetch all tables. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -148,42 +148,41 @@ export default function SelectTable() {
             const isSelected = selectedTable?._id === table._id;
 
             return (
-              <>
-              <TableDetails
-                table={table}
-                setAllTables={setAllTables}
-                isSelected={isSelected}
-                handleDeselectTable={handleDeselectTable}
-                restaurantSlug={slug}
-              >
-                <div
+              <div
                 key={table._id}
-                  ref={
-                    allTables.tables.length - 1 === index
-                      ? lastElementRef
-                      : null
-                  }
-                  className={cn(
-                    "rounded-md ring-3 ring-transparent cursor-pointer transition-all duration-200 relative hover:ring-primary p-0.5",
-                    isSelected && "text-white ring-primary"
-                  )}
-                  onClick={() => handleTableSelect(table)}
+                ref={
+                  allTables.tables.length - 1 === index ? lastElementRef : null
+                }
+              >
+                <TableDetails
+                  table={table}
+                  setAllTables={setAllTables}
+                  isSelected={isSelected}
+                  handleDeselectTable={handleDeselectTable}
+                  restaurantSlug={slug}
                 >
-                  <Card
+                  <div
                     className={cn(
-                      "flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md rounded-lg truncate whitespace-pre-wrap",
-                      table.isOccupied
-                        ? "bg-red-100 text-red-700 border border-red-300"
-                        : "bg-green-100 text-green-700 border border-green-300"
+                      "rounded-md ring-3 ring-transparent cursor-pointer transition-all duration-200 relative hover:ring-primary p-0.5",
+                      isSelected && "text-white ring-primary",
                     )}
+                    onClick={() => handleTableSelect(table)}
                   >
-                    <span className="font-medium text-xs text-center text-balance">
-                      {table.tableName}
-                    </span>
-                  </Card>
-                </div>
-              </TableDetails>
-              </>
+                    <Card
+                      className={cn(
+                        "flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md rounded-lg truncate whitespace-pre-wrap",
+                        table.isOccupied
+                          ? "bg-red-100 text-red-700 border border-red-300"
+                          : "bg-green-100 text-green-700 border border-green-300",
+                      )}
+                    >
+                      <span className="font-medium text-xs text-center text-balance">
+                        {table.tableName}
+                      </span>
+                    </Card>
+                  </div>
+                </TableDetails>
+              </div>
             );
           })}
           {isPageChanging &&

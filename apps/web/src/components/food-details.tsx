@@ -137,8 +137,7 @@ const FoodDetails = ({
       fetchFoodItemDetails();
       window.history.pushState(null, "", window.location.href);
     } else {
-      setFoodVariant(null);
-      window.history.back();
+      router.back();
     }
   };
 

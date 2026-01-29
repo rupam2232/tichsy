@@ -10,6 +10,8 @@ import {
   IconLayoutDashboard,
   IconChartBar,
   IconUser,
+  IconUsers,
+  IconCreditCard,
   IconHome,
 } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
@@ -39,6 +41,12 @@ const data = {
       url: "/home",
       showInSidebar: true,
       icon: IconHome,
+    },
+    {
+      title: "Billing",
+      url: "/billing",
+      showInSidebar: true,
+      icon: IconCreditCard,
     },
   ],
 };
@@ -90,6 +98,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Owner Dashboard",
           url: `/restaurant/${restaurantSlug}/owner-dashboard`,
           icon: IconChartBar,
+        },
+        {
+          title: "Staff Management",
+          url: `/restaurant/${restaurantSlug}/staff-management`,
+          icon: IconUsers,
         },
         {
           title: "Settings",
