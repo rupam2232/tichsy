@@ -18,6 +18,7 @@ import {
   getAllStaffOfRestaurant,
   addStaffToRestaurant,
   removeStaffFromRestaurant,
+  toggleRestaurantArchiveStatus,
 } from "../controllers/restaurant.controller.js";
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
@@ -63,11 +64,19 @@ router
   .route("/:slug")
   .get(getRestaurantBySlug)
   .patch(verifyAuth, updateRestaurantDetails);
-router.post(
+router.patch(
   "/:slug/toggle-open-status",
   verifyAuth,
   toggleRestaurantOpenStatus
 );
+
+router.patch(
+  "/:slug/toggle-archive-status",
+  verifyAuth,
+  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  toggleRestaurantArchiveStatus
+);
+
 router
   .route("/:slug/categories")
   .get(getRestaurantCategories)

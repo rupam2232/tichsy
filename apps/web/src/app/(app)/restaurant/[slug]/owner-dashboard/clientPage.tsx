@@ -112,7 +112,7 @@ const ClientPage = () => {
 
   const handleToggleRestaurantStatus = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.patch(
         `/restaurant/${slug}/toggle-open-status`,
       );
       if (response.data.success) {

@@ -41,7 +41,14 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       throw new ApiError(404, "Restaurant not found");
     }
 
-    if (restaurant.isCurrentlyOpen === false || restaurant.isArchived) {
+    if (restaurant.isArchived) {
+      throw new ApiError(
+        403,
+        "Restaurant is archived. Please contact staff or try again later."
+      );
+    }
+
+    if (restaurant.isCurrentlyOpen === false) {
       throw new ApiError(400, "Restaurant is currently closed");
     }
 
@@ -1076,7 +1083,10 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   if (restaurant.isArchived) {
-    throw new ApiError(400, "Restaurant is archived");
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update order status."
+    );
   }
 
   if (req.user?.role === "owner") {
@@ -1214,7 +1224,10 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     }
 
     if (restaurant.isArchived) {
-      throw new ApiError(400, "Restaurant is archived");
+      throw new ApiError(
+        403,
+        "Restaurant is archived. Please unarchive restaurant to update order."
+      );
     }
 
     if (req.user?.role === "owner") {
@@ -1383,7 +1396,10 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   }
 
   if (restaurant.isArchived) {
-    throw new ApiError(400, "Restaurant is archived");
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update paid status."
+    );
   }
 
   if (req.user!.role === "owner") {

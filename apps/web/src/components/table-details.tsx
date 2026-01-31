@@ -265,7 +265,7 @@ const TableDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.patch(
-        `/table/${restaurantSlug}/${tableDetails.qrSlug}/toggle-occupied`
+        `/table/${restaurantSlug}/${tableDetails.qrSlug}/toggle-occupied-status`
       );
       if (
         !response.data.success ||

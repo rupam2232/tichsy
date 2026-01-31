@@ -45,6 +45,13 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Restaurant is currently closed");
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please contact staff or try again later."
+    );
+  }
+
   if (quantity <= 0) {
     throw new ApiError(400, "Quantity must be greater than zero");
   }
@@ -484,12 +491,6 @@ export const getCartItems = asyncHandler(async (req, res) => {
           _id: 1,
           taxDetails: 1,
           items: 1,
-          // items: {
-          //   $sortArray: {
-          //     input: "$items",
-          //     sortBy: { createdAt: -1 },
-          //   },
-          // },
         },
       },
     ]).exec();

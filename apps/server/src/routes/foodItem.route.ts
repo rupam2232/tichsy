@@ -6,6 +6,7 @@ import {
   getFoodItemById,
   toggleFoodItemAvailability,
   updateFoodItem,
+  toggleFoodItemArchiveStatus,
 } from "../controllers/foodItem.controller.js";
 import { verifyAuth } from "../middlewares/auth.middleware.js";
 import { isSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
@@ -53,10 +54,17 @@ router
   );
 
 router.patch(
-  "/:restaurantSlug/:foodItemId/toggle-availability",
+  "/:restaurantSlug/:foodItemId/toggle-availability-status",
   isProduction ? limit : (req, res, next) => next(),
   verifyAuth,
   toggleFoodItemAvailability
+);
+
+router.patch(
+  "/:restaurantSlug/:foodItemId/toggle-archive-status",
+  verifyAuth,
+  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  toggleFoodItemArchiveStatus
 );
 
 export default router;

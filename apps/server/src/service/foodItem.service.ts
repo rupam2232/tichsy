@@ -5,11 +5,13 @@ import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
+const isProduction = process.env?.NODE_ENV === "production";
 
 export async function canCreateFoodItem(
   subscription: SubscriptionType,
   restaurantId: string
 ) {
+  if (!isProduction) return;
   const foodItemCount = await FoodItem.countDocuments({ restaurantId });
 
   const plan =
@@ -29,6 +31,7 @@ export async function checkVariantLimit(
   variantCount: number,
   subscription: SubscriptionType
 ) {
+  if (!isProduction) return;
   if (variantCount <= 0) return;
 
   const plan =
@@ -40,6 +43,29 @@ export async function checkVariantLimit(
     throw new ApiError(
       403,
       `Your plan allows to create max ${maxVariants} variants per food item. Upgrade to create more.`
+    );
+  }
+}
+
+export async function canUnarchiveFoodItem(
+  subscription: SubscriptionType,
+  restaurantId: string
+) {
+  if (!isProduction) return;
+  const activeFoodItemCount = await FoodItem.countDocuments({
+    restaurantId,
+    isArchived: false,
+  });
+
+  const plan =
+    (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
+
+  const maxFoodItems = SUBSCRIPTION_PLANS[plan].maxFoodItemsPerRestaurant;
+
+  if (activeFoodItemCount >= maxFoodItems) {
+    throw new ApiError(
+      403,
+      `Your plan allows max ${maxFoodItems} active food items per restaurant. Upgrade your plan or archive another food item to unarchive this one`
     );
   }
 }

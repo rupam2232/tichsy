@@ -1,11 +1,10 @@
 import { nanoid } from "nanoid";
 import { Restaurant } from "../models/restaurant.models.js";
 import { Table } from "../models/table.model.js";
-import { canCreateTable } from "../service/table.service.js";
+import { canCreateTable, canUnarchiveTable } from "../service/table.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-const isProduction = process.env?.NODE_ENV === "production";
 
 export const createTable = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.tableName) {
@@ -46,8 +45,15 @@ export const createTable = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to create a table"
+    );
+  }
+
   const restaurantId = restaurant._id!.toString();
-  if (isProduction) await canCreateTable(req.subscription!, restaurantId);
+  await canCreateTable(req.subscription!, restaurantId);
 
   // Try to create a unique qrSlug, retry if duplicate key error
   let table;
@@ -123,15 +129,26 @@ export const updateTable = asyncHandler(async (req, res) => {
     );
   }
 
-  const table = await Table.findOneAndUpdate(
-    { qrSlug, restaurantId: restaurant?._id },
-    { $set: { tableName, seatCount: Math.ceil(seatCount) } },
-    { new: true }
-  );
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update table."
+    );
+  }
+
+  const table = await Table.findOne({ qrSlug, restaurantId: restaurant?._id });
 
   if (!table) {
     throw new ApiError(404, "Table not found or you do not own this table");
   }
+
+  if (table.isArchived) {
+    throw new ApiError(403, "Cannot make changes in a archived table");
+  }
+
+  table.tableName = tableName;
+  table.seatCount = Math.ceil(seatCount);
+  await table.save({ validateBeforeSave: false });
 
   const totalTables = await Table.countDocuments({
     restaurantId: restaurant._id,
@@ -140,7 +157,15 @@ export const updateTable = asyncHandler(async (req, res) => {
   const availableTables = await Table.countDocuments({
     restaurantId: restaurant._id,
     isOccupied: false,
+    isArchived: false,
   });
+
+  const archivedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isArchived: true,
+  });
+
+  const occupiedTables = totalTables - availableTables - archivedTables;
 
   res.status(200).json(
     new ApiResponse(
@@ -149,7 +174,8 @@ export const updateTable = asyncHandler(async (req, res) => {
         table,
         totalCount: totalTables,
         availableTables,
-        occupiedTables: totalTables - availableTables,
+        occupiedTables,
+        archivedTables,
       },
       "Table updated successfully"
     )
@@ -210,6 +236,13 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to toggle occupied status."
+    );
+  }
+
   if (table.isOccupied && table.currentOrderId) {
     throw new ApiError(
       400,
@@ -218,9 +251,10 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
   }
 
   if (table.isArchived) {
-    table.isOccupied = false;
-    await table.save({ validateBeforeSave: false });
-    throw new ApiError(400, "Cannot toggle occupied status of an archived table");
+    throw new ApiError(
+      400,
+      "Cannot toggle occupied status of an archived table"
+    );
   }
 
   table.isOccupied = !table.isOccupied;
@@ -474,6 +508,13 @@ export const deleteTable = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to delete table."
+    );
+  }
+
   const table = await Table.findOneAndDelete({
     qrSlug,
     restaurantId: restaurant._id,
@@ -486,4 +527,69 @@ export const deleteTable = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, null, "Table deleted successfully"));
+});
+
+export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.qrSlug || !req.params.restaurantSlug) {
+    throw new ApiError(400, "qrSlug and restaurantSlug are required");
+  }
+  const { qrSlug, restaurantSlug } = req.params;
+
+  const user = req.user;
+
+  if (user!.role !== "owner") {
+    throw new ApiError(
+      403,
+      "You do not have permission to toggle table archive status"
+    );
+  }
+
+  const restaurant = await Restaurant.findOne({
+    slug: restaurantSlug,
+    ownerId: user!._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(
+      404,
+      "Restaurant not found or you do not own this restaurant"
+    );
+  }
+
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to toggle table archive status."
+    );
+  }
+
+  const table = await Table.findOne({
+    qrSlug,
+    restaurantId: restaurant._id,
+  });
+
+  if (!table) {
+    throw new ApiError(404, "Table not found");
+  }
+
+  // If unarchiving, check subscription limits
+  if (table.isArchived) {
+    await canUnarchiveTable(req.subscription!, restaurant.id);
+    table.isArchived = false;
+    table.archivedAt = undefined;
+    table.archivedReason = undefined;
+  } else {
+    // Archiving is always allowed manually
+    table.isArchived = true;
+    table.archivedAt = new Date();
+    table.archivedReason = req.body?.archivedReason ?? "Archived by owner";
+  }
+
+  await table.save();
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, table, "Table archive status toggled successfully")
+    );
 });

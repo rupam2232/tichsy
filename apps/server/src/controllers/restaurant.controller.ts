@@ -6,6 +6,7 @@ import {
   canAddCategory,
   canCreateRestaurant,
   canToggleOpeningStatus,
+  canUnarchiveRestaurant,
 } from "../service/restaurant.service.js";
 import { checkStaffLimit } from "../service/subscription.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -18,7 +19,6 @@ import { Table } from "../models/table.model.js";
 import { startOfMonth, startOfDay, endOfDay } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { User } from "../models/user.model.js";
-const isProduction = process.env?.NODE_ENV === "production";
 
 export const createRestaurant = asyncHandler(async (req, res) => {
   if (!req.body?.restaurantName || !req.body?.slug) {
@@ -42,7 +42,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     );
   }
 
-  if (isProduction) await canCreateRestaurant(req.user!, req.subscription!);
+  await canCreateRestaurant(req.user!, req.subscription!);
 
   // Check if the restaurant already exists
   const existingRestaurant = await Restaurant.findOne({
@@ -238,6 +238,13 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
     restaurant = foundRestaurant;
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update details."
+    );
+  }
+
   if (restaurant.slug !== newSlug) restaurant.slug = newSlug;
   restaurant.restaurantName = restaurantName;
   restaurant.description = description;
@@ -275,12 +282,17 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
   }
 
   if (restaurant.isArchived) {
-    restaurant.isCurrentlyOpen = false;
-    restaurant.save({ validateBeforeSave: false });
-    throw new ApiError(403, "You cannot toggle the status of an archived restaurant.");
+    if (restaurant.isCurrentlyOpen) {
+      restaurant.isCurrentlyOpen = false;
+      await restaurant.save({ validateBeforeSave: false });
+    }
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to continue"
+    );
   }
 
-  if (isProduction) await canToggleOpeningStatus(restaurant);
+  await canToggleOpeningStatus(restaurant);
 
   restaurant.isCurrentlyOpen = !restaurant.isCurrentlyOpen;
   await restaurant.save();
@@ -292,6 +304,56 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
         200,
         restaurant,
         `Restaurant is now ${restaurant.isCurrentlyOpen ? "open" : "closed"}`
+      )
+    );
+});
+
+export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
+  if (!req.params?.slug) {
+    throw new ApiError(400, "Restaurant slug is required.");
+  }
+  const { slug } = req.params;
+  if (req.user!.role !== "owner") {
+    throw new ApiError(
+      403,
+      "Only owners can toggle restaurant archive status."
+    );
+  }
+
+  const restaurant = await Restaurant.findOne({
+    slug,
+    ownerId: req.user!._id,
+  }).select(
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen isArchived ownerId"
+  );
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found or you are not the owner.");
+  }
+
+  // If unarchiving, check subscription limits
+  if (restaurant.isArchived) {
+    await canUnarchiveRestaurant(req.user!, req.subscription!);
+    restaurant.isArchived = false;
+    restaurant.archivedAt = undefined;
+    restaurant.archivedReason = undefined;
+  } else {
+    // Archiving is always allowed manually
+    restaurant.isArchived = true;
+    restaurant.archivedAt = new Date();
+    restaurant.archivedReason = req.body?.archivedReason ?? "Archived by owner";
+    restaurant.isCurrentlyOpen = false;
+  }
+
+  await restaurant.save({ validateBeforeSave: false });
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        restaurant,
+        `Restaurant is now ${restaurant.isArchived ? "archived" : "unarchived"}`
       )
     );
 });
@@ -324,7 +386,14 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  if (isProduction) await canAddCategory(restaurant, req.subscription!);
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to add categories."
+    );
+  }
+
+  await canAddCategory(restaurant, req.subscription!);
 
   const categories = restaurant.categories || [];
   // Check if the category already exists
@@ -359,20 +428,41 @@ export const removeRestaurantCategories = asyncHandler(async (req, res) => {
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can remove restaurant categories.");
   }
-  const restaurant = await Restaurant.findOneAndUpdate(
-    { slug, ownerId: req.user!._id },
-    { $pull: { categories: { $in: categories } } },
-    { new: true, runValidators: true }
-  ).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories"
-  );
+  const restaurant = await Restaurant.findOne({
+    slug,
+    ownerId: req.user!._id,
+  });
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found or you are not the owner.");
   }
+
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to remove categories."
+    );
+  }
+
+  await Restaurant.updateOne(
+    { _id: restaurant._id },
+    { $pull: { categories: { $in: categories } } },
+    { runValidators: true }
+  );
+
+  // Refresh restaurant data to return
+  const updatedRestaurant = await Restaurant.findById(restaurant._id).select(
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories"
+  );
+
+  if (!updatedRestaurant) {
+    throw new ApiError(404, "Restaurant not found or you are not the owner.");
+  }
   res
     .status(200)
-    .json(new ApiResponse(200, restaurant, "Categories removed successfully"));
+    .json(
+      new ApiResponse(200, updatedRestaurant, "Categories removed successfully")
+    );
 });
 
 export const getRestaurantCategories = asyncHandler(async (req, res) => {
@@ -431,19 +521,26 @@ export const setRestaurantTax = asyncHandler(async (req, res) => {
     );
   }
 
-  const restaurant = await Restaurant.findOneAndUpdate(
-    { slug, ownerId: req.user!._id },
-    {
-      $set: {
-        taxRate: isTaxIncludedInPrice ? 0 : taxRate,
-        taxLabel: taxLabel ? taxLabel : null,
-        isTaxIncludedInPrice: isTaxIncludedInPrice,
-      },
-    },
-    { new: true, runValidators: true }
-  ).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories"
-  );
+  const restaurant = await Restaurant.findOne({
+    slug,
+    ownerId: req.user!._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found or you are not the owner");
+  }
+
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to set tax."
+    );
+  }
+
+  restaurant.taxRate = isTaxIncludedInPrice ? 0 : taxRate;
+  restaurant.taxLabel = taxLabel ? taxLabel : null;
+  restaurant.isTaxIncludedInPrice = isTaxIncludedInPrice;
+  await restaurant.save();
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found or you are not the owner");
   }
@@ -523,6 +620,14 @@ export const updateRestaurantLogo = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found or you are not the owner");
   }
   let uploadResponse = null;
+
+  if (restaurant.isArchived) {
+    if (logoLocalPath) fs.unlinkSync(logoLocalPath);
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update logo."
+    );
+  }
   // If a logoLocalPath exists, upload the logo to Cloudinary
   if (logoLocalPath) {
     uploadResponse = await cloudinary.upload(

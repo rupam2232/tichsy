@@ -12,7 +12,7 @@ export interface Table extends Document {
   seatCount: number; // Number of seats at the table
   isOccupied: boolean; // Whether the table is currently occupied
   currentOrderId?: Types.ObjectId; // Reference to the current Order (if any)
-  isArchived?: boolean; // Whether the table is archived
+  isArchived: boolean; // Whether the table is archived
   archivedAt?: Date; // When the table was archived
   archivedReason?: string; // Reason for archiving
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)

@@ -12,11 +12,13 @@ import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
+const isProduction = process.env?.NODE_ENV === "production";
 
 export async function canCreateRestaurant(
   user: User,
   subscription: SubscriptionType
 ) {
+  if (!isProduction) return;
   const restaurantCount = await Restaurant.countDocuments({
     ownerId: user._id,
   });
@@ -32,9 +34,8 @@ export async function canCreateRestaurant(
   }
 }
 
-export async function canToggleOpeningStatus(
-  restaurant: RestaurantType
-) {
+export async function canToggleOpeningStatus(restaurant: RestaurantType) {
+  if (!isProduction) return;
   const subscription = await Subscription.findOne({
     userId: restaurant.ownerId,
   });
@@ -83,10 +84,7 @@ export async function canToggleOpeningStatus(
       "Your trial period has expired. Please subscribe to continue using the service"
     );
   }
-  if (
-    !subscription.trialExpiresAt &&
-    !subscription.subscriptionEndDate
-  ) {
+  if (!subscription.trialExpiresAt && !subscription.subscriptionEndDate) {
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
     subscription.isSubscriptionActive = false;
@@ -106,6 +104,7 @@ export async function canAddCategory(
   restaurant: RestaurantType,
   subscription: SubscriptionType
 ) {
+  if (!isProduction) return;
   const categoryCount = restaurant.categories.length;
 
   const plan = (subscription.plan as SubscriptionPlan) || "starter";
@@ -115,6 +114,27 @@ export async function canAddCategory(
     throw new ApiError(
       403,
       `Your plan allows to add max ${maxCategories} categories`
+    );
+  }
+}
+
+export async function canUnarchiveRestaurant(
+  user: User,
+  subscription: SubscriptionType
+) {
+  if (!isProduction) return;
+  const activeRestaurantCount = await Restaurant.countDocuments({
+    ownerId: user._id,
+    isArchived: false,
+  });
+
+  const plan = (subscription.plan as SubscriptionPlan) || "starter";
+  const maxRestaurants = SUBSCRIPTION_PLANS[plan].maxRestaurants;
+
+  if (activeRestaurantCount >= maxRestaurants) {
+    throw new ApiError(
+      403,
+      `Your plan allows max ${maxRestaurants} active restaurants. Upgrade your plan or archive another restaurant to unarchive this one`
     );
   }
 }

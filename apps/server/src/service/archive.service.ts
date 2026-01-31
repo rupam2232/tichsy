@@ -32,6 +32,7 @@ export async function archiveExcessResources(
 
     for (const rest of restaurantsToArchive) {
       rest.isArchived = true;
+      rest.isCurrentlyOpen = false;
       rest.archivedAt = new Date();
       rest.archivedReason = `Downgrade to ${newPlan} plan`;
       await rest.save();

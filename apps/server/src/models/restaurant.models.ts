@@ -20,7 +20,7 @@ export interface Restaurant extends Document {
   taxLabel?: string; // "GST", "VAT"
   isTaxIncludedInPrice: boolean; // Is taxes are already included with all food item's price
   address?: string; // Optional address of restaurant
-  isArchived?: boolean; // Whether the restaurant is archived
+  isArchived: boolean; // Whether the restaurant is archived
   archivedAt?: Date; // When the restaurant was archived
   archivedReason?: string; // Reason for archiving
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)

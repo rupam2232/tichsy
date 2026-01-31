@@ -5,12 +5,12 @@ import { ApiError } from "../utils/ApiError.js";
 import { Restaurant } from "../models/restaurant.models.js";
 import {
   canCreateFoodItem,
+  canUnarchiveFoodItem,
   checkVariantLimit,
 } from "../service/foodItem.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
 import { isValidObjectId } from "mongoose";
-const isProduction = process.env?.NODE_ENV === "production";
 
 function hasDuplicates(arr: string[]): boolean {
   const lowerArr = arr.map((tag) => tag.trim().toLowerCase());
@@ -112,6 +112,13 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found or you are not the owner");
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to create food items"
+    );
+  }
+
   if (
     category &&
     (restaurant.categories.length === 0 ||
@@ -123,12 +130,10 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     );
   }
 
-  if (isProduction)
-    await canCreateFoodItem(req.subscription!, restaurant._id!.toString());
+  await canCreateFoodItem(req.subscription!, restaurant._id!.toString());
 
   if (hasVariants) {
-    if (isProduction)
-      await checkVariantLimit(variants.length, req.subscription!);
+    await checkVariantLimit(variants.length, req.subscription!);
   }
   // Check if the food item already exists
   const existingFoodItem = await FoodItem.findOne({
@@ -444,6 +449,13 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to toggle availability."
+    );
+  }
+
   const foodItem = await FoodItem.findById(req.params.foodItemId);
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -457,9 +469,7 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
   }
 
   if (foodItem.isArchived) {
-    foodItem.isAvailable = false;
-    await foodItem.save({ validateBeforeSave: false });
-    throw new ApiError(403, "This food item is archived");
+    throw new ApiError(403, "Cannot toggle availability of archived food item");
   }
 
   // Toggle availability
@@ -527,6 +537,13 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found or you are not the owner");
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to update food item."
+    );
+  }
+
   const foodItem = await FoodItem.findById(req.params.foodItemId);
 
   if (!foodItem) {
@@ -538,6 +555,10 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
       403,
       "This food item does not belong to your restaurant"
     );
+  }
+
+  if (foodItem.isArchived) {
+    throw new ApiError(403, "Cannot make changes in a archived food item");
   }
 
   if (!req.body || !req.body.foodName || req.body.foodName.trim() === "") {
@@ -587,8 +608,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
 
   // Check subscription limits if updating variants
   if (hasVariants && variants.length > 0) {
-    if (isProduction)
-      await checkVariantLimit(variants.length, req.subscription!);
+    await checkVariantLimit(variants.length, req.subscription!);
   }
 
   if (tags && !Array.isArray(tags)) {
@@ -673,6 +693,13 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found or you are not the owner");
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to delete food item."
+    );
+  }
+
   const foodItem = await FoodItem.findById(req.params.foodItemId);
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -696,4 +723,77 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, null, "Food item deleted successfully"));
+});
+
+export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
+    throw new ApiError(400, "foodItemId and restaurantSlug are required");
+  }
+  const { foodItemId, restaurantSlug } = req.params;
+
+  if (!isValidObjectId(foodItemId)) {
+    throw new ApiError(400, "Invalid food item ID");
+  }
+
+  const user = req.user;
+
+  if (user!.role !== "owner") {
+    throw new ApiError(
+      403,
+      "You do not have permission to toggle food item archive status"
+    );
+  }
+
+  const restaurant = await Restaurant.findOne({
+    slug: restaurantSlug,
+    ownerId: user!._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(
+      404,
+      "Restaurant not found or you do not own this restaurant"
+    );
+  }
+
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to toggle this food item's archive status"
+    );
+  }
+
+  const foodItem = await FoodItem.findOne({
+    _id: foodItemId,
+    restaurantId: restaurant._id,
+  });
+
+  if (!foodItem) {
+    throw new ApiError(404, "food item not found");
+  }
+
+  // If unarchiving, check subscription limits
+  if (foodItem.isArchived) {
+    await canUnarchiveFoodItem(req.subscription!, restaurant.id);
+    foodItem.isArchived = false;
+    foodItem.archivedAt = undefined;
+    foodItem.archivedReason = undefined;
+  } else {
+    // Archiving is always allowed manually
+    foodItem.isArchived = true;
+    foodItem.archivedAt = new Date();
+    foodItem.archivedReason = req.body?.archivedReason ?? "Archived by owner";
+  }
+
+  await foodItem.save();
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        foodItem,
+        "Food item archive status toggled successfully"
+      )
+    );
 });

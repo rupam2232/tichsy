@@ -4,11 +4,13 @@ import { ApiError } from "../utils/ApiError.js";
 import { type Restaurant as RestaurantType } from "../models/restaurant.models.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Coupon } from "../models/coupon.model.js";
+const isProduction = process.env?.NODE_ENV === "production";
 
 export async function checkStaffLimit(
   restaurant: RestaurantType,
   userId: User["_id"]
 ) {
+  if (!isProduction) return;
   const staffCount = restaurant.staffIds ? restaurant.staffIds.length : 0;
 
   const subscription = await Subscription.findOne({ userId: userId });
@@ -26,6 +28,7 @@ export async function checkStaffLimit(
 }
 
 export async function checkCouponLimit(restaurantId: string, user: User) {
+  if (!isProduction) return;
   const subscription = await Subscription.findOne({ userId: user._id });
   const plan = (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
 

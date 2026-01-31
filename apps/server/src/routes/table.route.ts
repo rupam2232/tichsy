@@ -6,6 +6,7 @@ import {
   getTableBySlug,
   getAllTablesOfRestaurant,
   deleteTable,
+  toggleTableArchiveStatus,
 } from "../controllers/table.controller.js";
 import { verifyAuth } from "../middlewares/auth.middleware.js";
 import rateLimit from "express-rate-limit";
@@ -48,10 +49,17 @@ router
   );
 
 router.patch(
-  "/:restaurantSlug/:qrSlug/toggle-occupied",
+  "/:restaurantSlug/:qrSlug/toggle-occupied-status",
   isProduction ? occupiedStatusUpdateLimit : (req, res, next) => next(),
   verifyAuth,
   toggleOccupiedStatus
+);
+
+router.patch(
+  "/:restaurantSlug/:qrSlug/toggle-archive-status",
+  verifyAuth,
+  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  toggleTableArchiveStatus
 );
 
 router

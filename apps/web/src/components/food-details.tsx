@@ -164,7 +164,7 @@ const FoodDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.patch(
-        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability`
+        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability-status`
       );
       if (
         !response.data.success ||
@@ -227,7 +227,7 @@ const FoodDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.patch(
-        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability`,
+        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability-status`,
         {
           isVariant: true,
           variantId: foodVariant._id,
