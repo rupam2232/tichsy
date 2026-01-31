@@ -16,10 +16,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   ChefHat,
-  Clock,
+  Download,
   Loader2,
-  MapPin,
-  Receipt,
   UtensilsCrossed,
   XCircle,
 } from "lucide-react";
@@ -34,7 +32,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@repo/ui/components/avatar";
-import { IconSalad } from "@tabler/icons-react";
+import { IconReceipt, IconSalad } from "@tabler/icons-react";
 
 const CustomerOrderDetailsClientPage = () => {
   const params = useParams();
@@ -84,7 +82,6 @@ const CustomerOrderDetailsClientPage = () => {
           isPaid: socketData.isPaid,
         };
       });
-      toast.info(`Order status updated: ${socketData.status}`);
     };
 
     socket.on("orderUpdate", handleOrderUpdate);
@@ -97,7 +94,7 @@ const CustomerOrderDetailsClientPage = () => {
   // Order Progress Steps
   const orderSteps = useMemo(() => {
     const steps = [
-      { id: "pending", label: "Order Placed", icon: Receipt },
+      { id: "pending", label: "Placed", icon: IconReceipt },
       { id: "preparing", label: "Preparing", icon: ChefHat },
       { id: "ready", label: "Ready", icon: UtensilsCrossed },
       { id: "completed", label: "Completed", icon: CheckCircle2 },
@@ -105,7 +102,7 @@ const CustomerOrderDetailsClientPage = () => {
 
     if (order?.status === "cancelled") {
       return [
-        { id: "pending", label: "Order Placed", icon: Receipt },
+        { id: "pending", label: "Placed", icon: IconReceipt },
         { id: "cancelled", label: "Cancelled", icon: XCircle, isError: true },
       ];
     }
@@ -154,30 +151,45 @@ const CustomerOrderDetailsClientPage = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Order Details</h1>
-          <p className="text-sm text-muted-foreground">
-            Order #{order.orderNo} •{" "}
-            {new Date(order.createdAt).toLocaleString()}
-          </p>
-        </div>
-        <div className="ml-auto">
-          <Badge variant={order.isPaid ? "default" : "destructive"}>
-            {order.isPaid ? "Paid" : "Unpaid"}
-          </Badge>
-        </div>
       </div>
 
-      {/* Progress Bar */}
       <Card className="mb-6 overflow-hidden border-none shadow-sm ring-1 ring-border">
-        <CardContent className="p-6">
+        <CardHeader className="gap-0">
+          <CardTitle className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Order Details</h1>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                window.open(
+                  `/${slug}/bill/${orderId}`,
+                  "PRINT",
+                  "height=600,width=800",
+                )
+              }
+            >
+              <Download />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+
+        {/* Progress Bar */}
+        <CardContent>
           <div className="relative flex justify-between">
             {/* Connecting Line */}
-            <div className="absolute top-5 left-0 h-[2px] w-full bg-muted/50 -z-0 hidden md:block" />
+            <div className="absolute top-5 left-0 h-[2px] w-full bg-muted/50 -z-0 block" />
+            <div
+              className={cn(
+                "absolute top-5 left-0 h-[2px] dark:bg-green-700 bg-green-400 -z-0 block transition-all duration-300 ease-in-out",
+                order.status === "cancelled" &&
+                  "bg-destructive dark:bg-destructive",
+              )}
+              style={{
+                width: `${orderSteps.length === currentStepIndex + 1 ? 100 : ((currentStepIndex + 0.5) / orderSteps.length) * 100}%`,
+              }}
+            />
 
             {orderSteps.map((step, index) => {
               const isCompleted = index <= currentStepIndex;
-              const isCurrent = index === currentStepIndex;
               const Icon = step.icon;
 
               return (
@@ -189,7 +201,7 @@ const CustomerOrderDetailsClientPage = () => {
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 bg-background",
                       isCompleted && !step.isError
-                        ? "border-primary bg-primary text-primary-foreground"
+                        ? "dark:border-green-600 dark:bg-green-600 border-green-300 bg-green-300 text-primary-foreground"
                         : "border-muted text-muted-foreground",
                       step.isError && isCompleted
                         ? "border-destructive bg-destructive text-destructive-foreground"
@@ -201,8 +213,9 @@ const CustomerOrderDetailsClientPage = () => {
                   <span
                     className={cn(
                       "text-xs font-medium text-center",
-                      isCurrent ? "text-foreground" : "text-muted-foreground",
-                      step.isError ? "text-destructive" : "",
+                      isCompleted
+                        ? "text-primary-foreground"
+                        : "dark:text-muted-foreground text-muted-foreground/70",
                     )}
                   >
                     {step.label}
@@ -211,67 +224,89 @@ const CustomerOrderDetailsClientPage = () => {
               );
             })}
           </div>
-          {/* Mobile Progress Bar (Simple Text) */}
-          <div className="mt-6 md:hidden text-center">
-            <p className="font-semibold text-lg flex items-center justify-center gap-2">
-              Current Status:
-              <span
-                className={cn(
-                  "text-primary capitalize",
-                  order.status === "cancelled" && "text-destructive",
-                )}
-              >
-                {order.status}
-              </span>
-            </p>
+        </CardContent>
+
+        <CardContent className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Order #{order.orderNo}</p>
+            <div className="text-sm text-muted-foreground flex flex-col justify-between">
+              <p>
+                {new Date(order.createdAt).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "long",
+                  day: "2-digit",
+                })}
+              </p>
+              <p>
+                {new Date(order.createdAt)
+                  .toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                  .toUpperCase()}
+              </p>
+            </div>
+          </div>
+          <div className="ml-auto">
+            <Badge variant={order.isPaid ? "default" : "destructive"}>
+              {order.isPaid ? "Paid" : "Unpaid"}
+            </Badge>
           </div>
         </CardContent>
-      </Card>
 
-      {/* Order Items */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Left Column: Items */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="border-none shadow-sm ring-1 ring-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <UtensilsCrossed className="w-5 h-5 text-primary" />
-                Items Ordered
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y">
-              {order.orderedFoodItems.map((item, idx) => (
-                <div key={idx} className="flex py-4 first:pt-0 last:pb-0">
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="font-medium flex items-center gap-2">
-                        <Avatar className="size-16 rounded-lg">
-                          <AvatarImage
-                            src={item.firstImageUrl}
-                            alt={item.foodName}
-                            className="object-cover"
-                            draggable={false}
-                          />
-                          <AvatarFallback className="rounded-lg">
-                            <IconSalad />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="text-lg flex flex-col">
-                          <span className="flex items-center gap-1">
-                            <VegNonVegTooltip
-                              foodType={item.foodType}
-                              innerClassName="size-1"
-                            />
-                            {item.foodName}
-                            {item.isVariantOrder && item.variantDetails
-                              ? ` (${item.variantDetails.variantName})`
-                              : ""}
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <UtensilsCrossed className="w-5 h-5" />
+            Items Ordered
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="divide-y">
+          {order.orderedFoodItems.map((item, idx) => (
+            <div key={idx} className="flex py-4 first:pt-0 last:pb-0">
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-medium flex items-center gap-2">
+                    <Avatar className="size-12 lg:size-16 rounded-lg">
+                      <AvatarImage
+                        src={item.firstImageUrl}
+                        alt={item.foodName}
+                        className="object-cover"
+                        draggable={false}
+                      />
+                      <AvatarFallback className="rounded-lg">
+                        <IconSalad />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-lg flex flex-col">
+                      <span className="flex items-baseline gap-1">
+                        <VegNonVegTooltip
+                          foodType={item.foodType}
+                          innerClassName="size-1"
+                        />
+                        {item.foodName}
+                        {item.isVariantOrder && item.variantDetails
+                          ? ` (${item.variantDetails.variantName})`
+                          : ""}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Qty: {item.quantity} x ₹{item.finalPrice ?? item.price}{" "}
+                        {item.finalPrice !== item.price ? (
+                          <span className="text-xs font-normal line-through">
+                            ₹{item.price}
                           </span>
-                          <span className="text-sm text-muted-foreground">
-                            Qty: {item.quantity} x ₹{item.finalPrice ?? item.price} {item.finalPrice !== item.price ? <span className="text-xs font-normal line-through">₹{item.price}</span> : ""}
-                          </span>
-                        </div>
-                      </div>
+                        ) : (
+                          ""
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  {item.finalPrice < item.price ? (
+                    <div className="flex items-center flex-col">
+                      <span className="text-xs font-normal line-through text-muted-foreground">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </span>
                       <span className="font-semibold">
                         ₹
                         {(
@@ -279,75 +314,70 @@ const CustomerOrderDetailsClientPage = () => {
                         ).toFixed(2)}
                       </span>
                     </div>
-                  </div>
+                  ) : (
+                    <span className="font-semibold">
+                      ₹
+                      {(
+                        (item.finalPrice ?? item.price) * item.quantity
+                      ).toFixed(2)}
+                    </span>
+                  )}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-        {/* Right Column: Bill Details */}
-        <div className="space-y-6">
-          <Card className="border-none shadow-sm ring-1 ring-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-primary" />
-                Bill Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Item Total</span>
-                <span>₹{order.subtotal?.toFixed(2) || "0.00"}</span>
+      {/* Bill Details */}
+      <Card className="border-none shadow-sm ring-1 ring-border gap-3">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <IconReceipt className="w-5 h-5" />
+            Bill Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between text-sm items-end">
+            <span className="text-muted-foreground">Item Total</span>
+            {order.orderedFoodItems.reduce(
+              (acc, item) => acc + item.price * item.quantity,
+              0,
+            ) > order.subtotal ? (
+              <div className="flex flex-col items-end">
+                <span className="line-through text-muted-foreground text-xs">
+                  ₹
+                  {order.orderedFoodItems
+                    .reduce((acc, item) => acc + item.price * item.quantity, 0)
+                    .toFixed(2)}
+                </span>
+                <span className="font-semibold">
+                  ₹{order.subtotal.toFixed(2)}
+                </span>
               </div>
-              {order.taxAmount && order.taxAmount > 0 ? (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Tax{" "}
-                    {order.restaurant.taxRate
-                      ? `(${order.restaurant.taxRate}%)`
-                      : ""}
-                  </span>
-                  <span>+₹{order.taxAmount.toFixed(2)}</span>
-                </div>
-              ) : null}
-              {order.discountAmount && order.discountAmount > 0 ? (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Discount</span>
-                  <span>-₹{order.discountAmount.toFixed(2)}</span>
-                </div>
-              ) : null}
-              <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>₹{order.totalAmount.toFixed(2)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm ring-1 ring-border">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">Table Details</p>
-                    <p className="text-sm text-muted-foreground">
-                      {order.table?.tableName || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">Estimate Time</p>
-                    <p className="text-sm text-muted-foreground">20-30 mins</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            ) : (
+              <span className="font-semibold">
+                ₹{order.subtotal.toFixed(2)}
+              </span>
+            )}
+          </div>
+          {order.taxAmount && order.taxAmount > 0 ? (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Tax{" "}
+                {order.restaurant.taxRate
+                  ? `(${order.restaurant.taxRate}%)`
+                  : ""}
+              </span>
+              <span>+₹{order.taxAmount.toFixed(2)}</span>
+            </div>
+          ) : null}
+          <div className="border-t pt-3 flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span>₹{order.totalAmount.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

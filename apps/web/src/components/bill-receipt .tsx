@@ -19,7 +19,7 @@ const BillReceipt = ({
   const [qrCode, setQrCode] = useState<QRCodeStyling | null>(null);
   const qrDivRef = useRef<HTMLDivElement | null>(null);
   const [orderDetails, setOrderDetails] = useState<FullOrderDetailsType | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,22 +34,45 @@ const BillReceipt = ({
       const response = await axios.get(`/order/${restaurantSlug}/${orderId}`);
       if (response.data && response.data.data) {
         setOrderDetails(response.data.data);
+        setQrCode(
+          new QRCodeStyling({
+            width: 1200,
+            height: 1200,
+            data: `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/${restaurantSlug}/order/${orderId}`,
+            type: "svg",
+            margin: 40,
+            dotsOptions: {
+              color: "#000000",
+              type: "rounded",
+            },
+            backgroundOptions: {
+              color: "#ffffff",
+            },
+            imageOptions: {
+              crossOrigin: "anonymous",
+              margin: 20,
+            },
+            qrOptions: {
+              errorCorrectionLevel: "H",
+            },
+          }),
+        );
       } else {
         setError("Something went wrong. Please try again later");
       }
     } catch (error) {
       console.error(
         "Failed to fetch all orders. Please try again later:",
-        error
+        error,
       );
       setError(
         (error as AxiosError<ApiResponse>).response?.data.message ||
-          "Failed to fetch all orders. Please try again later"
+          "Failed to fetch all orders. Please try again later",
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all orders. Please try again later"
+          "Failed to fetch all orders. Please try again later",
       );
     } finally {
       setIsLoading(false);
@@ -58,29 +81,6 @@ const BillReceipt = ({
 
   useEffect(() => {
     fetchOrderDetails();
-    setQrCode(
-      new QRCodeStyling({
-        width: 1200,
-        height: 1200,
-        data: window.location.href,
-        type: "svg",
-        margin: 40,
-        dotsOptions: {
-          color: "#000000",
-          type: "rounded",
-        },
-        backgroundOptions: {
-          color: "#ffffff",
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: 20,
-        },
-        qrOptions: {
-          errorCorrectionLevel: "H",
-        },
-      })
-    );
   }, [fetchOrderDetails]);
 
   useEffect(() => {
@@ -217,7 +217,7 @@ const BillReceipt = ({
           orderDetails.discountAmount ===
             orderDetails.orderedFoodItems.reduce(
               (acc, item) => acc + (item.finalPrice - item.price),
-              0
+              0,
             ) ? (
             <div className="flex justify-between">
               <span>Discount</span>

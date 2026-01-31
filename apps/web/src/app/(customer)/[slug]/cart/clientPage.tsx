@@ -268,7 +268,7 @@ const CheckoutClientPage = () => {
           </Card>
 
           <Textarea
-            className="my-4 border rounded-md bg-muted resize-none text-wrap whitespace-pre-wrap min-h-11 max-h-40"
+            className="my-4 border rounded-md resize-none text-wrap whitespace-pre-wrap min-h-11 max-h-40"
             placeholder="Add special instructions..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
