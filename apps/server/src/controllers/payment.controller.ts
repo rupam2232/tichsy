@@ -15,6 +15,7 @@ import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
+import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
@@ -71,7 +72,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
 
           const expectedAmount = SUBSCRIPTION_PLANS[plan].price * 100; // in paise
           if (paymentEntity.amount !== expectedAmount) {
-            razorpay.payments.refund(paymentEntity.id,{
+            razorpay.payments.refund(paymentEntity.id, {
               amount: paymentEntity.amount,
               speed: "optimum",
               notes: {
@@ -95,9 +96,8 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
             isTrial: false,
             trialExpiresAt: undefined,
             subscriptionStartDate: new Date(),
-            subscriptionEndDate: new Date(
-              Date.now() +
-                (period === "monthly" ? 30 : 365) * 24 * 60 * 60 * 1000
+            subscriptionEndDate: calculateSubscriptionExpiryDate(
+              period === "monthly" ? 30 : 365
             ),
           },
           { new: true, upsert: true }

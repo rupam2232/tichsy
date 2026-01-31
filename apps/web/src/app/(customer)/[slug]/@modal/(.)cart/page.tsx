@@ -7,7 +7,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@repo/ui/components/drawer";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@repo/ui/components/button";
@@ -32,7 +32,8 @@ const CheckoutModalPage = () => {
   const { slug: restaurantSlug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const tableId = searchParams.get("tableId");
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
+  const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(pathname.includes("cart"));
   const { syncCart, cartItems, removeItem, editItem, clearCart } =
     useCart(restaurantSlug);
   const [taxDetails, setTaxDetails] = useState<{

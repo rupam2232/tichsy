@@ -22,3 +22,6 @@ export const updateRestaurantSchema = z.object({
   categories: z.array(z.string().min(1).max(40)).optional(),
   logoUrl: z.string().trim().url("Invalid URL format").optional(),
 })
+export const addStaffSchema = z.object({
+  email: z.email("Invalid email address").trim(),
+});

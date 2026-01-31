@@ -4,20 +4,23 @@ import { archiveExcessResources } from "../service/archive.service.js";
 
 /**
  * Initializes the subscription check cron job.
- * Runs every day at midnight (00:00).
+ * Runs every day at midnight (00:00) and noon (12:00).
  */
 export const initSubscriptionCron = () => {
   console.log("Initializing Subscription Cron Job...");
 
   cron.schedule("0 0,12 * * *", async () => {
-    console.log("Running Daily Subscription Expiry Check...");
+    console.log("Running Subscription Expiry Check...");
     try {
       const now = new Date();
 
       // Find active subscriptions that have expired
       const expiredSubscriptions = await Subscription.find({
         isSubscriptionActive: true,
-        subscriptionEndDate: { $lte: now },
+        $or: [
+          { isTrial: true, trialExpiresAt: { $lte: now } },
+          { isTrial: false, subscriptionEndDate: { $lte: now } },
+        ],
       });
 
       console.log(
@@ -43,5 +46,7 @@ export const initSubscriptionCron = () => {
     } catch (error) {
       console.error("Error in Subscription Cron Job:", error);
     }
+  }, {
+    timezone: "Asia/Kolkata",
   });
 };

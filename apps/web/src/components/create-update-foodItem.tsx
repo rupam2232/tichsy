@@ -120,10 +120,10 @@ const CreateUpdateFoodItem = ({
     Promise<void>[]
   >([]);
   const [openParentAccordion, setOpenParentAccordion] = useState<string | null>(
-    null
+    null,
   ); // Parent accordion state
   const [openChildAccordion, setOpenChildAccordion] = useState<string[] | null>(
-    null
+    null,
   ); // Child accordion state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -201,9 +201,10 @@ const CreateUpdateFoodItem = ({
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setIsDialogOpen(true);
-      window.history.pushState(null, "", window.location.href);
+      if (!isEditing) window.history.pushState(null, "", window.location.href);
     } else {
-      router.back();
+      if (isEditing) setIsDialogOpen(false);
+      else router.back();
     }
   };
 
@@ -226,10 +227,10 @@ const CreateUpdateFoodItem = ({
           try {
             form.setValue(
               "imageUrls",
-              imageUrls.filter((u) => u !== url)
+              imageUrls.filter((u) => u !== url),
             );
             setImageFiles((prev) =>
-              prev ? prev.filter((file) => file.name !== url) : null
+              prev ? prev.filter((file) => file.name !== url) : null,
             );
             await Promise.all(pendingImageOperations);
             const response = await axios.delete("/media/food-item", {
@@ -261,7 +262,7 @@ const CreateUpdateFoodItem = ({
             console.error("Error removing image:", error);
             const axiosError = error as AxiosError<ApiResponse>;
             toast.error(
-              axiosError.response?.data.message || "Failed to remove image"
+              axiosError.response?.data.message || "Failed to remove image",
             );
             form.setValue("imageUrls", tempImageUrls);
             setImageFiles(tempImageFiles);
@@ -288,7 +289,7 @@ const CreateUpdateFoodItem = ({
       setFoodItemDetails,
       pendingImageOperations,
       pathname,
-    ]
+    ],
   );
 
   const handleImageUpload = useCallback(
@@ -321,7 +322,7 @@ const CreateUpdateFoodItem = ({
                 shouldDirty: true,
                 shouldValidate: true,
                 shouldTouch: true,
-              }
+              },
             );
             setTempImages((prev) => [...prev, ...response.data.data]);
             setImageFiles(null);
@@ -330,7 +331,7 @@ const CreateUpdateFoodItem = ({
             console.error("Error uploading images:", error);
             const axiosError = error as AxiosError<ApiResponse>;
             toast.error(
-              axiosError.response?.data.message || "Failed to upload images"
+              axiosError.response?.data.message || "Failed to upload images",
             );
             if (axiosError.response?.status === 401) {
               dispatch(signOut());
@@ -343,7 +344,7 @@ const CreateUpdateFoodItem = ({
 
       setPendingImageOperations((prev) => [...prev, uploadPromise]);
     },
-    [imageUrls, form, dispatch, router, pathname]
+    [imageUrls, form, dispatch, router, pathname],
   );
 
   useEffect(() => {
@@ -359,7 +360,7 @@ const CreateUpdateFoodItem = ({
       setOpenChildAccordion(null);
     };
 
-    if (isDialogOpen) {
+    if (isDialogOpen && !isEditing) {
       window.addEventListener("popstate", handlePopState);
     }
     return () => {
@@ -367,6 +368,7 @@ const CreateUpdateFoodItem = ({
     };
   }, [
     isDialogOpen,
+    isEditing,
     tempImages,
     form,
     setImageFiles,
@@ -378,7 +380,7 @@ const CreateUpdateFoodItem = ({
 
   const onImageDrop = (
     acceptedFiles: File[],
-    rejectedFiles: FileRejection[]
+    rejectedFiles: FileRejection[],
   ) => {
     const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg"];
 
@@ -399,7 +401,7 @@ const CreateUpdateFoodItem = ({
       rejectedFiles.length > 0 ||
       (acceptedFiles.length > 0 &&
         acceptedFiles.some(
-          (file) => !file.type || !allowedImageTypes.includes(file.type)
+          (file) => !file.type || !allowedImageTypes.includes(file.type),
         ))
     ) {
       setImageErrorMessage("Only .jpeg, .jpg, .png files are allowed");
@@ -449,7 +451,7 @@ const CreateUpdateFoodItem = ({
       (variant) =>
         variant.price === undefined ||
         isNaN(variant.price) ||
-        variant.variantName === ""
+        variant.variantName === "",
     );
 
     if (invalidVariantPrice) {
@@ -471,7 +473,7 @@ const CreateUpdateFoodItem = ({
         Object.keys(form.formState.dirtyFields).length === 0
       ) {
         toast.error(
-          "No changes detected. Please update the form before submitting."
+          "No changes detected. Please update the form before submitting.",
         );
 
         setFormLoading(false);
@@ -486,7 +488,7 @@ const CreateUpdateFoodItem = ({
       const response = isEditing
         ? await axios.patch(
             `/food-item/${restaurantSlug}/${foodItemDetails?._id}`,
-            updatedData
+            updatedData,
           )
         : await axios.post(`/food-item/${restaurantSlug}`, updatedData);
       if (!response.data.success) {
@@ -543,7 +545,7 @@ const CreateUpdateFoodItem = ({
                             ? response.data.data.discountedPrice
                             : undefined,
                       }
-                    : item
+                    : item,
                 )
               : [response.data.data, ...prev.foodItems],
         };
@@ -556,7 +558,7 @@ const CreateUpdateFoodItem = ({
         response.data.message ||
           (isEditing
             ? "Food item updated successfully!"
-            : "Food item created successfully!")
+            : "Food item created successfully!"),
       );
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
@@ -564,13 +566,13 @@ const CreateUpdateFoodItem = ({
         axiosError.response?.data.message ||
           (isEditing
             ? "An error occurred during food item update"
-            : "An error occurred during food item creation")
+            : "An error occurred during food item creation"),
       );
       console.error(
         axiosError.response?.data.message ||
           (isEditing
             ? "An error occurred during food item update"
-            : "An error occurred during food item creation")
+            : "An error occurred during food item creation"),
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -610,7 +612,7 @@ const CreateUpdateFoodItem = ({
       let firstErrorIndex = -1;
       if (Array.isArray(errors.variants)) {
         firstErrorIndex = errors.variants.findIndex(
-          (error) => error !== undefined
+          (error) => error !== undefined,
         );
       }
       if (firstErrorIndex !== -1) {
@@ -634,7 +636,6 @@ const CreateUpdateFoodItem = ({
     };
   }, [imageErrorMessage]);
 
-
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       {isEditing ? (
@@ -648,7 +649,7 @@ const CreateUpdateFoodItem = ({
           New Food Item
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <ScrollArea className="max-h-[90vh]">
           <DialogHeader className="p-6">
             <DialogTitle className="mb-4 line-clamp-1 leading-6">
@@ -661,7 +662,7 @@ const CreateUpdateFoodItem = ({
                 <div
                   className={cn(
                     "grid gap-4 transition-all ease-in delay-75",
-                    !(imageUrls && imageUrls.length >= 5) ? "mt-4" : ""
+                    !(imageUrls && imageUrls.length >= 5) ? "mt-4" : "",
                   )}
                 >
                   <div
@@ -952,11 +953,11 @@ const CreateUpdateFoodItem = ({
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="veg">
-                              <VegIcon className="ml-1"/>
+                              <VegIcon className="ml-1" />
                               Veg
                             </SelectItem>
                             <SelectItem value="non-veg">
-                              <NonVegIcon className="ml-1"/>
+                              <NonVegIcon className="ml-1" />
                               Non Veg
                             </SelectItem>
                           </SelectContent>
@@ -984,16 +985,18 @@ const CreateUpdateFoodItem = ({
                                   role="combobox"
                                   className={cn(
                                     "w-[200px] justify-between",
-                                    !field.value && "text-muted-foreground"
+                                    !field.value && "text-muted-foreground",
                                   )}
                                 >
                                   {field.value
                                     ? categories.length > 0
                                       ? categories.find(
-                                          (category) => category === field.value
+                                          (category) =>
+                                            category === field.value,
                                         )
                                       : foodItemDetails?.restaurantDetails.categories.find(
-                                          (category) => category === field.value
+                                          (category) =>
+                                            category === field.value,
                                         )
                                     : "Select category"}
                                   <ChevronsUpDown className="opacity-50" />
@@ -1031,7 +1034,7 @@ const CreateUpdateFoodItem = ({
                                           "ml-auto",
                                           undefined === field.value
                                             ? "opacity-100"
-                                            : "opacity-0"
+                                            : "opacity-0",
                                         )}
                                       />
                                     </Button>
@@ -1053,7 +1056,7 @@ const CreateUpdateFoodItem = ({
                                               "ml-auto",
                                               category === field.value
                                                 ? "opacity-100"
-                                                : "opacity-0"
+                                                : "opacity-0",
                                             )}
                                           />
                                         </CommandItem>
@@ -1219,7 +1222,7 @@ const CreateUpdateFoodItem = ({
                                                   } // Convert undefined to an empty string
                                                   onChange={(e) =>
                                                     field.onChange(
-                                                      e.target.valueAsNumber
+                                                      e.target.valueAsNumber,
                                                     )
                                                   }
                                                   onWheel={(e) => {
@@ -1277,7 +1280,7 @@ const CreateUpdateFoodItem = ({
                                                         shouldDirty: true,
                                                         shouldValidate: true,
                                                         shouldTouch: true,
-                                                      }
+                                                      },
                                                     ); // Explicitly update the form state
                                                   }}
                                                   onWheel={(e) => {

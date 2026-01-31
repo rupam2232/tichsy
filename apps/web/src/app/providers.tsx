@@ -8,10 +8,11 @@ import { signIn, signOut } from "@/store/authSlice";
 import store from "@/store/store";
 import { Toaster } from "@repo/ui/components/sonner";
 import axios from "@/utils/axiosInstance";
+import { SocketProvider } from "@/context/SocketContext";
 
 function FetchCurrentUser({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
-  
+
   const fetchCurrentUser = useCallback(async () => {
     try {
       const response = await axios.get("/user/me");
@@ -45,7 +46,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <GoogleOAuthProvider
           clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
         >
-          <FetchCurrentUser>{children}</FetchCurrentUser>
+          <SocketProvider>
+            <FetchCurrentUser>{children}</FetchCurrentUser>
+          </SocketProvider>
           <Toaster richColors expand={true} position="top-right" />
         </GoogleOAuthProvider>
       </ReduxProvider>

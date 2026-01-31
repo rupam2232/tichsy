@@ -57,11 +57,9 @@ const ClientPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const socket = useSocket();
-  const [isRestaurantCurrentlyOpen, setIsRestaurantCurrentlyOpen] = useState(
-    useSelector(
-      (state: RootState) =>
-        state.restaurantsSlice.activeRestaurant?.isCurrentlyOpen
-    )
+  const isRestaurantCurrentlyOpen = useSelector(
+    (state: RootState) =>
+      state.restaurantsSlice.activeRestaurant?.isCurrentlyOpen,
   );
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -70,7 +68,8 @@ const ClientPage = () => {
       setIsPageLoading(true);
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const statsResponse = await axios.get(
-        `/restaurant/${slug}/owner-dashboard-stats?timezone=${userTimezone}`);
+        `/restaurant/${slug}/owner-dashboard-stats?timezone=${userTimezone}`,
+      );
 
       if (statsResponse.data.success) {
         setStats(statsResponse.data.data);
@@ -80,17 +79,17 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch dashboard stats. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch dashboard stats. Please try again later"
+          "Failed to fetch dashboard stats. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push(
-          "/signin?redirect=/restaurant/" + slug + "/owner-dashboard"
+          "/signin?redirect=/restaurant/" + slug + "/owner-dashboard",
         );
       }
     } finally {
@@ -114,10 +113,9 @@ const ClientPage = () => {
   const handleToggleRestaurantStatus = async () => {
     try {
       const response = await axios.post(
-        `/restaurant/${slug}/toggle-open-status`
+        `/restaurant/${slug}/toggle-open-status`,
       );
       if (response.data.success) {
-        setIsRestaurantCurrentlyOpen(response.data.data.isCurrentlyOpen);
         dispatch(setActiveRestaurant(response.data.data));
         toast.success(response.data.message);
       } else {
@@ -128,12 +126,12 @@ const ClientPage = () => {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to toggle restaurant status. Please try again later"
+          "Failed to toggle restaurant status. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push(
-          "/signin?redirect=/restaurant/" + slug + "/owner-dashboard"
+          "/signin?redirect=/restaurant/" + slug + "/owner-dashboard",
         );
       }
     }

@@ -27,6 +27,7 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   ) {
     subscription.isSubscriptionActive = false;
     subscription.isTrial = false;
+    subscription.trialExpiresAt = undefined;
     subscription.plan = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;
@@ -60,6 +61,7 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   ) {
     subscription.isSubscriptionActive = false;
     subscription.isTrial = false;
+    subscription.trialExpiresAt = undefined;
     subscription.plan = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;

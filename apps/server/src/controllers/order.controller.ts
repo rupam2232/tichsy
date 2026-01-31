@@ -221,10 +221,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       createdAt: order[0].createdAt,
     };
 
-    // Calculate the size in bytes
-    // const dataSizeBytes = Buffer.byteLength(JSON.stringify(socketIoOrderData), "utf8");
-    // console.log(`Socket.IO order data size: ${dataSizeBytes} bytes (${(dataSizeBytes / 1024).toFixed(2)} KB)`);
-
     // If the payment method is online, we can initiate the payment process here
     if (paymentMethod === "online") {
       const payment = await Payment.create(
@@ -1184,6 +1180,8 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     }
   }
 
+  io?.to(`order_${order._id}`).emit("orderUpdate", order);
+
   res
     .status(200)
     .json(new ApiResponse(200, order, "Order status updated successfully"));
@@ -1451,6 +1449,8 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
     order.kitchenStaffId = req.user!._id as Types.ObjectId; // Set the kitchen staff who updated the order status
   }
   await order.save();
+
+  io?.to(`order_${order._id}`).emit("orderUpdate", order);
 
   res
     .status(200)

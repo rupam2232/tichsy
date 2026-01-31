@@ -18,6 +18,7 @@ import {
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
+import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 const options = getCookieOptions();
 const passwordRegex =
   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/;
@@ -120,7 +121,7 @@ export const signup = async (
           userId: user[0]._id,
           isTrial: true,
           plan: "starter",
-          trialExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trialExpiresAt: calculateSubscriptionExpiryDate(7),
           isSubscriptionActive: true,
         },
       ],
@@ -535,7 +536,8 @@ export const google = async (
           {
             userId: user[0]._id,
             isTrial: true,
-            trialExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            plan: "starter",
+            trialExpiresAt: calculateSubscriptionExpiryDate(7),
             isSubscriptionActive: true,
           },
         ],
@@ -548,6 +550,7 @@ export const google = async (
           {
             userId: user[0]._id,
             amount: 0,
+            plan: subscription[0].plan,
             isTrial: true,
             trialExpiresAt: subscription[0].trialExpiresAt,
           },
@@ -636,7 +639,8 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 // Handles password reset for unauthenticated users. Verifies email, validates new password, updates it, and sends a success email.
-export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+export const forgotPassword = asyncHandler(
+  async (req: Request, res: Response) => {
     if (!req.body || !req.body.email || !req.body.password) {
       throw new ApiError(400, "Email and password are required");
     }

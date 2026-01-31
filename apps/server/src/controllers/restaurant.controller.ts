@@ -7,9 +7,7 @@ import {
   canCreateRestaurant,
   canToggleOpeningStatus,
 } from "../service/restaurant.service.js";
-import {
-  checkStaffLimit,
-} from "../service/subscription.service.js";
+import { checkStaffLimit } from "../service/subscription.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -269,7 +267,7 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
     slug,
     ownerId: req.user!._id,
   }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen ownerId"
   );
 
   if (!restaurant) {
