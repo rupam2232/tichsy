@@ -147,6 +147,13 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       );
     }
 
+    if (table.isArchived) {
+      throw new ApiError(
+        400,
+        "This table is not available for new orders"
+      );
+    }
+
     await canRestaurantRecieveOrders(restaurant);
 
     const { paymentMethod, notes, customerName, customerPhone } = req.body;

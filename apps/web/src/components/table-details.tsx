@@ -54,6 +54,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
+import { Switch } from "@repo/ui/components/switch";
 
 const TableDetails = ({
   children,
@@ -89,7 +90,7 @@ const TableDetails = ({
       window.history.pushState(
         { tableSlug: table.qrSlug },
         "",
-        window.location.href
+        window.location.href,
       );
     } else {
       router.back();
@@ -122,7 +123,7 @@ const TableDetails = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `/table/${restaurantSlug}/${table.qrSlug}`
+        `/table/${restaurantSlug}/${table.qrSlug}`,
       );
       setIsTableOccupied(response.data.data.isOccupied);
       setTableDetails(response.data.data);
@@ -147,12 +148,12 @@ const TableDetails = ({
     } catch (error) {
       console.error(
         "Failed to fetch table details. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch table details. Please try again later"
+          "Failed to fetch table details. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -183,7 +184,7 @@ const TableDetails = ({
       form.getValues("seatCount") === table.seatCount
     ) {
       toast.error(
-        "No changes detected. Please modify the table details before submitting"
+        "No changes detected. Please modify the table details before submitting",
       );
       return;
     }
@@ -191,7 +192,7 @@ const TableDetails = ({
       setFormLoading(true);
       const response = await axios.patch(
         `/table/${restaurantSlug}/${table.qrSlug}`,
-        data
+        data,
       );
       if (
         !response.data.success ||
@@ -227,7 +228,7 @@ const TableDetails = ({
                   isOccupied:
                     response.data.data.table.isOccupied ?? t.isOccupied,
                 }
-              : t
+              : t,
           ),
           totalCount: response.data.data.totalCount ?? prev.totalCount,
           occupiedTables:
@@ -241,11 +242,11 @@ const TableDetails = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during table update"
+          "An error occurred during table update",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during table update"
+          "An error occurred during table update",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -265,7 +266,7 @@ const TableDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.patch(
-        `/table/${restaurantSlug}/${tableDetails.qrSlug}/toggle-occupied-status`
+        `/table/${restaurantSlug}/${tableDetails.qrSlug}/toggle-occupied-status`,
       );
       if (
         !response.data.success ||
@@ -299,7 +300,7 @@ const TableDetails = ({
                   tableName: response.data.data.table.tableName ?? t.tableName,
                   seatCount: response.data.data.table.seatCount ?? t.seatCount,
                 }
-              : t
+              : t,
           ),
           totalCount: response.data.data.totalCount ?? prev.totalCount,
           occupiedTables:
@@ -313,11 +314,11 @@ const TableDetails = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during table status update"
+          "An error occurred during table status update",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during table status update"
+          "An error occurred during table status update",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -339,7 +340,7 @@ const TableDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.delete(
-        `/table/${restaurantSlug}/${tableDetails.qrSlug}`
+        `/table/${restaurantSlug}/${tableDetails.qrSlug}`,
       );
       if (!response.data.success) {
         toast.error(response.data.message || "Failed to delete table");
@@ -359,16 +360,108 @@ const TableDetails = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during table deletion"
+          "An error occurred during table deletion",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during table deletion"
+          "An error occurred during table deletion",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push(`/signin?redirect=${pathname}`);
       }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const toggleArchiveStatus = async () => {
+    if (!tableDetails) return;
+    if (isLoading || formLoading) {
+      toast.error("Please wait for the current operation to complete");
+      return;
+    } // Prevent multiple submissions
+    const isArchived = tableDetails.isArchived;
+    setTableDetails((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        isArchived: !isArchived,
+      };
+    });
+    try {
+      setFormLoading(true);
+      const response = await axios.patch(
+        `/table/${restaurantSlug}/${tableDetails.qrSlug}/toggle-archive-status`,
+      );
+      if (
+        !response.data.success ||
+        !response.data.data.table ||
+        response.data.data.table.isArchived === undefined
+      ) {
+        toast.error(response.data.message || "Failed to update table status");
+        return;
+      }
+      setTableDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isArchived: response.data.data.table.isArchived,
+          qrSlug: response.data.data.table.qrSlug ?? prev.qrSlug,
+          tableName: response.data.data.table.tableName ?? prev.tableName,
+          seatCount: response.data.data.table.seatCount ?? prev.seatCount,
+        };
+      });
+
+      setAllTables((prev) => {
+        if (!prev) return prev; // If allTables is null, return it
+        return {
+          ...prev,
+          tables: prev.tables.map((t) =>
+            t.qrSlug === tableDetails.qrSlug
+              ? {
+                  ...t,
+                  isArchived: response.data.data.table.isArchived,
+                  qrSlug: response.data.data.table.qrSlug ?? t.qrSlug,
+                  tableName: response.data.data.table.tableName ?? t.tableName,
+                  seatCount: response.data.data.table.seatCount ?? t.seatCount,
+                }
+              : t,
+          ),
+          totalCount: response.data.data.totalCount ?? prev.totalCount,
+          occupiedTables:
+            response.data.data.occupiedTables ?? prev.occupiedTables,
+          availableTables:
+            response.data.data.availableTables ?? prev.availableTables,
+          archivedTables:
+            response.data.data.archivedTables ?? prev.archivedTables,
+        };
+      });
+      toast.success(
+        response.data.message || "Table status updated successfully!",
+      );
+    } catch (error) {
+      setTableDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isArchived: !isArchived,
+        };
+      });
+      const axiosError = error as AxiosError<ApiResponse>;
+      toast.error(
+        axiosError.response?.data.message ||
+          "An error occurred during table status update",
+      );
+      console.error(
+        axiosError.response?.data.message ||
+          "An error occurred during table status update",
+      );
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push(`/signin?redirect=${pathname}`);
+      }
+      setIsTableOccupied((prev) => !prev); // Toggle back the status on error
     } finally {
       setFormLoading(false);
     }
@@ -489,7 +582,7 @@ const TableDetails = ({
                 qrCodeData={`${window.location.origin}/${tableDetails?.restaurantDetails?.slug}/menu?tableId=${tableDetails.qrSlug}`}
                 qrCodeImage={tableDetails.restaurantDetails.logoUrl?.replace(
                   "/upload/",
-                  "/upload/r_max/"
+                  "/upload/r_max/",
                 )}
                 qrCodeName={tableDetails.tableName + "-qrcode"}
               />
@@ -521,6 +614,15 @@ const TableDetails = ({
               </Select>
             </p>
 
+            <p className="flex items-center gap-2">
+              Archive:
+              <Switch
+                className="cursor-pointer"
+                checked={tableDetails.isArchived}
+                onCheckedChange={toggleArchiveStatus}
+              />
+            </p>
+
             <p>
               slug: <span className="font-bold">{tableDetails.qrSlug}</span>
             </p>
@@ -534,7 +636,7 @@ const TableDetails = ({
                     variant={"outline"}
                     onClick={() =>
                       router.push(
-                        `/restaurant/${tableDetails.restaurantDetails.slug}/orders?tab=search&search=${tableDetails.currentOrder?.orderNo}`
+                        `/restaurant/${tableDetails.restaurantDetails.slug}/orders?tab=search&search=${tableDetails.currentOrder?.orderNo}`,
                       )
                     }
                     className=""

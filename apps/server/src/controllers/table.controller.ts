@@ -159,13 +159,15 @@ export const updateTable = asyncHandler(async (req, res) => {
     isOccupied: false,
     isArchived: false,
   });
-
+  const occupiedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isOccupied: true,
+    isArchived: false,
+  });
   const archivedTables = await Table.countDocuments({
     restaurantId: restaurant._id,
     isArchived: true,
   });
-
-  const occupiedTables = totalTables - availableTables - archivedTables;
 
   res.status(200).json(
     new ApiResponse(
@@ -267,6 +269,16 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
   const availableTables = await Table.countDocuments({
     restaurantId: restaurant._id,
     isOccupied: false,
+    isArchived: false,
+  });
+  const occupiedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isOccupied: true,
+    isArchived: false,
+  });
+  const archivedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isArchived: true,
   });
 
   res.status(200).json(
@@ -276,7 +288,8 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
         table,
         totalCount: totalTables,
         availableTables,
-        occupiedTables: totalTables - availableTables,
+        occupiedTables,
+        archivedTables,
       },
       "Table occupied status updated successfully"
     )
@@ -294,14 +307,14 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  let canViewOrder = false;
+  let isUserPartofRestaurant = false;
   if (req.user) {
     // If user is authenticated, check if they are the owner or staff of the restaurant
     if (
       req.user.role === "owner" &&
       restaurant.ownerId.toString() === req.user._id!.toString()
     ) {
-      canViewOrder = true;
+      isUserPartofRestaurant = true;
     } else if (
       req.user.role === "staff" &&
       restaurant.staffIds!.length > 0 &&
@@ -309,7 +322,7 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
         .staffIds!.map((id) => id.toString())
         .includes(req.user._id!.toString())
     ) {
-      canViewOrder = true;
+      isUserPartofRestaurant = true;
     }
   }
 
@@ -350,7 +363,11 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
         isOccupied: 1,
         qrSlug: 1,
         currentOrderId: 1,
-        currentOrder: canViewOrder
+        isArchived: 1,
+        archivedAt: 1,
+        archivedReason: 1,
+        createdAt: 1,
+        currentOrder: isUserPartofRestaurant
           ? {
               orderId: "$currentOrder._id",
               orderNo: "$currentOrder.orderNo",
@@ -375,6 +392,10 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Table not found");
   }
 
+  if (table[0].isArchived && !isUserPartofRestaurant) {
+    throw new ApiError(403, "You do not have permission to view this table");
+  }
+
   res
     .status(200)
     .json(new ApiResponse(200, table[0], "Table details fetched successfully"));
@@ -391,10 +412,12 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
     limit = 10,
     sortBy = "createdAt",
     sortType = "asc",
+    includeArchived = false,
   } = req.query;
 
   const pageNumber = parseInt(page.toString());
   const limitNumber = parseInt(limit.toString());
+  const includeArchivedBoolean = includeArchived === "true";
 
   if (pageNumber < 1 || limitNumber < 1) {
     throw new ApiError(400, "Page and limit must be positive integers");
@@ -428,6 +451,7 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
   }
   const tableCount = await Table.countDocuments({
     restaurantId: restaurant._id,
+    ...(!includeArchivedBoolean && { isArchived: false }),
   });
 
   if (!tableCount || tableCount === 0) {
@@ -442,13 +466,17 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
           totalCount: 0,
           availableTables: 0,
           occupiedTables: 0,
+          archivedTables: 0,
         },
         "No tables found"
       )
     );
   } else {
     // Fetch all tables for the restaurant
-    const tables = await Table.find({ restaurantId: restaurant._id })
+    const tables = await Table.find({
+      restaurantId: restaurant._id,
+      ...(!includeArchivedBoolean && { isArchived: false }),
+    })
       .sort({
         [sortBy.toString()]: sortType === "asc" ? 1 : -1, // Ascending or descending sort
       })
@@ -459,6 +487,16 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
     const availableTables = await Table.countDocuments({
       restaurantId: restaurant._id,
       isOccupied: false,
+      isArchived: false,
+    });
+    const occupiedTables = await Table.countDocuments({
+      restaurantId: restaurant._id,
+      isOccupied: true,
+      isArchived: false,
+    });
+    const archivedTables = await Table.countDocuments({
+      restaurantId: restaurant._id,
+      isArchived: true,
     });
     const totalPages = Math.ceil(tableCount / limitNumber);
     res
@@ -475,7 +513,8 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
             totalPages,
             totalCount: tableCount,
             availableTables,
-            occupiedTables: tableCount - availableTables,
+            occupiedTables,
+            archivedTables,
           },
           "Tables fetched successfully"
         )
@@ -585,11 +624,38 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
     table.archivedReason = req.body?.archivedReason ?? "Archived by owner";
   }
 
-  await table.save();
+  await table.save({ validateBeforeSave: false });
 
-  res
-    .status(200)
-    .json(
-      new ApiResponse(200, table, "Table archive status toggled successfully")
-    );
+  const totalTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+  });
+
+  const availableTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isOccupied: false,
+    isArchived: false,
+  });
+  const occupiedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isOccupied: true,
+    isArchived: false,
+  });
+  const archivedTables = await Table.countDocuments({
+    restaurantId: restaurant._id,
+    isArchived: true,
+  });
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        table,
+        totalCount: totalTables,
+        availableTables,
+        occupiedTables,
+        archivedTables,
+      },
+      "Table archive status toggled successfully"
+    )
+  );
 });

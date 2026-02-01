@@ -3,6 +3,9 @@ export interface Table {
   tableName: string;
   qrSlug: string;
   seatCount: number;
+  isArchived: boolean;
+  archivedAt?: string;
+  archivedReason?: string;
   isOccupied: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,4 +49,5 @@ export type AllTables = {
   totalCount: number;
   availableTables: number;
   occupiedTables: number;
+  archivedTables: number;
 };

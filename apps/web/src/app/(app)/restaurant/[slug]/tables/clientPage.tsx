@@ -47,11 +47,11 @@ export default function SelectTable() {
     try {
       if (page === 1) {
         setIsPageLoading(true);
-        const response = await axios.get(`/table/${slug}`);
+        const response = await axios.get(`/table/${slug}?includeArchived=true`);
         setAllTables(response.data.data);
       } else {
         setIsPageChanging(true);
-        const response = await axios.get(`/table/${slug}?page=${page}`);
+        const response = await axios.get(`/table/${slug}?page=${page}&includeArchived=true`);
         setAllTables((prev) => ({
           ...response.data.data,
           tables: [...(prev?.tables || []), ...response.data.data.tables],
@@ -69,7 +69,7 @@ export default function SelectTable() {
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=/restaurant/${slug}/tables`);
       }
       setAllTables(null);
     } finally {
@@ -100,7 +100,6 @@ export default function SelectTable() {
     <div>
       {/* Header */}
       <div className="flex flex-col-reverse sm:flex-row gap-y-2 items-center justify-between px-4 py-3 border-b border-border bg-background">
-        {/* Status Legend - Center */}
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-300"></span>
@@ -112,6 +111,12 @@ export default function SelectTable() {
             <span className="w-2 h-2 rounded-full bg-red-300"></span>
             <span className="text-muted-foreground">
               Occupied: {allTables ? allTables.occupiedTables : 0}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-muted border border-muted-foreground"></span>
+            <span className="text-muted-foreground">
+              Archived: {allTables ? allTables.archivedTables : 0}
             </span>
           </div>
         </div>
@@ -171,7 +176,9 @@ export default function SelectTable() {
                     <Card
                       className={cn(
                         "flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md rounded-lg truncate whitespace-pre-wrap",
-                        table.isOccupied
+                        table.isArchived
+                          ? "bg-muted text-muted-foreground border border-muted-foreground"
+                          : table.isOccupied
                           ? "bg-red-100 text-red-700 border border-red-300"
                           : "bg-green-100 text-green-700 border border-green-300",
                       )}

@@ -18,6 +18,7 @@ import {
   ChefHat,
   Download,
   Loader2,
+  Utensils,
   UtensilsCrossed,
   XCircle,
 } from "lucide-react";
@@ -94,15 +95,15 @@ const CustomerOrderDetailsClientPage = () => {
   // Order Progress Steps
   const orderSteps = useMemo(() => {
     const steps = [
-      { id: "pending", label: "Placed", icon: IconReceipt },
-      { id: "preparing", label: "Preparing", icon: ChefHat },
-      { id: "ready", label: "Ready", icon: UtensilsCrossed },
-      { id: "completed", label: "Completed", icon: CheckCircle2 },
+      { id: "pending", label: "Placed", icon: IconReceipt, isError: false },
+      { id: "preparing", label: "Preparing", icon: ChefHat, isError: false },
+      { id: "ready", label: "Ready", icon: Utensils, isError: false },
+      { id: "completed", label: "Completed", icon: CheckCircle2, isError: false },
     ];
 
     if (order?.status === "cancelled") {
       return [
-        { id: "pending", label: "Placed", icon: IconReceipt },
+        { id: "pending", label: "Placed", icon: IconReceipt, isError: false },
         { id: "cancelled", label: "Cancelled", icon: XCircle, isError: true },
       ];
     }
