@@ -44,7 +44,7 @@ const ClinetFoodMenu = ({
 }) => {
   const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(null);
   const [restaurantCategories, setRestaurantCategories] = useState<string[]>(
-    []
+    [],
   );
   const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
@@ -56,7 +56,7 @@ const ClinetFoodMenu = ({
   const [showEditDrawer, setShowEditDrawer] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [selectedFoodItem, setSelectedFoodItem] = useState<FoodItem | null>(
-    null
+    null,
   );
   const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +64,8 @@ const ClinetFoodMenu = ({
   const debounced = useDebounceCallback(setSearchInput, 300);
   const currentPage = tabPages[tabName] || 1;
   const { cartItems, syncCart, addItem, removeItem, editItem } = useCart(slug);
-  const [isTableDataLoading, setIsTableDataLoading] = useState<boolean>(true);
+  const [isTableDataLoading, setIsTableDataLoading] =
+    useState<boolean>(!isStaffCreatingOrder);
   const [tableDetails, setTableDetails] = useState<Table | null>(null);
 
   const fetchFoodItems = useCallback(async () => {
@@ -78,9 +79,9 @@ const ClinetFoodMenu = ({
       if (currentPage === 1) {
         setIsPageLoading(true);
         const response = await axios.get(
-          `/food-item/${slug}?${tabName !== "search" ? `tab=${tabName}` : ""}${
+          `/food-item/${slug}?forPage=order&${tabName !== "search" ? `tab=${tabName}` : ""}${
             searchInput.trim() ? `search=${searchInput.trim()}` : ""
-          }`
+          }`,
         );
         setAllFoodItems({ ...response.data.data });
       } else {
@@ -88,7 +89,7 @@ const ClinetFoodMenu = ({
         const response = await axios.get(
           `/food-item/${slug}?page=${currentPage}&tab=${tabName}${
             searchInput.trim() ? `&search=${searchInput.trim()}` : ""
-          }`
+          }`,
         );
         setAllFoodItems((prev) => ({
           ...response.data.data,
@@ -101,12 +102,12 @@ const ClinetFoodMenu = ({
     } catch (error) {
       console.error(
         "Failed to fetch all foodItems. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all food items. Please try again later"
+          "Failed to fetch all food items. Please try again later",
       );
       setAllFoodItems(null);
     } finally {
@@ -126,18 +127,21 @@ const ClinetFoodMenu = ({
     } catch (error) {
       console.error(
         "Failed to fetch all categories. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all categories. Please try again later"
+          "Failed to fetch all categories. Please try again later",
       );
       setRestaurantCategories([]);
     }
   }, [slug]);
 
   const fetchTableDetails = useCallback(async () => {
+    if (isStaffCreatingOrder) {
+      return;
+    }
     if (!tableId) {
       toast.error("Table ID is required to fetch table details");
       setIsTableDataLoading(false);
@@ -153,36 +157,40 @@ const ClinetFoodMenu = ({
       console.error(axiosError.response?.data.message || axiosError.message);
       console.error(
         "Failed to fetch table details. Please try again later:",
-        axiosError.response?.data.message || axiosError.message
+        axiosError.response?.data.message || axiosError.message,
       );
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch table details. Please try again later"
+          "Failed to fetch table details. Please try again later",
       );
     } finally {
       setIsTableDataLoading(false);
     }
-  }, [tableId, slug]);
+  }, [tableId, slug, isStaffCreatingOrder]);
 
   useEffect(() => {
-    if (slug) {
+    if (slug && !isStaffCreatingOrder) {
       syncCart();
     }
     fetchTableDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, fetchTableDetails]);
+  }, [slug, fetchTableDetails, isStaffCreatingOrder]);
 
   useEffect(() => {
-    if (tableDetails && tableDetails.isOccupied === false) {
+    if (isStaffCreatingOrder) {
+      fetchFoodItems();
+    } else if (tableDetails && tableDetails.isOccupied === false) {
       fetchFoodItems();
     }
-  }, [fetchFoodItems, tableDetails]);
+  }, [fetchFoodItems, tableDetails, isStaffCreatingOrder]);
 
   useEffect(() => {
-    if (tableDetails && tableDetails.isOccupied === false) {
+    if (isStaffCreatingOrder) {
+      fetchRestaurantCategories();
+    } else if (tableDetails && tableDetails.isOccupied === false) {
       fetchRestaurantCategories();
     }
-  }, [fetchRestaurantCategories, tableDetails]);
+  }, [fetchRestaurantCategories, tableDetails, isStaffCreatingOrder]);
 
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -204,7 +212,7 @@ const ClinetFoodMenu = ({
       });
       if (node) observer.current.observe(node);
     },
-    [allFoodItems, currentPage, tabName, isPageChanging]
+    [allFoodItems, currentPage, tabName, isPageChanging],
   );
 
   useEffect(() => {
@@ -225,7 +233,7 @@ const ClinetFoodMenu = ({
     );
   }
 
-  if (!tableDetails) {
+  if (!tableDetails && !isStaffCreatingOrder) {
     return (
       <div className="p-4 text-center text-balance">
         Sorry, we couldn&apos;t find your table details. Please refresh the page
@@ -234,7 +242,7 @@ const ClinetFoodMenu = ({
     );
   }
 
-  if (tableDetails.isOccupied) {
+  if (tableDetails?.isOccupied && !isStaffCreatingOrder) {
     return (
       <div className="p-4 text-center text-balance">
         This table is currently occupied. Please try again later. Or contact
@@ -259,7 +267,10 @@ const ClinetFoodMenu = ({
       >
         <div className="flex flex-wrap items-center sm:items-baseline justify-between gap-2 pt-2">
           <ScrollArea
-            className={cn("w-full sm:w-0 flex-1 pb-2 rounded-md", scrollClassName)}
+            className={cn(
+              "w-full sm:w-0 flex-1 pb-2 rounded-md",
+              scrollClassName,
+            )}
           >
             <TabsList>
               <TabsTrigger
@@ -316,7 +327,7 @@ const ClinetFoodMenu = ({
                   "hover:opacity-100 hover:bg-accent h-6 w-6",
                   searchInputRef.current && searchInputRef.current.value !== ""
                     ? ""
-                    : "hidden"
+                    : "hidden",
                 )}
                 onClick={() => {
                   if (searchInputRef.current) {
@@ -373,7 +384,7 @@ const ClinetFoodMenu = ({
                     "overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative",
                     !foodItem.isAvailable &&
                       !foodItem.hasVariants &&
-                      "grayscale opacity-80"
+                      "grayscale opacity-80",
                   )}
                   onClick={() => {
                     setSelectedFoodItem(foodItem);
@@ -382,7 +393,10 @@ const ClinetFoodMenu = ({
                   }}
                 >
                   <div className="absolute top-2 left-2 z-10">
-                    <VegNonVegTooltip foodType={foodItem.foodType} innerClassName="size-1.5" />
+                    <VegNonVegTooltip
+                      foodType={foodItem.foodType}
+                      innerClassName="size-1.5"
+                    />
                   </div>
                   <div className="relative aspect-square">
                     {foodItem.imageUrls &&
@@ -424,7 +438,7 @@ const ClinetFoodMenu = ({
                       )}
                       {foodItem.isAvailable || foodItem.hasVariants ? (
                         cartItems.some(
-                          (item) => item.foodId === foodItem._id
+                          (item) => item.foodId === foodItem._id,
                         ) ? (
                           <div className="flex items-center justify-between dark:border-zinc-600 border rounded-md w-full">
                             <Button
@@ -434,7 +448,7 @@ const ClinetFoodMenu = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const existingItem = cartItems.find(
-                                  (item) => item.foodId === foodItem._id
+                                  (item) => item.foodId === foodItem._id,
                                 );
                                 if (existingItem && foodItem.hasVariants) {
                                   setSelectedFoodItem(foodItem);
@@ -471,7 +485,7 @@ const ClinetFoodMenu = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const existingItem = cartItems.find(
-                                  (item) => item.foodId === foodItem._id
+                                  (item) => item.foodId === foodItem._id,
                                 );
                                 if (existingItem && foodItem.hasVariants) {
                                   setSelectedFoodItem(foodItem);

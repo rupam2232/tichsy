@@ -56,6 +56,7 @@ import {
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
 import VegNonVegTooltip from "./veg-nonveg-tooltip";
+import { Switch } from "@repo/ui/components/switch";
 
 const FoodDetails = ({
   children,
@@ -96,29 +97,29 @@ const FoodDetails = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `/food-item/${restaurantSlug}/${foodItem._id}`
+        `/food-item/${restaurantSlug}/${foodItem._id}`,
       );
       setIsFoodItemAvailable(response.data.data.isAvailable);
       setFoodItemDetails(response.data.data);
     } catch (error) {
       console.error(
         "Failed to fetch food item details. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch food item details. Please try again later"
+          "Failed to fetch food item details. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
-        router.push("/signin");
+        router.push(`/signin?redirect=${pathname}`);
       }
       setFoodItemDetails(null);
     } finally {
       setIsLoading(false);
     }
-  }, [dispatch, restaurantSlug, router, foodItem]);
+  }, [dispatch, restaurantSlug, router, foodItem, pathname]);
 
   useEffect(() => {
     if (!carouselApi) {
@@ -164,7 +165,7 @@ const FoodDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.patch(
-        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability-status`
+        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-availability-status`,
       );
       if (
         !response.data.success ||
@@ -172,7 +173,7 @@ const FoodDetails = ({
         response.data.data.isAvailable === undefined
       ) {
         toast.error(
-          response.data.message || "Failed to update food item status"
+          response.data.message || "Failed to update food item status",
         );
         return;
       }
@@ -193,7 +194,7 @@ const FoodDetails = ({
                   ...f,
                   isAvailable: response.data.data.isAvailable,
                 }
-              : f
+              : f,
           ),
         };
       });
@@ -202,11 +203,11 @@ const FoodDetails = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during food item status update"
+          "An error occurred during food item status update",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during food item status update"
+          "An error occurred during food item status update",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -231,17 +232,17 @@ const FoodDetails = ({
         {
           isVariant: true,
           variantId: foodVariant._id,
-        }
+        },
       );
       if (
         !response.data.success ||
         !response.data.data ||
         response.data.data.variants.find(
-          (v: FoodVariant) => v._id === foodVariant._id
+          (v: FoodVariant) => v._id === foodVariant._id,
         )?.isAvailable === undefined
       ) {
         toast.error(
-          response.data.message || "Failed to update food item status"
+          response.data.message || "Failed to update food item status",
         );
         return;
       }
@@ -255,10 +256,10 @@ const FoodDetails = ({
                   ...v,
                   isAvailable:
                     response.data.data.variants.find(
-                      (variant: FoodVariant) => variant._id === v._id
+                      (variant: FoodVariant) => variant._id === v._id,
                     )?.isAvailable ?? v.isAvailable,
                 }
-              : v
+              : v,
           ),
         };
       });
@@ -269,7 +270,7 @@ const FoodDetails = ({
           ...prev,
           isAvailable:
             response.data.data.variants.find(
-              (variant: FoodVariant) => variant._id === prev._id
+              (variant: FoodVariant) => variant._id === prev._id,
             )?.isAvailable ?? prev.isAvailable,
         };
       });
@@ -278,11 +279,11 @@ const FoodDetails = ({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "An error occurred during food variant status update"
+          "An error occurred during food variant status update",
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during food variant status update"
+          "An error occurred during food variant status update",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -313,7 +314,7 @@ const FoodDetails = ({
     try {
       setFormLoading(true);
       const response = await axios.delete(
-        `/food-item/${restaurantSlug}/${foodItemDetails._id}`
+        `/food-item/${restaurantSlug}/${foodItemDetails._id}`,
       );
       if (!response.data.success) {
         toast.error(response.data.message || "Failed to delete food item");
@@ -325,7 +326,7 @@ const FoodDetails = ({
         return {
           ...prev,
           foodItems: prev.foodItems.filter(
-            (f) => f._id !== foodItemDetails._id
+            (f) => f._id !== foodItemDetails._id,
           ),
         };
       });
@@ -340,11 +341,98 @@ const FoodDetails = ({
           "An error occurred during food item deletion",
         {
           id: loadingToastId,
-        }
+        },
       );
       console.error(
         axiosError.response?.data.message ||
-          "An error occurred during food item deletion"
+          "An error occurred during food item deletion",
+      );
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push(`/signin?redirect=${pathname}`);
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const toggleArchiveStatus = async () => {
+    if (!foodItemDetails) return;
+    if (isLoading || formLoading) {
+      toast.error("Please wait for the current operation to complete");
+      return;
+    } // Prevent multiple submissions
+    const isArchived = foodItemDetails.isArchived;
+
+    setFoodItemDetails((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        isArchived: !isArchived,
+      };
+    });
+
+    try {
+      setFormLoading(true);
+      const response = await axios.patch(
+        `/food-item/${restaurantSlug}/${foodItemDetails._id}/toggle-archive-status`,
+      );
+      if (
+        !response.data.success ||
+        !response.data.data ||
+        response.data.data.isArchived === undefined
+      ) {
+        toast.error(
+          response.data.message || "Failed to update food item archive status",
+        );
+        setFoodItemDetails((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isArchived: isArchived,
+          };
+        });
+        return;
+      }
+
+      setFoodItemDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isArchived: response.data.data.isArchived,
+        };
+      });
+      setAllFoodItems((prev) => {
+        if (!prev) return prev; // If allFoodItems is null, return it
+        return {
+          ...prev,
+          foodItems: prev.foodItems.map((f) =>
+            f._id === foodItemDetails._id
+              ? {
+                  ...f,
+                  isArchived: response.data.data.isArchived,
+                }
+              : f,
+          ),
+        };
+      });
+      toast.success("Food item archive status updated successfully!");
+    } catch (error) {
+      setFoodItemDetails((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isArchived: isArchived,
+        };
+      });
+      const axiosError = error as AxiosError<ApiResponse>;
+      toast.error(
+        axiosError.response?.data.message ||
+          "An error occurred during food item archive status update",
+      );
+      console.error(
+        axiosError.response?.data.message ||
+          "An error occurred during food item archive status update",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -356,10 +444,7 @@ const FoodDetails = ({
   };
 
   return (
-    <Sheet
-      open={isSheetOpen}
-      onOpenChange={handleOpenChange}
-    >
+    <Sheet open={isSheetOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="w-full">
         <ScrollArea className="h-full py-1">
@@ -451,7 +536,7 @@ const FoodDetails = ({
                               setFoodVariant((prev) =>
                                 prev && prev._id === variant._id
                                   ? null
-                                  : variant
+                                  : variant,
                               )
                             }
                           >
@@ -468,7 +553,7 @@ const FoodDetails = ({
                 )}
               {foodVariant &&
               foodItemDetails.variants?.find(
-                (v) => v._id === foodVariant._id
+                (v) => v._id === foodVariant._id,
               ) ? (
                 <>
                   <div className="flex items-center justify-between gap-2">
@@ -571,7 +656,10 @@ const FoodDetails = ({
                   </p>
                   <div className="flex items-center gap-1">
                     Food Type:{" "}
-                    <VegNonVegTooltip foodType={foodItemDetails.foodType} innerClassName="size-1.5" />
+                    <VegNonVegTooltip
+                      foodType={foodItemDetails.foodType}
+                      innerClassName="size-1.5"
+                    />
                     <span className="font-bold">
                       {foodItemDetails.foodType === "veg"
                         ? "Veg"
@@ -609,6 +697,15 @@ const FoodDetails = ({
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    Archive:
+                    <Switch
+                      disabled={!user}
+                      className="cursor-pointer"
+                      checked={foodItemDetails.isArchived}
+                      onCheckedChange={toggleArchiveStatus}
+                    />
                   </div>
                   <p className="whitespace-pre-wrap">
                     Description:{" "}

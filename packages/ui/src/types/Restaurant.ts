@@ -6,6 +6,7 @@ export type RestaurantMinimalInfo = {
   address?: string;
   logoUrl?: string;
   isCurrentlyOpen?: boolean;
+  isArchived?: boolean;
 };
 
 export type RestaurantFullInfo = RestaurantMinimalInfo & {

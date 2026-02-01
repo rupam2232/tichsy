@@ -15,6 +15,7 @@ export interface FoodItem {
   imageUrls?: string[]; // Optional array of image URLs
   foodType: "veg" | "non-veg"; // Type of the food (veg or non-veg)
   isAvailable: boolean; // Whether the item is currently available
+  isArchived: boolean; // Whether the item is archived
   description?: string; // Optional description of the food item
   hasVariants: boolean; // Whether this item has variants
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)

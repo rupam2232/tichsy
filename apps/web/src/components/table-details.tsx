@@ -445,7 +445,7 @@ const TableDetails = ({
         if (!prev) return prev;
         return {
           ...prev,
-          isArchived: !isArchived,
+          isArchived: isArchived,
         };
       });
       const axiosError = error as AxiosError<ApiResponse>;

@@ -3,7 +3,7 @@ import axios from "@/utils/axiosInstance";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import type { AxiosError } from "axios";
@@ -18,21 +18,7 @@ import {
 import { Loader2, ChartNoAxesColumn, BookCheck } from "lucide-react";
 import { IconChartBar, IconReceiptOff, IconSalad } from "@tabler/icons-react";
 import { useSocket } from "@/context/SocketContext";
-import { Switch } from "@repo/ui/components/switch";
-import { Label } from "@repo/ui/components/label";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@repo/ui/components/alert-dialog";
-import type { RootState, AppDispatch } from "@/store/store";
-import { setActiveRestaurant } from "@/store/restaurantSlice";
+import type { AppDispatch } from "@/store/store";
 import { OwnerDashboardStats } from "@repo/ui/types/Stats";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import {
@@ -57,11 +43,6 @@ const ClientPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const socket = useSocket();
-  const isRestaurantCurrentlyOpen = useSelector(
-    (state: RootState) =>
-      state.restaurantsSlice.activeRestaurant?.isCurrentlyOpen,
-  );
-  const user = useSelector((state: RootState) => state.auth.user);
 
   const fetchDashboardStats = useCallback(async () => {
     try {
@@ -110,33 +91,6 @@ const ClientPage = () => {
     };
   }, [socket, fetchDashboardStats]);
 
-  const handleToggleRestaurantStatus = async () => {
-    try {
-      const response = await axios.patch(
-        `/restaurant/${slug}/toggle-open-status`,
-      );
-      if (response.data.success) {
-        dispatch(setActiveRestaurant(response.data.data));
-        toast.success(response.data.message);
-      } else {
-        toast.error(response.data.message);
-      }
-    } catch (error) {
-      console.error("Failed to toggle restaurant status:", error);
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to toggle restaurant status. Please try again later",
-      );
-      if (axiosError.response?.status === 401) {
-        dispatch(signOut());
-        router.push(
-          "/signin?redirect=/restaurant/" + slug + "/owner-dashboard",
-        );
-      }
-    }
-  };
-
   if (isPageLoading) {
     return (
       <div className="h-[95vh] flex items-center justify-center">
@@ -149,40 +103,6 @@ const ClientPage = () => {
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col">
         <div className="flex justify-between items-center px-6 pt-2">
-          {user?.role === "owner" && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <div className="inline-flex cursor-pointer gap-2">
-                  <Switch
-                    id="toggle-restaurant-status"
-                    checked={isRestaurantCurrentlyOpen}
-                    className="cursor-pointer"
-                  />
-                  <Label className="cursor-pointer">
-                    {isRestaurantCurrentlyOpen
-                      ? "Close restaurant"
-                      : "Open restaurant"}
-                  </Label>
-                </div>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {isRestaurantCurrentlyOpen
-                      ? "This will close the restaurant and stop accepting orders."
-                      : "This will open the restaurant and start accepting orders."}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleToggleRestaurantStatus}>
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
         </div>
         <div className="flex flex-col gap-4 md:gap-6 p-4 pt-2! lg:p-6">
           <div className="*:data-[slot=card]:from-foreground/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">

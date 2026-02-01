@@ -21,11 +21,16 @@ import {
   setActiveRestaurant,
 } from "@/store/restaurantSlice";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
 import type { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
 import CreateRestaurantDialog from "@/components/create-restaurant-dialog";
 import "@/utils/orderSound";
 import { Plus } from "lucide-react";
+import { Badge } from "@repo/ui/components/badge";
 
 export default function ClientPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -52,14 +57,14 @@ export default function ClientPage() {
               _id: restaurant._id,
               restaurantName: restaurant.restaurantName,
               slug: restaurant.slug,
-            }))
-          )
+            })),
+          ),
         );
         dispatch(setActiveRestaurant(null));
         setStaffsRestaurant(null);
       } else {
         toast.error(
-          response.data.message || "Failed to fetch owner's restaurants"
+          response.data.message || "Failed to fetch owner's restaurants",
         );
       }
     } catch (error) {
@@ -67,7 +72,7 @@ export default function ClientPage() {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch owner's restaurants"
+          "Failed to fetch owner's restaurants",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -91,13 +96,13 @@ export default function ClientPage() {
               restaurantName: response.data.data.restaurantName,
               slug: response.data.data.slug,
             },
-          ])
+          ]),
         );
         dispatch(setActiveRestaurant(null));
         setOwnersRestaurant([]);
       } else {
         toast.error(
-          response.data.message || "Failed to fetch staff's restaurants"
+          response.data.message || "Failed to fetch staff's restaurants",
         );
       }
     } catch (error) {
@@ -105,7 +110,7 @@ export default function ClientPage() {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch staff's restaurants"
+          "Failed to fetch staff's restaurants",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -170,6 +175,11 @@ export default function ClientPage() {
                   {ownersRestaurant.map((restaurant) => (
                     <Card key={restaurant._id} className="@container/card">
                       <CardHeader>
+                        {restaurant.isArchived && (
+                          <Badge variant="destructive" className="ml-auto">
+                            Archived
+                          </Badge>
+                        )}
                         <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
                           {restaurant.restaurantName}
                         </CardTitle>
@@ -177,45 +187,44 @@ export default function ClientPage() {
                           {restaurant.description}
                         </CardDescription>
                       </CardHeader>
-                      <CardAction className="flex flex-col items-center justify-center w-full gap-4">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-15 h-15">
-                            <AvatarImage
-                              src={
-                                restaurant.logoUrl || "/placeholder-logo.png"
-                              }
-                              alt={
-                                restaurant.restaurantName
-                                  ? `${restaurant.restaurantName} Logo`
-                                  : "Placeholder Logo"
-                              }
-                              className="object-cover"
-                              loading="lazy"
-                              draggable={false}
-                            />
-                          </Avatar>
-                        </div>
-                        <Button
-                          variant="outline"
-                          className="text-sm"
-                          onClick={async () => {
-                            dispatch(
-                              setActiveRestaurant({
-                                _id: restaurant._id,
-                                restaurantName: restaurant.restaurantName,
-                                slug: restaurant.slug,
-                                logoUrl: restaurant.logoUrl,
-                                isCurrentlyOpen: restaurant.isCurrentlyOpen,
-                              })
-                            );
-                            router.push(
-                              `/restaurant/${restaurant.slug}/dashboard`
-                            );
-                          }}
-                        >
-                          Manage Restaurant
-                        </Button>
-                      </CardAction>
+                      <div className="flex flex-col items-center w-full gap-4">
+                        <Avatar className="w-15 h-15">
+                          <AvatarImage
+                            src={restaurant.logoUrl}
+                            alt={`${restaurant.restaurantName} Logo`}
+                            className="object-cover"
+                            loading="lazy"
+                            draggable={false}
+                          />
+                          <AvatarFallback>
+                            {restaurant?.restaurantName
+                              ?.slice(0, 2)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <CardAction className="self-auto">
+                          <Button
+                            variant="outline"
+                            className="text-sm"
+                            onClick={async () => {
+                              dispatch(
+                                setActiveRestaurant({
+                                  _id: restaurant._id,
+                                  restaurantName: restaurant.restaurantName,
+                                  slug: restaurant.slug,
+                                  logoUrl: restaurant.logoUrl,
+                                  isCurrentlyOpen: restaurant.isCurrentlyOpen,
+                                }),
+                              );
+                              router.push(
+                                `/restaurant/${restaurant.slug}/dashboard`,
+                              );
+                            }}
+                          >
+                            Manage Restaurant
+                          </Button>
+                        </CardAction>
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -237,6 +246,11 @@ export default function ClientPage() {
             ) : user?.role === "staff" && staffsrestaurant ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-center text-center">
                 <Card className="@container/card">
+                  {staffsrestaurant.isArchived && (
+                    <Badge variant="destructive" className="ml-auto">
+                      Archived
+                    </Badge>
+                  )}
                   <CardHeader>
                     <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
                       {staffsrestaurant.restaurantName}
@@ -245,45 +259,44 @@ export default function ClientPage() {
                       {staffsrestaurant.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardAction className="flex flex-col items-center justify-center w-full gap-4">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-15 h-15">
-                        <AvatarImage
-                          src={
-                            staffsrestaurant.logoUrl || "/placeholder-logo.png"
-                          }
-                          alt={
-                            staffsrestaurant.restaurantName
-                              ? `${staffsrestaurant.restaurantName} Logo`
-                              : "Placeholder Logo"
-                          }
-                          className="object-cover"
-                          loading="lazy"
-                          draggable={false}
-                        />
-                      </Avatar>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="text-sm"
-                      onClick={async () => {
-                        dispatch(
-                          setActiveRestaurant({
-                            _id: staffsrestaurant._id,
-                            restaurantName: staffsrestaurant.restaurantName,
-                            slug: staffsrestaurant.slug,
-                            logoUrl: staffsrestaurant.logoUrl,
-                            isCurrentlyOpen: staffsrestaurant.isCurrentlyOpen,
-                          })
-                        );
-                        router.push(
-                          `/restaurant/${staffsrestaurant.slug}/dashboard`
-                        );
-                      }}
-                    >
-                      Manage Restaurant
-                    </Button>
-                  </CardAction>
+                  <div className="flex flex-col items-center w-full gap-4">
+                    <Avatar className="w-15 h-15">
+                      <AvatarImage
+                        src={staffsrestaurant.logoUrl}
+                        alt={`${staffsrestaurant.restaurantName} Logo`}
+                        className="object-cover"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                      <AvatarFallback>
+                        {staffsrestaurant?.restaurantName
+                          ?.slice(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <CardAction className="self-auto">
+                      <Button
+                        variant="outline"
+                        className="text-sm"
+                        onClick={async () => {
+                          dispatch(
+                            setActiveRestaurant({
+                              _id: staffsrestaurant._id,
+                              restaurantName: staffsrestaurant.restaurantName,
+                              slug: staffsrestaurant.slug,
+                              logoUrl: staffsrestaurant.logoUrl,
+                              isCurrentlyOpen: staffsrestaurant.isCurrentlyOpen,
+                            }),
+                          );
+                          router.push(
+                            `/restaurant/${staffsrestaurant.slug}/dashboard`,
+                          );
+                        }}
+                      >
+                        Manage Restaurant
+                      </Button>
+                    </CardAction>
+                  </div>
                 </Card>
               </div>
             ) : (

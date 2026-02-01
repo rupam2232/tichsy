@@ -43,7 +43,7 @@ const MenuPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(null);
   const [restaurantCategories, setRestaurantCategories] = useState<string[]>(
-    []
+    [],
   );
   const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
@@ -74,7 +74,7 @@ const MenuPage = () => {
         const response = await axios.get(
           `/food-item/${slug}?${tabName !== "search" ? `tab=${tabName}` : ""}${
             searchInput.trim() ? `search=${searchInput.trim()}` : ""
-          }`
+          }&includeArchived=true`,
         );
         setAllFoodItems({ ...response.data.data });
       } else {
@@ -82,7 +82,7 @@ const MenuPage = () => {
         const response = await axios.get(
           `/food-item/${slug}?page=${currentPage}&tab=${tabName}${
             searchInput.trim() ? `&search=${searchInput.trim()}` : ""
-          }`
+          }&includeArchived=true`,
         );
         setAllFoodItems((prev) => ({
           ...response.data.data,
@@ -95,12 +95,12 @@ const MenuPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch all foodItems. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all food items. Please try again later"
+          "Failed to fetch all food items. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -124,12 +124,12 @@ const MenuPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch all categories. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all categories. Please try again later"
+          "Failed to fetch all categories. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -167,7 +167,7 @@ const MenuPage = () => {
       });
       if (node) observer.current.observe(node);
     },
-    [allFoodItems, currentPage, tabName, isPageChanging]
+    [allFoodItems, currentPage, tabName, isPageChanging],
   );
 
   useEffect(() => {
@@ -265,7 +265,7 @@ const MenuPage = () => {
                   "hover:opacity-100 hover:bg-accent h-6 w-6",
                   searchInputRef.current && searchInputRef.current.value !== ""
                     ? ""
-                    : "hidden"
+                    : "hidden",
                 )}
                 onClick={() => {
                   if (searchInputRef.current) {
@@ -335,7 +335,11 @@ const MenuPage = () => {
                         ? lastElementRef
                         : null
                     }
-                    className="overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative"
+                    className={cn(
+                      "overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative",
+                      foodItem.isArchived &&
+                        "bg-muted text-muted-foreground grayscale",
+                    )}
                   >
                     <div className={"absolute top-2 right-2 z-10"}>
                       <Tooltip>
@@ -343,24 +347,35 @@ const MenuPage = () => {
                           <span
                             className={cn(
                               "block w-2 h-2 rounded-full",
-                              foodItem.isAvailable
-                                ? "bg-green-500"
-                                : "bg-red-500"
+                              foodItem.isArchived
+                                ? "bg-muted-foreground"
+                                : foodItem.isAvailable
+                                  ? "bg-green-500"
+                                  : "bg-red-500",
                             )}
                           ></span>
                           <span className="sr-only">
-                            {foodItem.isAvailable
-                              ? "Available"
-                              : "Not Available"}
+                            {foodItem.isArchived
+                              ? "Archived"
+                              : foodItem.isAvailable
+                                ? "Available"
+                                : "Not Available"}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {foodItem.isAvailable ? "Available" : "Not Available"}
+                          {foodItem.isArchived
+                            ? "Archived"
+                            : foodItem.isAvailable
+                              ? "Available"
+                              : "Not Available"}
                         </TooltipContent>
                       </Tooltip>
                     </div>
                     <div className="absolute top-2 left-2 z-10">
-                      <VegNonVegTooltip foodType={foodItem.foodType} innerClassName="size-1.5" />
+                      <VegNonVegTooltip
+                        foodType={foodItem.foodType}
+                        innerClassName="size-1.5"
+                      />
                     </div>
                     <div className="relative aspect-square">
                       {foodItem.imageUrls?.length === 0 ? (

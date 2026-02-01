@@ -12,6 +12,7 @@ import { verifyAuth } from "../middlewares/auth.middleware.js";
 import { isSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
+import { verifyOptionalAuth } from "../middlewares/optionalAuth.middleware.js";
 
 const router = Router();
 
@@ -35,11 +36,11 @@ router
     isProduction ? isSubscriptionActive : (req, res, next) => next(),
     createFoodItem
   )
-  .get(getFoodItemsOfRestaurant);
+  .get(verifyOptionalAuth, getFoodItemsOfRestaurant);
 
 router
   .route("/:restaurantSlug/:foodItemId")
-  .get(getFoodItemById)
+  .get(verifyOptionalAuth, getFoodItemById)
   .patch(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,

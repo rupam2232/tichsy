@@ -46,6 +46,9 @@ const FoodOrderStepsForStaffs = ({
   const { slug } = useParams<{ slug: string }>();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const [page, setPage] = useState<number>(1);
   const [allTables, setAllTables] = useState<AllTables | null>(null);
   const [isTablePageLoading, setIsTablePageLoading] = useState<boolean>(false);
@@ -105,8 +108,10 @@ const FoodOrderStepsForStaffs = ({
   }, [slug, router, dispatch, page]);
 
   useEffect(() => {
-    fetchAllTables();
-  }, [fetchAllTables]);
+    if (activeRestaurant && activeRestaurant.isCurrentlyOpen) {
+      fetchAllTables();
+    }
+  }, [fetchAllTables, activeRestaurant]);
 
   const lastTableElementRef = useCallback((node: HTMLDivElement | null) => {
     if (observer.current) observer.current.disconnect();
@@ -196,6 +201,21 @@ const FoodOrderStepsForStaffs = ({
       router.back();
     }
   };
+
+  if (!activeRestaurant || !activeRestaurant.isCurrentlyOpen) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 px-6 custom-scrollbar overflow-y-auto">
+          <div className="flex flex-col items-center justify-center h-full">
+            <h1 className="text-2xl font-bold">Restaurant is closed</h1>
+            <p className="text-muted-foreground mt-2">
+              Please try again later when the restaurant is open.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col h-full", className)}>

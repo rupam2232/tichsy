@@ -102,7 +102,7 @@ export const getAllRestaurantofOwner = asyncHandler(async (req, res) => {
   }
 
   const restaurants = await Restaurant.find({ ownerId: req.user!._id }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen isArchived"
   );
   res
     .status(200)
@@ -118,7 +118,7 @@ export const getRestaurantofStaff = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findOne({
     staffIds: { $in: [req.user!._id] },
   }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen isArchived"
   );
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found for this staff member");
@@ -274,7 +274,7 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
     slug,
     ownerId: req.user!._id,
   }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen ownerId"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen ownerId isArchived"
   );
 
   if (!restaurant) {
@@ -379,7 +379,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
     slug,
     ownerId: req.user!._id,
   }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories isArchived"
   );
 
   if (!restaurant) {
@@ -613,7 +613,7 @@ export const updateRestaurantLogo = asyncHandler(async (req, res) => {
     slug,
     ownerId: req.user!._id,
   }).select(
-    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories"
+    "_id restaurantName slug description address logoUrl isCurrentlyOpen categories isArchived"
   );
   if (!restaurant) {
     if (logoLocalPath) fs.unlinkSync(logoLocalPath); // Remove the file if restaurant is not found

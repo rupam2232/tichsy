@@ -40,13 +40,8 @@ export const config = {
     "/signin",
     "/signup",
     "/forgot-password",
-    "/",
     "/home/:path*",
     "/billing/:path*",
     "/restaurant/:path*",
-    "/:slug/bill/:path*",
-    "/:slug/menu",
-    "/:slug/my-orders",
-    "/:slug/cart"
   ]
 };

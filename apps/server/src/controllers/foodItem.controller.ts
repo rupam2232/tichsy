@@ -183,6 +183,8 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
     sortType = "asc",
     tab = "all", // Default tab is 'all'
     search = "", // Optional search query
+    includeArchived = false,
+    forPage = "", // Optional page filter
   } = req.query;
 
   let {
@@ -193,6 +195,8 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   const pageNumber = parseInt(page.toString());
   const limitNumber = parseInt(limit.toString());
+  const includeArchivedBoolean = includeArchived === "true";
+  const user = req.user;
 
   if (pageNumber < 1 || limitNumber < 1) {
     throw new ApiError(400, "Page and limit must be positive integers");
@@ -204,6 +208,42 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (restaurant.isArchived || !restaurant.isCurrentlyOpen) {
+    if (!user) {
+      throw new ApiError(
+        403,
+        "This restaurant is closed"
+      );
+    }
+    if (
+      user.role === "owner" &&
+      restaurant.ownerId?.toString() !== user._id!.toString()
+    ) {
+      throw new ApiError(
+        403,
+        "This restaurant is closed"
+      );
+    } else if (
+      user.role === "staff" &&
+      restaurant.staffIds &&
+      restaurant.staffIds.length > 0 &&
+      restaurant.staffIds
+        .map((id: any) => id.toString())
+        .includes(user._id!.toString())
+    ) {
+      throw new ApiError(
+        403,
+        "This restaurant is closed"
+      );
+    }
+    if (forPage === "order") {
+      throw new ApiError(
+        403,
+        "Restaurant is closed"
+      );
+    }
   }
 
   // Validate sortBy and sortType
@@ -249,39 +289,41 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   const decodedSearch = decodeURIComponent(search as string).trim();
 
-  const foodItemCount = await FoodItem.countDocuments({
+  const query: any = {
     restaurantId: restaurant._id,
     ...(category ? { category } : {}), // Filter by category if provided
     ...(foodType ? { foodType } : {}), // Filter by food type if provided
     ...(isAvailable ? { isAvailable: isAvailable === "true" } : {}), // Filter by availability if provided
-    ...(decodedSearch
-      ? {
-          $or: [
-            { foodName: { $regex: decodedSearch, $options: "i" } }, // Case-insensitive search
-            { category: { $regex: decodedSearch, $options: "i" } },
-            { description: { $regex: decodedSearch, $options: "i" } },
-            {
-              tags: {
-                $elemMatch: {
-                  $regex: decodedSearch,
-                  $options: "i",
-                },
-              },
-            },
-            {
-              variants: {
-                $elemMatch: {
-                  $or: [
-                    { variantName: { $regex: decodedSearch, $options: "i" } },
-                    { description: { $regex: decodedSearch, $options: "i" } },
-                  ],
-                },
-              },
-            },
-          ],
-        }
-      : {}), // Filter by search query if provided
-  });
+    ...(!includeArchivedBoolean && { isArchived: false }), // Filter archived items if not requested
+  };
+
+  if (decodedSearch) {
+    query.$or = [
+      { foodName: { $regex: decodedSearch, $options: "i" } }, // Case-insensitive search
+      { category: { $regex: decodedSearch, $options: "i" } },
+      { description: { $regex: decodedSearch, $options: "i" } },
+      {
+        tags: {
+          $elemMatch: {
+            $regex: decodedSearch,
+            $options: "i",
+          },
+        },
+      },
+      {
+        variants: {
+          $elemMatch: {
+            $or: [
+              { variantName: { $regex: decodedSearch, $options: "i" } },
+              { description: { $regex: decodedSearch, $options: "i" } },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  const foodItemCount = await FoodItem.countDocuments(query);
 
   if (!foodItemCount || foodItemCount === 0) {
     res.status(200).json(
@@ -298,40 +340,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       )
     );
   } else {
-    const foodItems = await FoodItem.find({
-      restaurantId: restaurant._id,
-      ...(category ? { category } : {}), // Filter by category if provided
-      ...(foodType ? { foodType } : {}), // Filter by food type if provided
-      ...(isAvailable ? { isAvailable: isAvailable === "true" } : {}), // Filter by availability if provided
-
-      ...(decodedSearch
-        ? {
-            $or: [
-              { foodName: { $regex: decodedSearch, $options: "i" } }, // Case-insensitive search
-              { category: { $regex: decodedSearch, $options: "i" } },
-              { description: { $regex: decodedSearch, $options: "i" } },
-              {
-                tags: {
-                  $elemMatch: {
-                    $regex: decodedSearch,
-                    $options: "i",
-                  },
-                },
-              },
-              {
-                variants: {
-                  $elemMatch: {
-                    $or: [
-                      { variantName: { $regex: decodedSearch, $options: "i" } },
-                      { description: { $regex: decodedSearch, $options: "i" } },
-                    ],
-                  },
-                },
-              },
-            ],
-          }
-        : {}), // Filter by search query if provided
-    })
+    const foodItems = await FoodItem.find(query)
       .sort({
         isAvailable: -1, // Sort by availability first (available items first)
         // Then sort by the specified field
@@ -370,7 +379,10 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 
   const foodItem = await FoodItem.findById(req.params.foodItemId)
     .select("-__v")
-    .populate({ path: "restaurantId", select: "name slug categories" });
+    .populate({
+      path: "restaurantId",
+      select: "name slug categories ownerId staffIds",
+    });
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -384,6 +396,37 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     (foodItem.restaurantId as any).slug !== req.params.restaurantSlug
   ) {
     throw new ApiError(404, "Food item not found");
+  }
+
+  if (foodItem.isArchived) {
+    const user = req.user;
+    let isUserPartofRestaurant = false;
+
+    if (user) {
+      const restaurantDetails = foodItem.restaurantId as any;
+      if (
+        user.role === "owner" &&
+        restaurantDetails.ownerId.toString() === user._id!.toString()
+      ) {
+        isUserPartofRestaurant = true;
+      } else if (
+        user.role === "staff" &&
+        restaurantDetails.staffIds &&
+        restaurantDetails.staffIds.length > 0 &&
+        restaurantDetails.staffIds
+          .map((id: any) => id.toString())
+          .includes(user._id!.toString())
+      ) {
+        isUserPartofRestaurant = true;
+      }
+    }
+
+    if (!isUserPartofRestaurant) {
+      throw new ApiError(
+        403,
+        "You do not have permission to view this archived food item"
+      );
+    }
   }
 
   // Rename the populated field from restaurantId to restaurantDetails

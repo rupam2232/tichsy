@@ -42,6 +42,7 @@ import { RestaurantFullInfo } from "@repo/ui/types/Restaurant";
 import { TagsInput } from "@repo/ui/components/tags-input";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { useDebounceCallback } from "usehooks-ts";
+import { Switch } from "@repo/ui/components/switch";
 
 const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -115,7 +116,7 @@ const ClientPage = () => {
       setIsSlugUnique(null);
       try {
         const response = await axios.get(
-          `/restaurant/${formSlug}/is-unique-slug`
+          `/restaurant/${formSlug}/is-unique-slug`,
         );
         if (!response.data.data) {
           form.setError("newSlug", {
@@ -168,10 +169,13 @@ const ClientPage = () => {
             } else {
               if (restaurantData?.logoUrl === mediaUrl) {
                 setRestaurantData((prev) =>
-                  prev ? { ...prev, logoUrl: undefined } : prev
+                  prev ? { ...prev, logoUrl: undefined } : prev,
                 );
                 dispatch(
-                  setActiveRestaurant({ ...restaurantData, logoUrl: undefined })
+                  setActiveRestaurant({
+                    ...restaurantData,
+                    logoUrl: undefined,
+                  }),
                 );
               }
             }
@@ -181,7 +185,7 @@ const ClientPage = () => {
             form.setValue("logoUrl", mediaUrl);
             const axiosError = error as AxiosError<ApiResponse>;
             toast.error(
-              axiosError.response?.data.message || "Failed to remove logo"
+              axiosError.response?.data.message || "Failed to remove logo",
             );
             if (axiosError.response?.status === 401) {
               dispatch(signOut());
@@ -207,7 +211,7 @@ const ClientPage = () => {
               headers: {
                 "Content-Type": "multipart/form-data",
               },
-            }
+            },
           );
           form.setValue("logoUrl", response.data.data);
           resolve();
@@ -215,7 +219,7 @@ const ClientPage = () => {
           console.error("Error uploading image:", error);
           const axiosError = error as AxiosError<ApiResponse>;
           toast.error(
-            axiosError.response?.data.message || "Failed to upload image"
+            axiosError.response?.data.message || "Failed to upload image",
           );
           if (axiosError.response?.status === 401) {
             dispatch(signOut());
@@ -230,7 +234,7 @@ const ClientPage = () => {
 
   const onImageDrop = (
     acceptedFiles: File[],
-    rejectedFiles: FileRejection[]
+    rejectedFiles: FileRejection[],
   ) => {
     const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg"];
 
@@ -244,7 +248,7 @@ const ClientPage = () => {
       } else {
         setImageErrorMessage(
           rejectedFiles[0]?.errors[0]?.message ||
-            "Failed to upload logo. Please try again."
+            "Failed to upload logo. Please try again.",
         );
         return;
       }
@@ -294,12 +298,12 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch restaurant data. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch restaurant data. Please try again later"
+          "Failed to fetch restaurant data. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -309,6 +313,70 @@ const ClientPage = () => {
       setIsPageLoading(false);
     }
   }, [slug, router, dispatch]);
+
+  const toggleArchiveStatus = async () => {
+    if (!restaurantData) return;
+    const isArchived = restaurantData.isArchived;
+
+    // Optimistic update
+    setRestaurantData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        isArchived: !isArchived,
+      };
+    });
+
+    try {
+      const response = await axios.patch(
+        `/restaurant/${slug}/toggle-archive-status`,
+      );
+
+      if (response.data.success) {
+        toast.success(
+          response.data.message ||
+            `Restaurant ${!isArchived ? "archived" : "unarchived"} successfully`,
+        );
+        setRestaurantData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isArchived: response.data.data.isArchived,
+          };
+        });
+        dispatch(updateRestaurant(response.data.data));
+        dispatch(setActiveRestaurant(response.data.data));
+      } else {
+        // Revert on failure
+        setRestaurantData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isArchived: isArchived,
+          };
+        });
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Failed to toggle archive status:", error);
+      // Revert on error
+      setRestaurantData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isArchived: isArchived,
+        };
+      });
+      const axiosError = error as AxiosError<ApiResponse>;
+      toast.error(
+        axiosError.response?.data.message || "Failed to toggle archive status",
+      );
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push("/signin?redirect=/restaurant/" + slug + "/settings");
+      }
+    }
+  };
 
   const onSubmit = async (data: z.infer<typeof updateRestaurantSchema>) => {
     await Promise.all(pendingImageOperations);
@@ -325,7 +393,7 @@ const ClientPage = () => {
           response.data.message || "Restaurant updated successfully",
           {
             id: toastId,
-          }
+          },
         );
         setRestaurantData(response.data.data);
         dispatch(updateRestaurant(response.data.data));
@@ -338,7 +406,7 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to update restaurant data. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
@@ -346,7 +414,7 @@ const ClientPage = () => {
           "Failed to update restaurant data. Please try again later",
         {
           id: toastId,
-        }
+        },
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -407,7 +475,7 @@ const ClientPage = () => {
         <form
           className="space-y-4 relative flex items-start justify-between flex-col lg:flex-row-reverse mt-5"
           onSubmit={form.handleSubmit(onSubmit, (errors) =>
-            console.log("Form errors:", errors)
+            console.log("Form errors:", errors),
           )}
         >
           <div className="lg:sticky top-[calc((var(--header-height)+6rem))] lg:max-w-1/3 grid">
@@ -715,6 +783,47 @@ const ClientPage = () => {
           </div>
         </form>
       </Form>
+      <div className="border border-destructive rounded-lg p-4 mt-8 bg-destructive/10 lg:max-w-1/2">
+        <h3 className="text-lg font-medium text-red-500 mb-2">Danger Zone</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-red-500">
+              {restaurantData?.isArchived
+                ? "Unarchive Restaurant"
+                : "Archive Restaurant"}
+            </p>
+            <p className="text-sm text-red-500">
+              {restaurantData?.isArchived
+                ? "Unarchiving will make your restaurant visible and active again."
+                : "Archiving will hide your restaurant from customers and stop new orders."}
+            </p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Switch
+                checked={restaurantData?.isArchived}
+                className="aria-[checked=true]:bg-red-500 aria-[checked=false]:bg-secondary-foreground/20 cursor-pointer"
+              />
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {restaurantData?.isArchived
+                    ? "This will unarchive the restaurant and make it visible and active again."
+                    : "Confirm to archive the restaurant"}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={toggleArchiveStatus}>
+                  Confirm
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
     </div>
   );
 };

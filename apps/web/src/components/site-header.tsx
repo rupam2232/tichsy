@@ -2,20 +2,40 @@
 import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/select";
+import axios from "@/utils/axiosInstance";
+import { AxiosError } from "axios";
+import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { signOut } from "@/store/authSlice";
+import { toast } from "sonner";
+import { setActiveRestaurant } from "@/store/restaurantSlice";
+import { AvatarFallback } from "@radix-ui/react-avatar";
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);
+  const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const pageTitle = useRef<string>("");
   const pathname = usePathname();
   const activeRestaurant = useSelector(
-    (state: RootState) => state.restaurantsSlice.activeRestaurant
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
   );
+  const user = useSelector((state: RootState) => state.auth.user);
   const isMobile = useIsMobile();
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { slug } = useParams<{ slug: string }>();
 
   const updateTime = () => {
     const now = new Date();
@@ -52,6 +72,44 @@ export function SiteHeader() {
     })();
   }, [pathname]);
 
+  useEffect(() => {
+    setIsRestaurantOpen(activeRestaurant?.isCurrentlyOpen ?? false);
+  }, [activeRestaurant?.isCurrentlyOpen]);
+
+  const handleToggleRestaurantStatus = async () => {
+    if (isLoading) {
+      return;
+    }
+    const newStatus = !isRestaurantOpen;
+    try {
+      setIsLoading(true);
+      setIsRestaurantOpen(newStatus);
+      const response = await axios.patch(
+        `/restaurant/${slug}/toggle-open-status`,
+      );
+      if (response.data.success) {
+        dispatch(setActiveRestaurant(response.data.data));
+        toast.success(response.data.message);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Failed to toggle restaurant status:", error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      toast.error(
+        axiosError.response?.data.message ||
+          "Failed to toggle restaurant status. Please try again later",
+      );
+      setIsRestaurantOpen(!newStatus);
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push(`/signin?redirect=${pathname}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-11 px-1 backdrop-blur-sm bg-background/70 rounded-t-2xl">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -64,34 +122,49 @@ export function SiteHeader() {
           <div className="text-base font-medium flex items-center space-x-2">
             <Avatar className="w-7 h-7">
               <AvatarImage
-                src={activeRestaurant?.logoUrl || "/placeholder-logo.png"}
-                alt={
-                  activeRestaurant?.restaurantName
-                    ? `${activeRestaurant.restaurantName} Logo`
-                    : "Placeholder Logo"
-                }
+                src={activeRestaurant?.logoUrl}
+                alt={`${activeRestaurant?.restaurantName} Logo`}
                 className="object-cover"
                 loading="lazy"
                 draggable={false}
               />
+              <AvatarFallback>
+                {activeRestaurant?.restaurantName?.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="flex items-center">
-              <span className="line-clamp-1">{activeRestaurant?.restaurantName}</span>
+              <span className="line-clamp-1">
+                {activeRestaurant?.restaurantName}
+              </span>
               <Separator
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
               />
             </div>
-            {activeRestaurant?.isCurrentlyOpen ? (
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                <p className="text-sm">Open</p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                <p className="text-sm">Closed</p>
-              </div>
+            {user?.role === "owner" && (
+              <Select
+                disabled={isLoading}
+                value={isRestaurantOpen ? "open" : "closed"}
+                defaultValue={isRestaurantOpen ? "open" : "closed"}
+                onValueChange={handleToggleRestaurantStatus}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent align="center" position="popper">
+                  <SelectItem value="open" className="cursor-pointer">
+                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                    Open
+                  </SelectItem>
+                  <SelectItem value="closed" className="cursor-pointer">
+                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                    Closed
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             )}
           </div>
         ) : (
