@@ -2,6 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { addToCart, clearCart, getCartItems, removeFromCart, updateCartItem } from "../controllers/cart.controller.js";
+import { verifyOptionalAuth } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ const limiter = rateLimit({
 const isProduction = process.env?.NODE_ENV === "production";
 // Apply rate limiting only in production
 if (isProduction) router.use(limiter);
+router.use(verifyOptionalAuth)
 
 router.route("/:restaurantSlug")
 .post(addToCart)

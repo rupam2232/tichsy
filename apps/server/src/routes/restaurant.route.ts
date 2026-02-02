@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyAuth } from "../middlewares/auth.middleware.js";
+import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
 import {
   checkUniqueRestaurantSlug,
   createRestaurant,
@@ -62,7 +62,7 @@ router.get("/staff", verifyAuth, getRestaurantofStaff);
 
 router
   .route("/:slug")
-  .get(getRestaurantBySlug)
+  .get(verifyOptionalAuth, getRestaurantBySlug)
   .patch(verifyAuth, updateRestaurantDetails);
 router.patch(
   "/:slug/toggle-open-status",

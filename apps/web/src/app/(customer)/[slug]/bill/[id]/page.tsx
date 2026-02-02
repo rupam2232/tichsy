@@ -1,5 +1,5 @@
 import BillReceipt from "@/components/bill-receipt ";
-import { fetchRestaurantDetails } from "@/utils/fetchRestaurantDetails";
+import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -8,7 +8,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string; id: string }>;
 }): Promise<Metadata> {
   const { slug, id } = await params;
-  const restaurant = await fetchRestaurantDetails(slug);
+  const restaurant = await fetchRestaurantMetadata(slug);
   if (!restaurant) {
     return {
       title: "Restaurant not found",

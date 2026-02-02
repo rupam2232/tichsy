@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { RestaurantHeader } from "@/components/restaurant-header";
-import { fetchRestaurantDetails } from "@/utils/fetchRestaurantDetails";
+import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import { headers } from "next/headers";
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export default async function Layout({
     .split("/")
     .some((p) => p === "bill");
 
-  const restaurant = await fetchRestaurantDetails(slug);
+  const restaurant = await fetchRestaurantMetadata(slug);
 
   if (!restaurant) {
     return (

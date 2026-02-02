@@ -7,6 +7,7 @@ import type { User as UserType } from "../models/user.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
+const options = getCookieOptions();
 
 // Extend Express Request interface to include 'user'
 declare module "express-serve-static-core" {
@@ -16,7 +17,6 @@ declare module "express-serve-static-core" {
 }
 
 export const verifyAuth = asyncHandler(async (req, res, next) => {
-  const options = getCookieOptions();
   const accessToken =
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");
@@ -64,4 +64,55 @@ export const verifyAuth = asyncHandler(async (req, res, next) => {
 
   req.user = user;
   next();
+});
+
+export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
+  const accessToken =
+    req.cookies?.accessToken ||
+    req.header("Authorization")?.replace("Bearer ", "");
+  const refreshToken = req.cookies?.refreshToken;
+
+  let decoded = null;
+  if (accessToken) {
+    decoded = jwt.verify(
+      accessToken,
+      process.env.ACCESS_TOKEN_SECRET as string
+    );
+    if (typeof decoded !== "object" || decoded === null) {
+      next(); // If the token is invalid, just continue without attaching user
+    } else {
+      const decodedToken = decoded as accessTokenUser;
+
+      const user: UserType = await User.findById(decodedToken._id).select(
+        "-password -__v"
+      );
+
+      if (!user) {
+        next(); // If user not found, continue without attaching user
+      } else {
+        const deviceSession = await DeviceSession.findOne({
+          userId: user._id,
+          refreshToken
+        });
+
+        if (!deviceSession || deviceSession.revoked) {
+          // If the device session is not found, or the refresh token does not match, or the session is revoked
+          res
+            .clearCookie("accessToken", options)
+            .clearCookie("refreshToken", options)
+        } else {
+          // Update the last active time of the device session
+          deviceSession.lastActiveAt = new Date();
+          await deviceSession.save();
+
+          // Attach user to the request object
+          req.user = user;
+        }
+        next();
+      }
+    }
+  } else {
+    // If no access token, just continue without attaching user
+    next();
+  }
 });

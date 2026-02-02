@@ -7,7 +7,12 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@repo/ui/components/drawer";
-import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+  useSearchParams,
+  usePathname,
+} from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@repo/ui/components/button";
@@ -16,7 +21,7 @@ import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { cn } from "@repo/ui/lib/utils";
 import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/useCart";
-import { fetchRestaurantDetails } from "@/utils/fetchRestaurantDetails";
+import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import { Textarea } from "@repo/ui/components/textarea";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
@@ -33,7 +38,9 @@ const CheckoutModalPage = () => {
   const searchParams = useSearchParams();
   const tableId = searchParams.get("tableId");
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(pathname.includes("cart"));
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(
+    pathname.includes("cart"),
+  );
   const { syncCart, cartItems, removeItem, editItem, clearCart } =
     useCart(restaurantSlug);
   const [taxDetails, setTaxDetails] = useState<{
@@ -58,7 +65,7 @@ const CheckoutModalPage = () => {
     const previousTitle = document.title;
 
     if (drawerOpen) {
-      fetchRestaurantDetails(restaurantSlug).then((restaurant) => {
+      fetchRestaurantMetadata(restaurantSlug).then((restaurant) => {
         if (isMounted) {
           document.title = `Cart | ${restaurant.restaurantName}`;
         }
@@ -79,7 +86,7 @@ const CheckoutModalPage = () => {
   }, 0);
 
   const preDiscountedPrice = cartItems.some(
-    (item) => typeof item.discountedPrice === "number"
+    (item) => typeof item.discountedPrice === "number",
   )
     ? cartItems.reduce((total, item) => {
         return total + item.price * item.quantity;
@@ -111,7 +118,7 @@ const CheckoutModalPage = () => {
         addOrder({
           restaurantSlug: restaurantSlug,
           orderId: response.data.data.order._id,
-        })
+        }),
       );
       clearCart();
       router.replace(`/${restaurantSlug}/my-orders`);
@@ -124,7 +131,7 @@ const CheckoutModalPage = () => {
           "Failed to place order. Please try again.",
         {
           id: toastId,
-        }
+        },
       );
     }
   };
@@ -173,7 +180,7 @@ const CheckoutModalPage = () => {
                             "w-16 h-16 object-cover rounded-lg",
                             item.isAvailable
                               ? "opacity-100"
-                              : "opacity-80 grayscale"
+                              : "opacity-80 grayscale",
                           )}
                         />
                       ) : (
@@ -182,7 +189,7 @@ const CheckoutModalPage = () => {
                             "flex items-center justify-center bg-muted w-16 h-16 rounded-lg",
                             item.isAvailable
                               ? "opacity-100"
-                              : "opacity-80 grayscale"
+                              : "opacity-80 grayscale",
                           )}
                         >
                           <IconSalad className="size-5" />
@@ -194,11 +201,14 @@ const CheckoutModalPage = () => {
                           "flex-1 min-w-0",
                           item.isAvailable
                             ? "opacity-100"
-                            : "opacity-80 grayscale"
+                            : "opacity-80 grayscale",
                         )}
                       >
                         <div className="flex items-center space-x-2">
-                          <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
+                          <VegNonVegTooltip
+                            foodType={item.foodType}
+                            innerClassName="size-1"
+                          />
                           <h4 className="font-medium line-clamp-3">
                             {item.foodName}{" "}
                             {item.variantName && `(${item.variantName})`}
@@ -310,17 +320,19 @@ const CheckoutModalPage = () => {
                           <span>₹{restaurantCartItemSubtotal.toFixed(2)}</span>
                         </div>
                       </div>
-                      {(taxDetails && !taxDetails.isTaxIncludedInPrice && taxDetails.taxLabel) && (
-                        <div className="flex justify-between text-sm">
-                          <span>{taxDetails.taxLabel}</span>
-                          <span>
-                            ₹
-                            {(
-                              restaurantCartItemSubtotal * taxDetails.taxRate
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
+                      {taxDetails &&
+                        !taxDetails.isTaxIncludedInPrice &&
+                        taxDetails.taxLabel && (
+                          <div className="flex justify-between text-sm">
+                            <span>{taxDetails.taxLabel}</span>
+                            <span>
+                              ₹
+                              {(
+                                restaurantCartItemSubtotal * taxDetails.taxRate
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       <hr />
                       <div className="flex justify-between font-bold text-lg">
                         <span>To Pay</span>
@@ -356,7 +368,7 @@ const CheckoutModalPage = () => {
           asChild
           className={cn(
             "absolute right-1/2 translate-x-1/2 z-10 transition-all duration-200",
-            drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0"
+            drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0",
           )}
         >
           <Button variant="outline" className="rounded-full px-2.5! py-1.5!">

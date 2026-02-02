@@ -33,23 +33,23 @@ const foodItemImageLimit = rateLimit({
 
 const isProduction = process.env?.NODE_ENV === "production";
 
+router.use(verifyAuth)
+
 router
   .route("/restaurant-logo")
   .post(
     isProduction ? restaurantLogoLimit : (req, res, next) => next(),
-    verifyAuth,
     upload.single("restaurantLogo"),
     restaurantLogoUpload
   )
-  .delete(verifyAuth, restaurantLogoDelete);
+  .delete(restaurantLogoDelete);
 
   router.route("/food-item")
   .post(
     isProduction ? foodItemImageLimit : (req, res, next) => next(),
-    verifyAuth,
     upload.array("foodItemImages", 5),
     foodItemImageUpload
   )
-  .delete(verifyAuth, deleteFoodItemImage);
+  .delete(deleteFoodItemImage);
 
 export default router;

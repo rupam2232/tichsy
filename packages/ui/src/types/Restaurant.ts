@@ -15,7 +15,6 @@ export type RestaurantFullInfo = RestaurantMinimalInfo & {
   taxRate: number;
   taxLabel?: string;
   isTaxIncludedInPrice: boolean;
-  address?: string;
   categories?: string[];
 };
 

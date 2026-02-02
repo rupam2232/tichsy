@@ -2,6 +2,7 @@ import { Router } from "express";
 import { sendOtp, verifyOtp } from "../controllers/otp.controller.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
+import { verifyOptionalAuth } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -16,6 +17,7 @@ const sendLimit = rateLimit({
 });
 
 const isProduction = process.env?.NODE_ENV === "production";
+router.use(verifyOptionalAuth)
 
 router.post("/send", isProduction ? sendLimit : (req, res, next)=> next(), sendOtp);
 router.post("/verify", verifyOtp);

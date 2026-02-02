@@ -137,9 +137,14 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Restaurant slug is required.");
   }
 
-  const restaurant = await Restaurant.findOne({ slug }).select(
-    "-staffIds -ownerId -__v -updatedAt"
-  );
+  const { forMetaData = "false" } = req.query;
+  const isForMetaData = forMetaData === "true";
+  let selectFields = "-staffIds -ownerId -__v -updatedAt";
+  if (isForMetaData) {
+    selectFields = "-staffIds -ownerId -__v -updatedAt -createdAt -archivedAt -archivedReason -taxRate -taxLabel -isTaxIncludedInPrice";
+  }
+
+  const restaurant = await Restaurant.findOne({ slug }).select(selectFields);
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found.");
   }

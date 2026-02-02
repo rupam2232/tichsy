@@ -209,7 +209,7 @@ const FoodOrderStepsForStaffs = ({
           <div className="flex flex-col items-center justify-center h-full">
             <h1 className="text-2xl font-bold">Restaurant is closed</h1>
             <p className="text-muted-foreground mt-2">
-              Please try again later when the restaurant is open.
+              Please try again later when the restaurant is open
             </p>
           </div>
         </div>
