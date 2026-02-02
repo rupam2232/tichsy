@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, JSX } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,11 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
-import type { Order, FullOrderDetailsType } from "@repo/ui/types/Order";
+import type {
+  Order,
+  FullOrderDetailsType,
+  OrderDetails as OrderDetailsType,
+} from "@repo/ui/types/Order";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/ui/types/ApiResponse";
@@ -29,45 +33,25 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@repo/ui/components/tooltip";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
 import { AvatarImage } from "@radix-ui/react-avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@repo/ui/components/dropdown-menu";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
 import VegNonVegTooltip from "./veg-nonveg-tooltip";
+import OrderStatusDropdown from "./order-status-dropdown";
 
 const OrderDetails = ({
   children,
   order,
+  setOrders,
   restaurantSlug,
-  orderStatusIcons,
-  status,
-  handleUpdateStatus,
 }: {
   children: React.ReactNode;
   order: Order;
+  setOrders?: React.Dispatch<React.SetStateAction<OrderDetailsType>>;
   restaurantSlug: string;
-  orderStatusIcons: {
-    status: string;
-    icon: JSX.Element;
-    message: string;
-    color: string;
-    actionLabel?: string;
-  }[];
-  status: Order["status"];
-  handleUpdateStatus: (status: string) => void;
 }) => {
   const [orderDetails, setOrderDetails] = useState<FullOrderDetailsType | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,16 +72,16 @@ const OrderDetails = ({
     } catch (error) {
       console.error(
         "Failed to fetch all orders. Please try again later:",
-        error
+        error,
       );
       setError(
         (error as AxiosError<ApiResponse>).response?.data.message ||
-          "Failed to fetch all orders. Please try again later"
+          "Failed to fetch all orders. Please try again later",
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all orders. Please try again later"
+          "Failed to fetch all orders. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -131,17 +115,15 @@ const OrderDetails = ({
   }, [isOpen]);
 
   const onChildBtnClick = () => {
-    if (order._id !== orderDetails?._id) {
+    if (
+      order._id !== orderDetails?._id ||
+      order.status !== orderDetails?.status ||
+      order.isPaid !== orderDetails?.isPaid
+    ) {
       fetchOrderDetails();
     }
   };
 
-  const currentStatusIndex = orderStatusIcons.findIndex(
-    (item) => item.status === status
-  );
-
-  // Only show statuses after current one (excluding itself)
-  const availableNextStatuses = orderStatusIcons.slice(currentStatusIndex + 1);
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={() => onChildBtnClick()}>
@@ -171,7 +153,7 @@ const OrderDetails = ({
                   window.open(
                     `/${restaurantSlug}/bill/${order._id}`,
                     "PRINT",
-                    "height=600,width=800"
+                    "height=600,width=800",
                   )
                 }
               >
@@ -179,75 +161,13 @@ const OrderDetails = ({
               </Button>
               <div className="flex items-center justify-between text-sm font-medium">
                 <span>Table: {orderDetails.table.tableName}</span>
-                <div className="relative">
-                  {availableNextStatuses.length > 0 &&
-                  availableNextStatuses[0]?.status !== "cancelled" ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant="default"
-                              className={`cursor-pointer ${
-                                orderStatusIcons.find(
-                                  (icon) => icon.status === status
-                                )?.color || ""
-                              }`}
-                            >
-                              {orderStatusIcons.find(
-                                (icon) => icon.status === status
-                              )?.icon || "❓"}
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Click to Change Order Status
-                          </TooltipContent>
-                        </Tooltip>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {availableNextStatuses.map((status) => {
-                          return (
-                            <DropdownMenuItem
-                              key={status.status}
-                              className="cursor-pointer"
-                              onClick={() => {
-                                handleUpdateStatus(status.status);
-                              }}
-                            >
-                              {status.icon}{" "}
-                              {status.actionLabel ||
-                                status.status.charAt(0).toUpperCase() +
-                                  status.status.slice(1)}
-                            </DropdownMenuItem>
-                          );
-                        })}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <Badge
-                      variant="default"
-                      className={`cursor-pointer ${
-                        orderStatusIcons.find((icon) => icon.status === status)
-                          ?.color || ""
-                      }`}
-                    >
-                      {orderStatusIcons.find((icon) => icon.status === status)
-                        ?.icon || "❓"}
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </Badge>
-                  )}
-                  <div className={`absolute ${status === "completed" ? "-bottom-7.5" : "-bottom-5"} right-0 text-[10px] flex items-center gap-1 text-muted-foreground w-max whitespace-pre-line`}>
-                    <span
-                      className={`${
-                        orderStatusIcons.find((icon) => icon.status === status)
-                          ?.color || ""
-                      } w-1 h-1 rounded-full block`}
-                    ></span>
-                    {orderStatusIcons.find((icon) => icon.status === status)
-                      ?.message || ""}
-                  </div>
-                </div>
+
+                <OrderStatusDropdown
+                  orderId={orderDetails._id}
+                  orderInitialStatus={orderDetails.status}
+                  restaurantSlug={restaurantSlug}
+                  setOrders={setOrders}
+                />
               </div>
               <p className="text-muted-foreground text-xs mt-0.5">
                 Order #{orderDetails.orderNo}
@@ -272,7 +192,7 @@ const OrderDetails = ({
                       year: "numeric",
                       month: "long",
                       day: "2-digit",
-                    }
+                    },
                   )}
                 </p>
                 <p>
@@ -304,7 +224,10 @@ const OrderDetails = ({
                           className="text-foreground/80"
                         >
                           <TableCell className="font-medium flex items-center gap-2 text-left whitespace-pre-wrap">
-                            <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
+                            <VegNonVegTooltip
+                              foodType={item.foodType}
+                              innerClassName="size-1"
+                            />
                             {item.firstImageUrl ? (
                               <Avatar>
                                 <AvatarImage
@@ -356,7 +279,7 @@ const OrderDetails = ({
                         <TableCell className="text-center">
                           {orderDetails.orderedFoodItems.reduce(
                             (prv, item) => prv + item.quantity,
-                            0
+                            0,
                           )}
                         </TableCell>
                         <TableCell className="text-right">

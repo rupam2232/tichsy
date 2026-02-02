@@ -1160,13 +1160,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   if (status === "cancelled" && order.isPaid) {
     // If the order is cancelled and already paid, we should handle the refund logic here
   }
-  // If the order is being marked as completed, ensure it was not already served
-  if (status === "completed" && order.status !== "served") {
-    throw new ApiError(
-      400,
-      "Order must be served before it can be marked as completed"
-    );
-  }
 
   if (status === "completed" && !order.isPaid) {
     // If the order is being marked as completed, ensure it is paid
@@ -1178,9 +1171,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   // Update the order status
   order.status = status;
-  if (status === "completed") {
-    order.isPaid = true; // Automatically mark as paid if completed
-  }
 
   if (!order.kitchenStaffId) {
     order.kitchenStaffId = req.user._id as Types.ObjectId; // Set the kitchen staff who updated the order status
@@ -1453,19 +1443,20 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   if (["completed", "cancelled"].includes(order.status)) {
     throw new ApiError(
       400,
-      "Cannot update order that is already completed or cancelled"
+      `Cannot update order that is already ${order.status}`
     );
-  }
-
-  // If marking as unpaid, ensure order is not completed
-  if (order.isPaid && order.status === "completed") {
-    throw new ApiError(400, "Completed orders must be paid");
   }
 
   // If marking as paid, and order is not completed, we can allow it
   order.isPaid = !order.isPaid;
   if (req.body?.markCompleted && order.isPaid && order.status !== "completed") {
     order.status = "completed"; // Automatically mark as completed if paid
+    const table = await Table.findOne({ _id: order.tableId });
+    if (table) {
+      table.isOccupied = false; // Mark the table as not occupied
+      table.currentOrderId = undefined; // Clear the current order
+      await table.save({ validateBeforeSave: false });
+    }
   }
 
   if (!order.kitchenStaffId) {

@@ -5,6 +5,7 @@ import { canCreateTable, canUnarchiveTable } from "../service/table.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Order } from "../models/order.model.js";
 
 export const createTable = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.tableName) {
@@ -225,6 +226,13 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.isArchived) {
+    throw new ApiError(
+      403,
+      "Restaurant is archived. Please unarchive restaurant to toggle occupied status."
+    );
+  }
+
   // Check if the table exists and belongs to the user's restaurant
   const table = await Table.findOne({
     qrSlug,
@@ -238,25 +246,23 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
     );
   }
 
-  if (restaurant.isArchived) {
-    throw new ApiError(
-      403,
-      "Restaurant is archived. Please unarchive restaurant to toggle occupied status."
-    );
-  }
-
-  if (table.isOccupied && table.currentOrderId) {
-    throw new ApiError(
-      400,
-      "Cannot toggle occupied status while an order is active"
-    );
-  }
-
   if (table.isArchived) {
     throw new ApiError(
       400,
       "Cannot toggle occupied status of an archived table"
     );
+  }
+
+  if (table.isOccupied && table.currentOrderId) {
+    const order = await Order.findById(table.currentOrderId);
+    if (order && !["completed", "cancelled"].includes(order.status)) {
+      throw new ApiError(
+        400,
+        "Cannot toggle occupied status while an order is active"
+      );
+    } else {
+      table.currentOrderId = undefined;
+    }
   }
 
   table.isOccupied = !table.isOccupied;
