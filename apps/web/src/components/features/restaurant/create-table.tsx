@@ -27,12 +27,10 @@ import type { RootState, AppDispatch } from "@/store/store";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse, tableSchema, AllTables } from "@repo/types";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
-import { tableSchema } from "@repo/types";
-import type { AllTables } from "@repo/ui/types/Table";
 
 const CreateTableDialog = ({
   children = "Create a New Table",

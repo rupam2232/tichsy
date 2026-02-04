@@ -52,7 +52,7 @@ import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 
 const ForgotPasswordForm = () => {
   const [step, setStep] = useState<1 | 2>(1);

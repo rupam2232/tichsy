@@ -28,7 +28,7 @@ import type { AppDispatch } from "@/store/store";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 

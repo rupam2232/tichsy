@@ -25,7 +25,7 @@ import { Plus, Send } from "lucide-react";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse } from "@repo/types";
 
 const AddStaffDialog = ({ restaurantSlug }: { restaurantSlug: string }) => {
   const form = useForm<z.infer<typeof addStaffSchema>>({

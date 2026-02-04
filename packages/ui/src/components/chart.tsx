@@ -127,6 +127,8 @@ function ChartTooltipContent({
     nameKey?: string
     labelKey?: string
     extraNameKey?: string
+    payload?: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+    label?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   }) {
   const { config } = useChart()
 
@@ -271,9 +273,10 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+  Pick<RechartsPrimitive.LegendProps, "verticalAlign"> & {
     hideIcon?: boolean
     nameKey?: string
+    payload?: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
   }) {
   const { config } = useChart()
 

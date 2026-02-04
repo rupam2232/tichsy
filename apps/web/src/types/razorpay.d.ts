@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   }
 }
 

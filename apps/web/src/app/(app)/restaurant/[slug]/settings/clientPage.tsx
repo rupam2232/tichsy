@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { updateRestaurant, setActiveRestaurant } from "@/store/restaurantSlice";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse, RestaurantFullInfo } from "@repo/types";
 import { ImagePlusIcon, Loader2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -38,7 +38,6 @@ import { updateRestaurantSchema } from "@repo/types";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Textarea } from "@repo/ui/components/textarea";
-import { RestaurantFullInfo } from "@repo/ui/types/Restaurant";
 import { TagsInput } from "@repo/ui/components/tags-input";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { useDebounceCallback } from "usehooks-ts";

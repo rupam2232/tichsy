@@ -1,7 +1,6 @@
-import type {
-  Order,
-  OrderDetails as OrderDetailsType,
-} from "@repo/ui/types/Order";
+"use client";
+
+import { Order, OrderDetails as OrderDetailsType, ApiResponse } from "@repo/types";
 import { Badge } from "@repo/ui/components/badge";
 import {
   Table,
@@ -33,7 +32,6 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useState } from "react";
 import { cn } from "@repo/ui/lib/utils";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";

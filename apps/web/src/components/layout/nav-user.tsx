@@ -5,7 +5,6 @@ import {
   IconDotsVertical,
   IconLogout,
 } from "@tabler/icons-react";
-
 import {
   Avatar,
   AvatarFallback,
@@ -48,7 +47,7 @@ import { RootState } from "@/store/store";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
@@ -81,7 +80,7 @@ export function NavUser({ user }: { user: UserState["user"] }) {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Error logging out. Please try again"
+          "Error logging out. Please try again",
       );
     } finally {
       setisLogoutBtnLoading(false);
@@ -183,7 +182,7 @@ export function NavUser({ user }: { user: UserState["user"] }) {
                     disabled={isLogoutBtnLoading}
                     className={cn(
                       "bg-red-600 text-white hover:bg-red-500",
-                      isLogoutBtnLoading && "w-21"
+                      isLogoutBtnLoading && "w-21",
                     )}
                     onClick={handleLogout}
                   >

@@ -26,7 +26,7 @@ import { Textarea } from "@repo/ui/components/textarea";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";
@@ -67,7 +67,7 @@ const CheckoutModalPage = () => {
     if (drawerOpen) {
       fetchRestaurantMetadata(restaurantSlug).then((restaurant) => {
         if (isMounted) {
-          document.title = `Cart | ${restaurant.restaurantName}`;
+          document.title = `Cart | ${restaurant?.restaurantName}`;
         }
       });
     }

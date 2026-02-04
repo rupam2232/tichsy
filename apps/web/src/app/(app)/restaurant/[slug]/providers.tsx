@@ -6,7 +6,7 @@ import { useSocket } from "@/context/SocketContext";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse } from "@repo/types";
 import axios from "@/utils/axiosInstance";
 import { setActiveRestaurant } from "@/store/restaurantSlice";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -14,7 +14,7 @@ import { useNewOrderListener } from "@/hooks/useNewOrderListener";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const activeRestaurant = useSelector(
-    (state: RootState) => state.restaurantsSlice.activeRestaurant
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
   );
   const dispatch = useDispatch<AppDispatch>();
   const { slug } = useParams<{ slug: string }>();
@@ -37,7 +37,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         console.error("Error fetching restaurant data:", error);
         const axiosError = error as AxiosError<ApiResponse>;
         toast.error(
-          axiosError.response?.data.message || "Failed to fetch restaurant data"
+          axiosError.response?.data.message ||
+            "Failed to fetch restaurant data",
         );
       }
     })();
@@ -59,7 +60,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         console.log(
           "Emitted authenticate event with restaurant ID:",
           activeRestaurant._id,
-          socket.id
+          socket.id,
         );
       }
     };

@@ -1,10 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@repo/ui/components/button";
-import type { FullOrderDetailsType } from "@repo/ui/types/Order";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse, FullOrderDetailsType } from "@repo/types";
 import { toast } from "sonner";
 import QRCodeStyling from "qr-code-styling";
 import { Loader2, Printer } from "lucide-react";

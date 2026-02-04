@@ -1,8 +1,8 @@
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse, RestaurantMinimalInfo } from "@repo/types";
 import axios from "@/utils/axiosInstance";
 
-export async function fetchRestaurantMetadata(slug: string) {
+export async function fetchRestaurantMetadata(slug: string): Promise<RestaurantMinimalInfo | null> {
   try {
     const response = await axios.get(`/restaurant/${slug}?forMetaData=true`);
     return response.data.data;

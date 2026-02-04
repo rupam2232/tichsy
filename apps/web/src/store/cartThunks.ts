@@ -5,11 +5,11 @@ import {
   addToCart,
   removeFromCart,
   editCartItem,
-  clearCart
+  clearCart,
 } from "./cartSlice";
 import type { CartItem } from "./cartSlice";
 import { toast } from "sonner";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { AxiosError } from "axios";
 import { RootState } from "./store";
 
@@ -21,7 +21,7 @@ export const syncCartWithBackend = createAsyncThunk(
     const backendItems: CartItem[] = response.data.data.items || [];
     dispatch(mergeCartItems({ backendItems }));
     return response.data.data;
-  }
+  },
 );
 
 // Add item to backend and Redux
@@ -33,14 +33,14 @@ export const addCartItemToBackend = createAsyncThunk(
       await axios.post(`/cart/${item.restaurantSlug}`, item);
     } catch (error) {
       dispatch(
-        removeFromCart({ foodId: item.foodId, variantName: item.variantName })
+        removeFromCart({ foodId: item.foodId, variantName: item.variantName }),
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
-        axiosError.response?.data.message || "Failed to add item to cart"
+        axiosError.response?.data.message || "Failed to add item to cart",
       );
     }
-  }
+  },
 );
 
 // Remove item from backend and Redux
@@ -57,10 +57,10 @@ export const removeCartItemFromBackend = createAsyncThunk(
       thunkAPI.dispatch(addToCart(item)); // Re-add item to Redux state
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
-        axiosError.response?.data.message || "Failed to remove item from cart"
+        axiosError.response?.data.message || "Failed to remove item from cart",
       );
     }
-  }
+  },
 );
 
 export const editCartItemInBackend = createAsyncThunk(
@@ -78,7 +78,7 @@ export const editCartItemInBackend = createAsyncThunk(
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
-        axiosError.response?.data.message || "Failed to edit item in cart"
+        axiosError.response?.data.message || "Failed to edit item in cart",
       );
       // Revert the change in Redux state
       thunkAPI.dispatch(
@@ -87,13 +87,13 @@ export const editCartItemInBackend = createAsyncThunk(
           quantity:
             originalItem?.cart?.find(
               (item) =>
-                item.foodId === foodId && item.variantName === variantName
+                item.foodId === foodId && item.variantName === variantName,
             )?.quantity || item.quantity,
           variantName,
-        }) // Revert to original quantity
+        }), // Revert to original quantity
       );
     }
-  }
+  },
 );
 
 export const clearCartFromBackend = createAsyncThunk(
@@ -105,9 +105,7 @@ export const clearCartFromBackend = createAsyncThunk(
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
       console.error("Error clearing cart:", axiosError.response?.data);
-      toast.error(
-        axiosError.response?.data.message || "Failed to clear cart"
-      );
+      toast.error(axiosError.response?.data.message || "Failed to clear cart");
     }
-  }
+  },
 );

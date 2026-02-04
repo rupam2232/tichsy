@@ -38,8 +38,7 @@ import { NonVegIcon, VegIcon } from "@/components/shared/veg-nonveg-tooltip";
 import CreateRestaurantCategory from "../create-restaurant-category";
 import { UseFormReturn, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { foodItemSchema } from "@repo/types";
-import type { FoodItemDetails } from "@repo/ui/types/FoodItem";
+import { FoodItemDetails, foodItemSchema } from "@repo/types";
 
 interface FoodItemBasicInfoProps {
   form: UseFormReturn<z.infer<typeof foodItemSchema>>;

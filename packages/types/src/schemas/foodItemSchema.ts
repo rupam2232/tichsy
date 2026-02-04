@@ -11,10 +11,15 @@ export const foodItemSchema = z.object({
     .min(0, "Price must be a positive number"),
   discountedPrice: z
     .union([
-        z.number().min(0, "Discounted price must be a positive number or zero to make it free"),
-        z.undefined(),
-      ])
-      .optional(),
+      z
+        .number()
+        .min(
+          0,
+          "Discounted price must be a positive number or zero to make it free",
+        ),
+      z.undefined(),
+    ])
+    .optional(),
   hasVariants: z.boolean().optional(),
   variants: z.array(
     z.object({
@@ -29,25 +34,28 @@ export const foodItemSchema = z.object({
         .optional(),
       discountedPrice: z
         .union([
-        z.number().min(0, "Variant discounted price must be a positive number or zero to make it free"),
-        z.undefined(),
-      ])
-      .optional(),
+          z
+            .number()
+            .min(
+              0,
+              "Variant discounted price must be a positive number or zero to make it free",
+            ),
+          z.undefined(),
+        ])
+        .optional(),
       description: z
         .string()
         .max(100, "Variant description cannot exceed 100 characters")
         .trim()
         .optional(),
-    })
+    }),
   ),
   imageUrls: z
-    .array(z.url("Invalid image URL"))
+    .array(z.string().url("Invalid image URL"))
     .max(5, "You can upload a maximum of 5 images")
     .optional(),
   category: z.string().trim().optional(),
-  foodType: z.enum(["veg", "non-veg"], {
-    error: "Food type must be either 'Veg' or 'Non Veg'",
-  }),
+  foodType: z.enum(["veg", "non-veg"]),
   description: z
     .string()
     .max(200, "Description cannot exceed 200 characters")
@@ -59,7 +67,7 @@ export const foodItemSchema = z.object({
         .string()
         .min(1, "Tag cannot be empty")
         .max(30, "Tag cannot exceed 30 characters")
-        .trim()
+        .trim(),
     )
     .max(15, "You can only have a maximum of 15 tags")
     .optional(),

@@ -16,14 +16,14 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { signOut } from "@/store/authSlice";
 import { usePathname, useRouter } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
-import type {
+import {
   FoodItem,
   AllFoodItems,
   FoodItemDetails,
   FoodVariant,
-} from "@repo/ui/types/FoodItem";
+  ApiResponse
+} from "@repo/types";
 import { Loader2, Trash2, X } from "lucide-react";
 import {
   Select,

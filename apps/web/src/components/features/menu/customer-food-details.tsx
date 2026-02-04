@@ -10,13 +10,13 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
-import type {
+import {
   FoodItem,
   AllFoodItems,
   FoodItemDetails,
-} from "@repo/ui/types/FoodItem";
+  ApiResponse,
+} from "@repo/types";
 import { Loader2, Minus, Plus, Trash2, X } from "lucide-react";
 import {
   Carousel,
@@ -78,7 +78,7 @@ const CustomerFoodDetails = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `/food-item/${restaurantSlug}/${foodItem._id}`
+        `/food-item/${restaurantSlug}/${foodItem._id}`,
       );
       setFoodItemDetails(response.data.data);
       setAllFoodItems((prev) => {
@@ -86,19 +86,19 @@ const CustomerFoodDetails = ({
         return {
           ...prev,
           foodItems: prev.foodItems.map((item) =>
-            item._id === foodItem._id ? { ...response.data.data } : item
+            item._id === foodItem._id ? { ...response.data.data } : item,
           ),
         };
       });
     } catch (error) {
       console.error(
         "Failed to fetch food item details. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch food item details. Please try again later"
+          "Failed to fetch food item details. Please try again later",
       );
       setFoodItemDetails(null);
     } finally {
@@ -126,7 +126,7 @@ const CustomerFoodDetails = ({
       variantName !== "default"
     ) {
       const variant = foodItemDetails.variants.find(
-        (variant) => variant.variantName === variantName
+        (variant) => variant.variantName === variantName,
       );
       if (variant) {
         addItem({
@@ -143,7 +143,7 @@ const CustomerFoodDetails = ({
       const existingItem = cartItems.find(
         (item) =>
           item.foodId === foodItemDetails._id &&
-          (item.variantName === null || item.variantName === undefined)
+          (item.variantName === null || item.variantName === undefined),
       );
       if (existingItem) {
         editItem({
@@ -169,7 +169,7 @@ const CustomerFoodDetails = ({
       foodItemDetails.variants &&
       foodItemDetails.variants.length > 0
       ? foodItemDetails.variants.find(
-          (variant) => variant.variantName === variantName
+          (variant) => variant.variantName === variantName,
         )?.price
       : foodItemDetails.price
     : foodItem.price;
@@ -179,7 +179,7 @@ const CustomerFoodDetails = ({
       foodItemDetails.variants &&
       foodItemDetails.variants.length > 0
       ? foodItemDetails.variants.find(
-          (variant) => variant.variantName === variantName
+          (variant) => variant.variantName === variantName,
         )?.discountedPrice
       : foodItemDetails.discountedPrice
     : foodItem.discountedPrice;
@@ -204,7 +204,7 @@ const CustomerFoodDetails = ({
 
   if (showEditDrawer) {
     const cartItemsFiltered = cartItems.filter(
-      (item) => item.foodId === foodItem._id
+      (item) => item.foodId === foodItem._id,
     );
 
     return (
@@ -224,7 +224,10 @@ const CustomerFoodDetails = ({
                           className="flex justify-between items-start gap-x-4"
                         >
                           <div>
-                            <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
+                            <VegNonVegTooltip
+                              foodType={item.foodType}
+                              innerClassName="size-1"
+                            />
                             <h3>
                               {item.foodName}{" "}
                               {item.variantName && `(${item.variantName})`}
@@ -330,7 +333,7 @@ const CustomerFoodDetails = ({
             asChild
             className={cn(
               "absolute right-1/2 translate-x-1/2 z-10 transition-all duration-200",
-              drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0"
+              drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0",
             )}
           >
             <Button variant="outline" className="rounded-full px-2.5! py-1.5!">
@@ -416,7 +419,10 @@ const CustomerFoodDetails = ({
                       <CardHeader className="px-0 gap-0">
                         <div className="flex items-end justify-between gap-2">
                           <div>
-                            <VegNonVegTooltip foodType={foodItemDetails.foodType} innerClassName="size-1" />
+                            <VegNonVegTooltip
+                              foodType={foodItemDetails.foodType}
+                              innerClassName="size-1"
+                            />
                             <CardTitle className="whitespace-pre-wrap font-bold text-xl">
                               {foodItemDetails.foodName}
                             </CardTitle>
@@ -481,7 +487,7 @@ const CustomerFoodDetails = ({
                                       <span className="text-sm font-semibold">
                                         ₹
                                         {foodItemDetails.discountedPrice.toFixed(
-                                          2
+                                          2,
                                         )}
                                       </span>
                                     </>
@@ -500,43 +506,62 @@ const CustomerFoodDetails = ({
                             </div>
                             {foodItemDetails.variants.map((variant, index) => (
                               <div key={index}>
-                              <Separator className="mx-1" />
-                              <div
-                                className={cn("flex justify-between space-x-4 w-full hover:bg-muted rounded-sm px-2 cursor-pointer py-2", variantName === variant.variantName ? "items-start" : "items-center")}
-                              >
-                                <Label
-                                  htmlFor={variant.variantName}
-                                  className="flex-1 cursor-pointer flex-col justify-start py-0"
+                                <Separator className="mx-1" />
+                                <div
+                                  className={cn(
+                                    "flex justify-between space-x-4 w-full hover:bg-muted rounded-sm px-2 cursor-pointer py-2",
+                                    variantName === variant.variantName
+                                      ? "items-start"
+                                      : "items-center",
+                                  )}
                                 >
-                                  <div className="flex items-center justify-between w-full">
-                                  {variant.variantName}
-                                  <div className="text-right">
-                                    {typeof variant.discountedPrice ===
-                                    "number" ? (
-                                      <>
-                                        <span className="text-xs line-through text-muted-foreground mr-2">
-                                          ₹{variant.price.toFixed(2)}
-                                        </span>
-                                        <span className="text-sm font-semibold">
-                                          ₹{variant.discountedPrice.toFixed(2)}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <span className="text-sm font-semibold">
-                                        ₹{variant.price.toFixed(2)}
-                                      </span>
+                                  <Label
+                                    htmlFor={variant.variantName}
+                                    className="flex-1 cursor-pointer flex-col justify-start py-0"
+                                  >
+                                    <div className="flex items-center justify-between w-full">
+                                      {variant.variantName}
+                                      <div className="text-right">
+                                        {typeof variant.discountedPrice ===
+                                        "number" ? (
+                                          <>
+                                            <span className="text-xs line-through text-muted-foreground mr-2">
+                                              ₹{variant.price.toFixed(2)}
+                                            </span>
+                                            <span className="text-sm font-semibold">
+                                              ₹
+                                              {variant.discountedPrice.toFixed(
+                                                2,
+                                              )}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="text-sm font-semibold">
+                                            ₹{variant.price.toFixed(2)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {variant.description && (
+                                      <p
+                                        className={cn(
+                                          "text-sm pb-2 text-muted-foreground animate-in fade-in duration-300 w-full font-normal",
+                                          variantName === variant.variantName
+                                            ? "block"
+                                            : "hidden h-0",
+                                        )}
+                                      >
+                                        {variant.description}
+                                      </p>
                                     )}
-                                  </div>
-                                  </div>
-                                  {variant.description && <p className={cn("text-sm pb-2 text-muted-foreground animate-in fade-in duration-300 w-full font-normal", variantName === variant.variantName ? "block" : "hidden h-0")}>{variant.description}</p>}
-                                </Label>
+                                  </Label>
 
-                                <RadioGroupItem
-                                  value={variant.variantName}
-                                  id={variant.variantName}
-                                  className="border-primary cursor-pointer mt-1"
-                                />
-                              </div>
+                                  <RadioGroupItem
+                                    value={variant.variantName}
+                                    id={variant.variantName}
+                                    className="border-primary cursor-pointer mt-1"
+                                  />
+                                </div>
                               </div>
                             ))}
                           </RadioGroup>
@@ -581,7 +606,7 @@ const CustomerFoodDetails = ({
                   foodItemDetails?.variants?.length === 0 &&
                   foodItemDetails.tags?.length === 0
                   ? "bottom-0"
-                  : "bottom-0"
+                  : "bottom-0",
               )}
             >
               <CardDescription>
@@ -591,7 +616,7 @@ const CustomerFoodDetails = ({
                   : foodItemDetails.variants?.some(
                       (variant) =>
                         variant.variantName === variantName &&
-                        variant.isAvailable
+                        variant.isAvailable,
                     )) ? (
                   <div className="flex justify-between">
                     <div className="flex items-center gap-2 dark:border-zinc-600 border rounded-md w-min">
@@ -659,7 +684,7 @@ const CustomerFoodDetails = ({
           asChild
           className={cn(
             "absolute right-1/2 translate-x-1/2 z-10 transition-all duration-200",
-            drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0"
+            drawerOpen ? "-top-14 opacity-100" : "-top-0 opacity-0",
           )}
         >
           <Button variant="outline" className="rounded-full px-2.5! py-1.5!">

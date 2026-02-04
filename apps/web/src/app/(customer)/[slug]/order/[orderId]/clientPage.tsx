@@ -9,8 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
-import { FullOrderDetailsType } from "@repo/ui/types/Order";
+import { ApiResponse, FullOrderDetailsType } from "@repo/types";
 import { AxiosError } from "axios";
 import {
   ArrowLeft,

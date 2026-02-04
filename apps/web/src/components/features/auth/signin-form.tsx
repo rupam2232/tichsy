@@ -28,7 +28,7 @@ import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { signIn, signOut } from "@/store/authSlice";
 import { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse } from "@repo/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, LockKeyhole, Mail } from "lucide-react";

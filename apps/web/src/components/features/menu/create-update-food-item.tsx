@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import type { FoodItemDetails, AllFoodItems } from "@repo/ui/types/FoodItem";
+import { FoodItemDetails, AllFoodItems, ApiResponse } from "@repo/types";
 import { Form } from "@repo/ui/components/form";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -21,7 +21,6 @@ import type { RootState, AppDispatch } from "@/store/store";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { signOut } from "@/store/authSlice";
 import { usePathname, useRouter } from "next/navigation";
 import FoodItemBasicInfo from "./food-item-form/basic-info";

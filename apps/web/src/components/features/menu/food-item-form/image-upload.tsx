@@ -16,8 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@repo/ui/components/alert-dialog";;
-import type { FoodItemDetails } from "@repo/ui/types/FoodItem";
+} from "@repo/ui/components/alert-dialog";
+import type { FoodItemDetails } from "@repo/types";
 
 interface FoodItemImageUploadProps {
   imageUrls: string[];

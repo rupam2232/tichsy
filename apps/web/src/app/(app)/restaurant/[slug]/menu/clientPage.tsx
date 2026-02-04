@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { AllFoodItems } from "@repo/ui/types/FoodItem";
+import { AllFoodItems, ApiResponse } from "@repo/types";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Card, CardContent, CardFooter } from "@repo/ui/components/card";

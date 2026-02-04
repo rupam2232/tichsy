@@ -17,11 +17,11 @@ export type Order = {
     tableName: string;
     qrSlug: string;
   };
-  orderedFoodItems: FoodItemDetails[];
+  orderedFoodItems: OrderFoodItem[];
   createdAt: string;
 };
 
-export interface FoodItemDetails {
+export interface OrderFoodItem {
   foodItemId: string;
   variantName?: string;
   foodName: string;
@@ -31,7 +31,7 @@ export interface FoodItemDetails {
   isVariantOrder: boolean;
 }
 
-export interface DetailedFoodItemDetails extends FoodItemDetails {
+export interface DetailedFoodItemDetails extends OrderFoodItem {
   price: number;
   firstImageUrl?: string;
   variantDetails?: {

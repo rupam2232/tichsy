@@ -36,11 +36,10 @@ import type { RootState, AppDispatch } from "@/store/store";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse, RestaurantMinimalInfo } from "@repo/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
-import type { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
 import { addRestaurant } from "@/store/restaurantSlice";
 
 const CreateRestaurantDialog = ({

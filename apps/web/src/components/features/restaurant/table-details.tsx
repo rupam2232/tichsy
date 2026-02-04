@@ -17,9 +17,9 @@ import type { RootState, AppDispatch } from "@/store/store";
 import { signOut } from "@/store/authSlice";
 import { useRouter, usePathname } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse } from "@repo/types";
 import axios from "@/utils/axiosInstance";
-import type { Table, TableDetails, AllTables } from "@repo/ui/types/Table";
+import type { Table, TableDetails, AllTables } from "@repo/types";
 import { Pen, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import {
   Form,

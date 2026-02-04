@@ -44,11 +44,11 @@ export async function generateMetadata({
     },
     keywords: [
       restaurant.restaurantName,
-      ...restaurant.categories,
-      "food",
-      "menu",
-      "restaurant",
-    ].join(", "),
+      ...(Array.isArray(restaurant.categories) ? restaurant.categories : []),
+      "Food",
+      "Menu",
+      "Restaurant",
+    ],
   };
 }
 

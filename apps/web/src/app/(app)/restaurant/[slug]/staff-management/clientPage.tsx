@@ -6,9 +6,8 @@ import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse, RestaurantStaffData } from "@repo/types";
 import { Loader2 } from "lucide-react";
-import { RestaurantStaffData } from "@repo/ui/types/Restaurant";
 import AddStaffDialog from "@/components/features/restaurant/add-staff-dialog";
 
 const ClientPage = () => {

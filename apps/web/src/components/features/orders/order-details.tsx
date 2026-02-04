@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
@@ -14,10 +16,10 @@ import type {
   Order,
   FullOrderDetailsType,
   OrderDetails as OrderDetailsType,
-} from "@repo/ui/types/Order";
+  ApiResponse
+} from "@repo/types";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter, usePathname } from "next/navigation";

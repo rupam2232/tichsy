@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import type { ApiResponse, OwnerDashboardStats } from "@repo/types";
 import {
   Card,
   CardContent,
@@ -18,7 +18,6 @@ import { Loader2, ChartNoAxesColumn, BookCheck } from "lucide-react";
 import { IconChartBar, IconReceiptOff, IconSalad } from "@tabler/icons-react";
 import { useSocket } from "@/context/SocketContext";
 import type { AppDispatch } from "@/store/store";
-import { OwnerDashboardStats } from "@repo/ui/types/Stats";
 import { ChartAreaInteractive } from "@/components/shared/chart-area-interactive";
 import {
   Table,

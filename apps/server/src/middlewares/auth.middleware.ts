@@ -9,13 +9,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 const options = getCookieOptions();
 
-// Extend Express Request interface to include 'user'
-declare module "express-serve-static-core" {
-  interface Request {
-    user?: UserType;
-  }
-}
-
 export const verifyAuth = asyncHandler(async (req, res, next) => {
   const accessToken =
     req.cookies?.accessToken ||

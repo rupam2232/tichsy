@@ -1,8 +1,9 @@
+"use client";
+
 import { useEffect, useState, useCallback, useRef } from "react";
-import { AllFoodItems, FoodItem } from "@repo/ui/types/FoodItem";
+import { AllFoodItems, FoodItem, Table, ApiResponse } from "@repo/types";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
 import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
 import Image from "next/image";
@@ -27,7 +28,6 @@ import { Button } from "@repo/ui/components/button";
 import CustomerFoodDetails from "./customer-food-details";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
-import { Table } from "@repo/ui/types/Table";
 import { useIsMobile } from "@/hooks/use-mobile";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 

@@ -18,11 +18,7 @@ import axios from "@/utils/axiosInstance";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
-import type {
-  OrderDetails as OrderDetailsType,
-  Order,
-} from "@repo/ui/types/Order";
+import { OrderDetails as OrderDetailsType, Order, ApiResponse } from "@repo/types";
 import OrderCard from "@/components/features/orders/order-card";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Card, CardFooter } from "@repo/ui/components/card";

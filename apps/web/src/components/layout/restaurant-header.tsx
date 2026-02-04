@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
+import { RestaurantMinimalInfo } from "@repo/types";
 import {
   Avatar,
   AvatarFallback,

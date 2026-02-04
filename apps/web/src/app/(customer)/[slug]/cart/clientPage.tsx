@@ -18,7 +18,7 @@ import { Textarea } from "@repo/ui/components/textarea";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";

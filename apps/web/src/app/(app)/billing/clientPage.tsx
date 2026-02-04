@@ -7,8 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
-import type { CurrentSubscription } from "@repo/ui/types/Subscription";
+import type { ApiResponse, CurrentSubscription } from "@repo/types";
 import {
   Card,
   CardContent,
@@ -62,12 +61,12 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch subscription details. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch subscription details. Please try again later"
+          "Failed to fetch subscription details. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -96,7 +95,7 @@ const ClientPage = () => {
   const onSubscribe = async (
     e: React.MouseEvent<HTMLButtonElement>,
     plan: string,
-    card: { title: string; plan: string; description: string; price: number }
+    card: { title: string; plan: string; description: string; price: number },
   ) => {
     e.preventDefault();
     if (subscriptionPlanCardsDisableLogic(plan)) return;
@@ -143,16 +142,16 @@ const ClientPage = () => {
                 paymentId: response.razorpay_payment_id,
                 orderId: data.id,
                 signature: response.razorpay_signature,
-              }
+              },
             );
             if (verifyResponse.data.success) {
               toast.success(
-                verifyResponse.data.message || "Payment Successful"
+                verifyResponse.data.message || "Payment Successful",
               );
               router.refresh();
             } else {
               toast.error(
-                verifyResponse.data.message || "Payment Verification Failed"
+                verifyResponse.data.message || "Payment Verification Failed",
               );
             }
           } catch (error) {
@@ -160,7 +159,7 @@ const ClientPage = () => {
             const axiosError = error as AxiosError<ApiResponse>;
             toast.error(
               axiosError.response?.data.message ||
-                "Payment verification failed. Please try again later."
+                "Payment verification failed. Please try again later.",
             );
           }
         },
@@ -201,7 +200,7 @@ const ClientPage = () => {
         const axiosError = error as AxiosError<ApiResponse>;
         toast.error(
           axiosError.response?.data.message ||
-            "Subscription failed. Please try again later"
+            "Subscription failed. Please try again later",
         );
         if (axiosError.response?.status === 401) {
           dispatch(signOut());
@@ -209,7 +208,7 @@ const ClientPage = () => {
         }
       } else if (error instanceof Error) {
         toast.error(
-          error.message || "Subscription failed. Please try again later"
+          error.message || "Subscription failed. Please try again later",
         );
       } else {
         toast.error("Subscription failed. Please try again later");

@@ -1,5 +1,4 @@
 import { Subscription } from "../models/subscription.model.js";
-import type { Subscription as SubscriptionType } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -7,12 +6,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
  * Middleware to check if the user has an active subscription.
  * If not, it throws an error with a message indicating the need to subscribe.
  */
-
-declare module "express-serve-static-core" {
-  interface Request {
-    subscription?: SubscriptionType;
-  }
-}
 
 export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   const subscription = await Subscription.findOne({ userId: req.user!._id });

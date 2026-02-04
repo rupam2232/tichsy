@@ -6,9 +6,8 @@ import { useSelector } from "react-redux";
 import axios from "@/utils/axiosInstance";
 import { useCallback, useEffect, useState } from "react";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse, Order } from "@repo/types";
 import { toast } from "sonner";
-import { Order } from "@repo/ui/types/Order";
 import { Card, CardContent, CardHeader } from "@repo/ui/components/card";
 import { Loader2 } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
@@ -33,7 +32,7 @@ const MyOrdersClientPage = () => {
     setIsPageLoading(true);
     try {
       const response = await axios.get(
-        `/order/by-ids?restaurantSlug=${slug}&orderIds=${orderIds.length > 0 ? orderIds.join(",") : orderIds}`
+        `/order/by-ids?restaurantSlug=${slug}&orderIds=${orderIds.length > 0 ? orderIds.join(",") : orderIds}`,
       );
       setOrders(response.data.data);
     } catch (error) {
@@ -41,7 +40,7 @@ const MyOrdersClientPage = () => {
       console.error("Error fetching order details:", axiosError.response?.data);
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch all food items. Please try again later"
+          "Failed to fetch all food items. Please try again later",
       );
     } finally {
       setIsPageLoading(false);
@@ -114,9 +113,7 @@ const MyOrdersClientPage = () => {
                     {order.orderedFoodItems.slice(0, 3).map((item, index) => (
                       <span
                         key={index}
-                        className={
-                          `inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium`
-                        }
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium`}
                       >
                         {item.foodName}
                         {item.quantity > 1 && ` x${item.quantity}`}

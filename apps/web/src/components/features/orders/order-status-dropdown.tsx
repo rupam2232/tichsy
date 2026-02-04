@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -22,10 +23,9 @@ import {
 } from "lucide-react";
 import { IconReceiptOff } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { Order, OrderDetails } from "@repo/ui/types/Order";
+import { Order, OrderDetails, ApiResponse } from "@repo/types";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";

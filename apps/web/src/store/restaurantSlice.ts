@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
+import { RestaurantMinimalInfo } from "@repo/types";
 
 export interface RestaurantsState {
   restaurants: {
@@ -21,7 +21,7 @@ const restaurantsSlice = createSlice({
   reducers: {
     setAllRestaurants(
       state,
-      action: PayloadAction<RestaurantsState["restaurants"]>
+      action: PayloadAction<RestaurantsState["restaurants"]>,
     ) {
       state.restaurants = action.payload;
     },
@@ -31,16 +31,16 @@ const restaurantsSlice = createSlice({
         _id: string;
         restaurantName: string;
         slug: string;
-      }>
+      }>,
     ) {
       state.restaurants.push(action.payload);
     },
     updateRestaurant(
       state,
-      action: PayloadAction<RestaurantsState["restaurants"][number]>
+      action: PayloadAction<RestaurantsState["restaurants"][number]>,
     ) {
       const index = state.restaurants.findIndex(
-        (restaurant) => restaurant._id === action.payload._id
+        (restaurant) => restaurant._id === action.payload._id,
       );
 
       if (index !== -1) {
@@ -54,13 +54,17 @@ const restaurantsSlice = createSlice({
     },
     setActiveRestaurant(
       state,
-      action: PayloadAction<RestaurantsState["activeRestaurant"]>
+      action: PayloadAction<RestaurantsState["activeRestaurant"]>,
     ) {
       state.activeRestaurant = action.payload;
     },
   },
 });
 
-export const { setAllRestaurants, addRestaurant, updateRestaurant, setActiveRestaurant } =
-  restaurantsSlice.actions;
+export const {
+  setAllRestaurants,
+  addRestaurant,
+  updateRestaurant,
+  setActiveRestaurant,
+} = restaurantsSlice.actions;
 export default restaurantsSlice.reducer;

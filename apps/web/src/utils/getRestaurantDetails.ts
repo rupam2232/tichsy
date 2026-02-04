@@ -1,7 +1,6 @@
 import axios from "@/utils/axiosInstance";
-import { RestaurantFullInfo } from "@repo/ui/types/Restaurant";
+import { RestaurantFullInfo, ApiResponse } from "@repo/types";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
 
 export async function getRestaurantDetails(
   slug: string,

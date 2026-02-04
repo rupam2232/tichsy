@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@repo/ui/components/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Select,
@@ -16,11 +16,10 @@ import {
 } from "@repo/ui/components/select";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse } from "@repo/types";
 import { signOut } from "@/store/authSlice";
 import { toast } from "sonner";
 import { setActiveRestaurant } from "@/store/restaurantSlice";
-import { AvatarFallback } from "@radix-ui/react-avatar";
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);

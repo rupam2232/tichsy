@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import type { AxiosError } from "axios";
-import type { ApiResponse } from "@repo/ui/types/ApiResponse";
+import { ApiResponse, OrderDetails, AllTables, StaffDashboardStats } from "@repo/types";
 import {
   Card,
   CardContent,
@@ -26,15 +26,12 @@ import {
 } from "lucide-react";
 import { IconReceipt, IconTable } from "@tabler/icons-react";
 import { useSocket } from "@/context/SocketContext";
-import { OrderDetails } from "@repo/ui/types/Order";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import OrderCard from "@/components/features/orders/order-card";
 import { cn } from "@repo/ui/lib/utils";
-import { AllTables } from "@repo/ui/types/Table";
 import Link from "next/link";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import type { AppDispatch } from "@/store/store";
-import type { StaffDashboardStats } from "@repo/ui/types/Stats";
 import StaffOrderDialog from "@/components/features/orders/staff-order-dialog";
 
 const ClientPage = () => {
