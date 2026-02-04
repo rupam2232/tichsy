@@ -30,7 +30,7 @@ import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";
-import VegNonVegTooltip from "@/components/veg-nonveg-tooltip";
+import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 
 const CheckoutModalPage = () => {
   const router = useRouter();

@@ -1,11 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Tabs,
@@ -28,7 +23,7 @@ import type {
   OrderDetails as OrderDetailsType,
   Order,
 } from "@repo/ui/types/Order";
-import OrderCard from "@/components/order-card";
+import OrderCard from "@/components/features/orders/order-card";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Card, CardFooter } from "@repo/ui/components/card";
 import { Search, X } from "lucide-react";
@@ -36,16 +31,19 @@ import { useDebounceCallback } from "usehooks-ts";
 import { cn } from "@repo/ui/lib/utils";
 import { useSocket } from "@/context/SocketContext";
 
-const Page = () => {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
+interface OrdersPageProps {
+  initialOrders: OrderDetailsType;
+  slug: string;
+}
+
+const Page = ({ initialOrders, slug }: OrdersPageProps) => {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab");
   const search = searchParams.get("search");
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(!initialOrders);
   const [tabName, setTabName] = useState<string>(tab || "all");
-  const [allOrders, setAllOrders] = useState<OrderDetailsType>(null);
+  const [allOrders, setAllOrders] = useState<OrderDetailsType>(initialOrders);
   const [tabPages, setTabPages] = useState<{ [key: string]: number }>({
     all: 1,
   });
@@ -59,7 +57,15 @@ const Page = () => {
   const debouncedSearchInput = useDebounceCallback(setSearchInput, 300);
   const socket = useSocket();
 
+  // Flag to prevent double fetching on mount if initial data matches
+  const isFirstRender = useRef(true);
+
   const fetchOrders = useCallback(async () => {
+    // Skip fetch on mount if we have initial data
+    if (isFirstRender.current && initialOrders) {
+      return;
+    }
+
     if (!slug) {
       toast.error("Restaurant slug is required to fetch orders");
       return;
@@ -121,7 +127,7 @@ const Page = () => {
       } else {
         setIsPageChanging(true);
         const response = await axios.get(
-          `/order/${slug}?page=${currentPage}&${query}`
+          `/order/${slug}?page=${currentPage}&${query}`,
         );
         if (
           response.data &&
@@ -151,7 +157,7 @@ const Page = () => {
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch orders. Please try again later"
+          "Failed to fetch orders. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -161,7 +167,16 @@ const Page = () => {
       setIsPageChanging(false);
       setIsLoading(false);
     }
-  }, [slug, router, dispatch, currentPage, tabName, searchInput, pathname]);
+  }, [
+    slug,
+    router,
+    dispatch,
+    currentPage,
+    tabName,
+    searchInput,
+    pathname,
+    initialOrders,
+  ]);
 
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -183,7 +198,7 @@ const Page = () => {
       });
       if (node) observer.current.observe(node);
     },
-    [allOrders, currentPage, tabName, isPageChanging]
+    [allOrders, currentPage, tabName, isPageChanging],
   );
 
   const handleNewOrder = useCallback(
@@ -201,10 +216,10 @@ const Page = () => {
               limit: 10,
               totalOrders: 1,
               totalPages: 1,
-            }
+            },
       );
     },
-    [tabName]
+    [tabName],
   );
 
   useEffect(() => {
@@ -224,6 +239,7 @@ const Page = () => {
 
   useEffect(() => {
     fetchOrders();
+    isFirstRender.current = false;
   }, [fetchOrders]);
 
   useEffect(() => {
@@ -237,7 +253,11 @@ const Page = () => {
 
   useEffect(() => {
     const currentParams = new URLSearchParams(searchParams);
-    currentParams.set("tab", tabName);
+    if (tabName === "all") {
+      currentParams.delete("tab");
+    } else {
+      currentParams.set("tab", tabName);
+    }
     if (tabName !== "search") {
       currentParams.delete("search");
       setSearchInput("");
@@ -247,8 +267,18 @@ const Page = () => {
     } else {
       currentParams.set("search", searchInput);
     }
-    router.replace(`${pathname}?${currentParams.toString()}`);
-  }, [tabName, searchInput, pathname, searchParams, router]);
+    // Use window.history.replaceState to update URL without triggering a server-side refresh/refetch
+    const newSearchParamsString = currentParams.toString();
+    const oldSearchParamsString = searchParams.toString();
+
+    if (newSearchParamsString !== oldSearchParamsString) {
+      window.history.replaceState(
+        null,
+        "",
+        `${pathname}${newSearchParamsString ? `?${newSearchParamsString}` : ""}`,
+      );
+    }
+  }, [tabName, searchInput, pathname, searchParams]);
 
   return (
     <div className="flex flex-1 flex-col p-4 md:gap-6 lg:p-6">
@@ -329,7 +359,7 @@ const Page = () => {
                   "hover:opacity-100 hover:bg-accent h-6 w-6",
                   searchInputRef.current && searchInputRef.current.value !== ""
                     ? ""
-                    : "hidden"
+                    : "hidden",
                 )}
                 onClick={() => {
                   if (searchInputRef.current) {

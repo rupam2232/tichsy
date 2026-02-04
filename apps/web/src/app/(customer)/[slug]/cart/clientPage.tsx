@@ -22,13 +22,14 @@ import { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";
-import VegNonVegTooltip from "@/components/veg-nonveg-tooltip";
+import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 
 const CheckoutClientPage = () => {
   const { slug: restaurantSlug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const tableId = searchParams.get("tableId");
-  const { cartItems, syncCart, removeItem, editItem, clearCart } = useCart(restaurantSlug);
+  const { cartItems, syncCart, removeItem, editItem, clearCart } =
+    useCart(restaurantSlug);
   const [taxDetails, setTaxDetails] = useState<{
     isTaxIncludedInPrice: boolean;
     taxLabel: string;
@@ -55,7 +56,7 @@ const CheckoutClientPage = () => {
   }, 0);
 
   const preDiscountedPrice = cartItems.some(
-    (item) => typeof item.discountedPrice === "number"
+    (item) => typeof item.discountedPrice === "number",
   )
     ? cartItems.reduce((total, item) => {
         return total + item.price * item.quantity;
@@ -87,7 +88,7 @@ const CheckoutClientPage = () => {
         addOrder({
           restaurantSlug: restaurantSlug,
           orderId: response.data.data.order._id,
-        })
+        }),
       );
       clearCart();
       router.replace(`/${restaurantSlug}/my-orders`);
@@ -99,7 +100,7 @@ const CheckoutClientPage = () => {
           "Failed to place order. Please try again.",
         {
           id: toastId,
-        }
+        },
       );
     }
   };
@@ -157,7 +158,7 @@ const CheckoutClientPage = () => {
                         "w-16 h-16 object-cover rounded-lg",
                         item.isAvailable
                           ? "opacity-100"
-                          : "opacity-80 grayscale"
+                          : "opacity-80 grayscale",
                       )}
                     />
                   ) : (
@@ -166,7 +167,7 @@ const CheckoutClientPage = () => {
                         "flex items-center justify-center bg-muted w-16 h-16 rounded-lg",
                         item.isAvailable
                           ? "opacity-100"
-                          : "opacity-80 grayscale"
+                          : "opacity-80 grayscale",
                       )}
                     >
                       <IconSalad className="size-5" />
@@ -176,11 +177,14 @@ const CheckoutClientPage = () => {
                   <div
                     className={cn(
                       "flex-1 min-w-0",
-                      item.isAvailable ? "opacity-100" : "opacity-80 grayscale"
+                      item.isAvailable ? "opacity-100" : "opacity-80 grayscale",
                     )}
                   >
                     <div className="flex items-center space-x-2">
-                      <VegNonVegTooltip foodType={item.foodType} innerClassName="size-1" />
+                      <VegNonVegTooltip
+                        foodType={item.foodType}
+                        innerClassName="size-1"
+                      />
                       <h4 className="font-medium line-clamp-3">
                         {item.foodName}{" "}
                         {item.variantName && `(${item.variantName})`}
@@ -291,17 +295,19 @@ const CheckoutClientPage = () => {
                     <span>₹{restaurantCartItemSubtotal.toFixed(2)}</span>
                   </div>
                 </div>
-                {(taxDetails && !taxDetails.isTaxIncludedInPrice && taxDetails.taxLabel) && (
-                  <div className="flex justify-between text-sm">
-                    <span>{taxDetails.taxLabel}</span>
-                    <span>
-                      ₹
-                      {(
-                        restaurantCartItemSubtotal * taxDetails.taxRate
-                      ).toFixed(2)}
-                    </span>
-                  </div>
-                )}
+                {taxDetails &&
+                  !taxDetails.isTaxIncludedInPrice &&
+                  taxDetails.taxLabel && (
+                    <div className="flex justify-between text-sm">
+                      <span>{taxDetails.taxLabel}</span>
+                      <span>
+                        ₹
+                        {(
+                          restaurantCartItemSubtotal * taxDetails.taxRate
+                        ).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 <hr />
                 <div className="flex justify-between font-bold text-lg">
                   <span>To Pay</span>

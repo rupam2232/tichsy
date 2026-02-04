@@ -1,7 +1,6 @@
 "use client";
 import axios from "@/utils/axiosInstance";
-import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
@@ -20,7 +19,7 @@ import { IconChartBar, IconReceiptOff, IconSalad } from "@tabler/icons-react";
 import { useSocket } from "@/context/SocketContext";
 import type { AppDispatch } from "@/store/store";
 import { OwnerDashboardStats } from "@repo/ui/types/Stats";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import { ChartAreaInteractive } from "@/components/shared/chart-area-interactive";
 import {
   Table,
   TableBody,
@@ -35,18 +34,30 @@ import {
   AvatarImage,
 } from "@repo/ui/components/avatar";
 
-const ClientPage = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
-  const [stats, setStats] = useState<OwnerDashboardStats>();
+const ClientPage = ({
+  initialStats,
+  slug,
+}: {
+  initialStats: OwnerDashboardStats | null;
+  slug: string;
+}) => {
+  const [isPageLoading, setIsPageLoading] = useState<boolean>(!initialStats);
+  const [stats, setStats] = useState<OwnerDashboardStats | undefined>(
+    initialStats ?? undefined,
+  );
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const socket = useSocket();
 
+  const isFirstRender = useRef(true);
+
   const fetchDashboardStats = useCallback(async () => {
+    if (isFirstRender.current && initialStats) {
+      return;
+    }
+
     try {
-      setIsPageLoading(true);
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const statsResponse = await axios.get(
         `/restaurant/${slug}/owner-dashboard-stats?timezone=${userTimezone}`,
@@ -76,11 +87,7 @@ const ClientPage = () => {
     } finally {
       setIsPageLoading(false);
     }
-  }, [slug, router, dispatch]);
-
-  useEffect(() => {
-    fetchDashboardStats();
-  }, [slug, fetchDashboardStats]);
+  }, [slug, router, dispatch, initialStats]);
 
   useEffect(() => {
     if (!socket) return;
@@ -90,6 +97,11 @@ const ClientPage = () => {
       socket.off("newOrder", fetchDashboardStats);
     };
   }, [socket, fetchDashboardStats]);
+
+  useEffect(() => {
+    fetchDashboardStats();
+    isFirstRender.current = false;
+  }, [fetchDashboardStats]);
 
   if (isPageLoading) {
     return (
@@ -102,9 +114,7 @@ const ClientPage = () => {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col">
-        <div className="flex justify-between items-center px-6 pt-2">
-        </div>
-        <div className="flex flex-col gap-4 md:gap-6 p-4 pt-2! lg:p-6">
+        <div className="flex flex-col gap-4 md:gap-6 p-4 pt-4! lg:pt-5! lg:p-6">
           <div className="*:data-[slot=card]:from-foreground/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
             <Card className="@container/card">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

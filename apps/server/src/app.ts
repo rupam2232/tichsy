@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { ApiError } from "./utils/ApiError.js";
+import { ZodError } from "zod";
 import userRoute from "./routes/user.route.js";
 import authRoute from "./routes/auth.route.js";
 import restaurantRoute from "./routes/restaurant.route.js";
@@ -56,27 +57,39 @@ app.use(
   })
 );
 
-app.use("/api/v1/user", userRoute)
-app.use("/api/v1/auth", authRoute)
-app.use("/api/v1/restaurant", restaurantRoute)
-app.use("/api/v1/table", tableRoute)
-app.use("/api/v1/media", mediaRoute)
-app.use("/api/v1/food-item", foodItemRoute)
-app.use("/api/v1/order", orderRoute)
-app.use("/api/v1/otp", otpRoute)
-app.use("/api/v1/payment", paymentRoute)
+app.use("/api/v1/user", userRoute);
+app.use("/api/v1/auth", authRoute);
+app.use("/api/v1/restaurant", restaurantRoute);
+app.use("/api/v1/table", tableRoute);
+app.use("/api/v1/media", mediaRoute);
+app.use("/api/v1/food-item", foodItemRoute);
+app.use("/api/v1/order", orderRoute);
+app.use("/api/v1/otp", otpRoute);
+app.use("/api/v1/payment", paymentRoute);
 app.use("/api/v1/cart", cartRoute);
 app.use("/api/v1/subscription", subscriptionRoute);
 
 // Global error handler middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack); // Log the error stack trace for debugging
+
   if (err instanceof ApiError) {
     // Handle custom API errors
     res.status(err.status).json({
       success: false,
       message: err.message,
       errors: err.errors,
+    });
+  } else if (err instanceof ZodError) {
+    // Handle Zod validation errors
+    const errors = err.issues.map((e) => ({
+      field: e.path.join("."),
+      message: e.message,
+    }));
+    res.status(400).json({
+      success: false,
+      message: err.message ?? "Validation Error",
+      errors,
     });
   } else {
     // Handle all other errors as internal server errors

@@ -27,7 +27,7 @@ import {
   AvatarImage,
 } from "@repo/ui/components/avatar";
 import type { RestaurantMinimalInfo } from "@repo/ui/types/Restaurant";
-import CreateRestaurantDialog from "@/components/create-restaurant-dialog";
+import CreateRestaurantDialog from "@/components/features/restaurant/create-restaurant-dialog";
 import "@/utils/orderSound";
 import { Plus } from "lucide-react";
 import { Badge } from "@repo/ui/components/badge";

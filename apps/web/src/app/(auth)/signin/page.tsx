@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SigninForm } from "@/components/signin-form";
+import { SigninForm } from "@/components/features/auth/signin-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -15,5 +15,5 @@ export default function SigninPage() {
         <SigninForm />
       </div>
     </div>
-  )
+  );
 }

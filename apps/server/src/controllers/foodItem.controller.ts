@@ -11,6 +11,7 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
 import { isValidObjectId } from "mongoose";
+import { foodItemSchema } from "@repo/types";
 
 function hasDuplicates(arr: string[]): boolean {
   const lowerArr = arr.map((tag) => tag.trim().toLowerCase());
@@ -34,14 +35,8 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Restaurant slug is required");
   }
 
-  if (
-    !req.body ||
-    !req.body.foodName ||
-    !req.body.price ||
-    !req.body.foodType
-  ) {
-    throw new ApiError(400, "Food name, price, and food type are required");
-  }
+  const validatedData = foodItemSchema.parse(req.body);
+
   const {
     foodName,
     price,
@@ -53,51 +48,15 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     foodType,
     description,
     tags = [],
-  } = req.body;
+  } = validatedData;
 
-  if (foodType && !["veg", "non-veg"].includes(foodType)) {
-    throw new ApiError(400, "Food type must be either 'veg' or 'non-veg'");
-  }
-
-  if (imageUrls.length > 5) {
-    throw new ApiError(
-      400,
-      "You can only upload a maximum of 5 images for a food item"
-    );
-  }
-
-  if (!hasVariants && variants.length > 0) {
-    throw new ApiError(
-      400,
-      "Variants should not be provided when hasVariants is false"
-    );
-  }
-
-  if (hasVariants && variants.length === 0) {
-    throw new ApiError(400, "Variants are required when hasVariants is true");
-  }
-
-  if (hasVariants && variants.length > 6) {
-    throw new ApiError(400, "You can only create a maximum of 6 food variants");
-  }
-
-  if (tags && !Array.isArray(tags)) {
-    throw new ApiError(400, "Tags must be an array");
-  }
-
-  if (tags && tags.length > 15) {
-    throw new ApiError(400, "You can only have a maximum of 15 tags");
-  }
-
-  // Usage for tags
   if (tags && tags.length > 0 && hasDuplicates(tags)) {
     throw new ApiError(400, "all Tags must be unique.");
   }
 
-  // Usage for variants (assuming each variant has a variantName property)
   if (variants && variants.length > 0) {
     const variantNames = variants.map(
-      (v: FoodVariantType) => v.variantName?.trim().toLowerCase() || ""
+      (v) => v.variantName?.trim().toLowerCase() || ""
     );
     if (hasDuplicates(variantNames)) {
       throw new ApiError(400, "All variant names must be unique.");
@@ -212,19 +171,13 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   if (restaurant.isArchived || !restaurant.isCurrentlyOpen) {
     if (!user) {
-      throw new ApiError(
-        403,
-        "This restaurant is closed"
-      );
+      throw new ApiError(403, "This restaurant is closed");
     }
     if (
       user.role === "owner" &&
       restaurant.ownerId?.toString() !== user._id!.toString()
     ) {
-      throw new ApiError(
-        403,
-        "This restaurant is closed"
-      );
+      throw new ApiError(403, "This restaurant is closed");
     } else if (
       user.role === "staff" &&
       restaurant.staffIds &&
@@ -233,16 +186,10 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
         .map((id: any) => id.toString())
         .includes(user._id!.toString())
     ) {
-      throw new ApiError(
-        403,
-        "This restaurant is closed"
-      );
+      throw new ApiError(403, "This restaurant is closed");
     }
     if (forPage === "order") {
-      throw new ApiError(
-        403,
-        "Restaurant is closed"
-      );
+      throw new ApiError(403, "Restaurant is closed");
     }
   }
 
@@ -515,7 +462,6 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Cannot toggle availability of archived food item");
   }
 
-  // Toggle availability
   if (isVariant) {
     const variant = foodItem.variants?.find(
       (v: FoodVariantType) => v._id!.toString() === variantId
@@ -604,12 +550,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Cannot make changes in a archived food item");
   }
 
-  if (!req.body || !req.body.foodName || req.body.foodName.trim() === "") {
-    throw new ApiError(400, "Food name is required");
-  }
-  if (!req.body.price || isNaN(req.body.price) || req.body.price < 0) {
-    throw new ApiError(400, "Valid price is required");
-  }
+  const validatedData = foodItemSchema.parse(req.body);
 
   const {
     foodName,
@@ -622,46 +563,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     foodType = foodItem.foodType,
     description = foodItem.description,
     tags = foodItem.tags || [],
-  } = req.body;
-
-  if (foodType && !["veg", "non-veg"].includes(foodType)) {
-    throw new ApiError(400, "Food type must be either 'veg' or 'non-veg'");
-  }
-
-  if (imageUrls.length > 5) {
-    throw new ApiError(
-      400,
-      "You can only upload a maximum of 5 images for a food item"
-    );
-  }
-
-  if (!hasVariants && variants.length > 0) {
-    throw new ApiError(
-      400,
-      "Variants should not be provided or should be a empty array when hasVariants is false"
-    );
-  }
-  if (hasVariants && variants.length === 0) {
-    throw new ApiError(400, "Variants are required when hasVariants is true");
-  }
-
-  if (hasVariants && variants.length > 6) {
-    throw new ApiError(400, "You can only create a maximum of 6 food variants");
-  }
-
-  // Check subscription limits if updating variants
-  if (hasVariants && variants.length > 0) {
-    await checkVariantLimit(variants.length, req.subscription!);
-  }
-
-  if (tags && !Array.isArray(tags)) {
-    throw new ApiError(400, "Tags must be an array");
-  }
-
-  if (tags && tags.length > 15) {
-    throw new ApiError(400, "You can only have a maximum of 15 tags");
-  }
-
+  } = validatedData;
   // Usage for tags
   if (tags && tags.length > 0 && hasDuplicates(tags)) {
     throw new ApiError(400, "all Tags must be unique.");
@@ -670,7 +572,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   // Usage for variants (assuming each variant has a variantName property)
   if (variants && variants.length > 0) {
     const variantNames = variants.map(
-      (v: FoodVariantType) => v.variantName?.trim().toLowerCase() || ""
+      (v) => v.variantName?.trim().toLowerCase() || ""
     );
     if (hasDuplicates(variantNames)) {
       throw new ApiError(400, "All variant names must be unique.");
@@ -695,7 +597,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   foodItem.price = price;
   foodItem.discountedPrice = discountedPrice;
   foodItem.hasVariants = hasVariants;
-  foodItem.variants = variants;
+  foodItem.variants = variants as any;
   foodItem.imageUrls = imageUrls;
   foodItem.category = category;
   foodItem.foodType = foodType;
@@ -707,7 +609,6 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to update food item");
   }
 
-  // Return the updated food item
   res
     .status(200)
     .json(

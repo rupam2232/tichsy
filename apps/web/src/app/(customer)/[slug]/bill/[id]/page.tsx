@@ -1,4 +1,4 @@
-import BillReceipt from "@/components/bill-receipt ";
+import BillReceipt from "@/components/features/orders/bill-receipt";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import type { Metadata } from "next";
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ForgotPasswordForm from "@/components/forgot-password-form";
+import ForgotPasswordForm from "@/components/features/auth/forgot-password-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -14,5 +14,5 @@ export default function ForgotPasswordPage() {
         <ForgotPasswordForm />
       </div>
     </section>
-  )
+  );
 }

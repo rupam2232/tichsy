@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RestaurantHeader } from "@/components/restaurant-header";
+import { RestaurantHeader } from "@/components/layout/restaurant-header";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import { notFound } from "next/navigation";
 
@@ -27,8 +27,8 @@ export default async function Layout({
   return (
     <>
       <RestaurantHeader restaurant={restaurant} />
-      {children}
       {modal}
+      {children}
     </>
   );
 }

@@ -9,7 +9,7 @@ import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import { Loader2 } from "lucide-react";
 import { RestaurantStaffData } from "@repo/ui/types/Restaurant";
-import AddStaffDialog from "@/components/add-staff-dialog";
+import AddStaffDialog from "@/components/features/restaurant/add-staff-dialog";
 
 const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -26,17 +26,17 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch staff data. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch staff data. Please try again later"
+          "Failed to fetch staff data. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push(
-          "/signin?redirect=/restaurant/" + slug + "/staff-management"
+          "/signin?redirect=/restaurant/" + slug + "/staff-management",
         );
       }
     } finally {

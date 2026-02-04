@@ -1,10 +1,10 @@
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-// import Showcase from "@/components/Showcase";
-import Features from "@/components/Features";
-import Pricing from "@/components/Pricing";
-import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/features/landing/navbar";
+import Hero from "@/components/features/landing/hero";
+// import Showcase from "@/components/features/landing/showcase";
+import Features from "@/components/features/landing/features";
+import Pricing from "@/components/features/landing/pricing";
+import CTA from "@/components/features/landing/cta";
+import Footer from "@/components/features/landing/footer";
 
 export default function Home() {
   return (

@@ -27,7 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@repo/ui/lib/utils";
 import { useSocket } from "@/context/SocketContext";
-import VegNonVegTooltip from "@/components/veg-nonveg-tooltip";
+import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import {
   Avatar,
   AvatarFallback,

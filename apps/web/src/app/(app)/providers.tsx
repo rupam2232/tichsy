@@ -1,10 +1,9 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SiteHeader } from "@/components/layout/site-header";
 import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-
   return (
     <SidebarProvider
       style={

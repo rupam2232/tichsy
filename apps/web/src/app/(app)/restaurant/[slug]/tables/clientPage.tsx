@@ -11,9 +11,10 @@ import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
 import { useParams } from "next/navigation";
-import TableDetails from "@/components/table-details";
-import type { Table, AllTables } from "@repo/ui/types/Table";
-import CreateTableDialog from "@/components/create-table";
+import TableDetails from "@/components/features/restaurant/table-details";
+import type { Table } from "@repo/ui/types/Table";
+import { AllTables } from "@repo/ui/types/Table";
+import CreateTableDialog from "@/components/features/restaurant/create-table";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Plus } from "lucide-react";
 
@@ -51,7 +52,9 @@ export default function SelectTable() {
         setAllTables(response.data.data);
       } else {
         setIsPageChanging(true);
-        const response = await axios.get(`/table/${slug}?page=${page}&includeArchived=true`);
+        const response = await axios.get(
+          `/table/${slug}?page=${page}&includeArchived=true`,
+        );
         setAllTables((prev) => ({
           ...response.data.data,
           tables: [...(prev?.tables || []), ...response.data.data.tables],
@@ -179,8 +182,8 @@ export default function SelectTable() {
                         table.isArchived
                           ? "bg-muted text-muted-foreground border border-muted-foreground"
                           : table.isOccupied
-                          ? "bg-red-100 text-red-700 border border-red-300"
-                          : "bg-green-100 text-green-700 border border-green-300",
+                            ? "bg-red-100 text-red-700 border border-red-300"
+                            : "bg-green-100 text-green-700 border border-green-300",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">

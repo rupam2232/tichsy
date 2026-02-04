@@ -21,6 +21,26 @@ export async function generateMetadata({
   };
 }
 
-export default function page() {
-  return <ClientPage />;
+export default async function page({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const userTimezone = "Asia/Kolkata";
+  let initialStats = null;
+
+  try {
+    const { default: serverAxios } = await import("@/utils/server-axios");
+    const response = await serverAxios.get(
+      `/restaurant/${slug}/owner-dashboard-stats?timezone=${userTimezone}`,
+    );
+    if (response.data.success) {
+      initialStats = response.data.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch dashboard stats server-side:", error);
+  }
+
+  return <ClientPage initialStats={initialStats} slug={slug} />;
 }

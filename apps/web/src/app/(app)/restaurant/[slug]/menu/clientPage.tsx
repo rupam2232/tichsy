@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
 import { AllFoodItems } from "@repo/ui/types/FoodItem";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/ui/types/ApiResponse";
 import axios from "@/utils/axiosInstance";
@@ -19,9 +18,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
-import FoodDetails from "@/components/food-details";
 import { IconSalad } from "@tabler/icons-react";
-import CreateUpdateFoodItem from "@/components/create-update-foodItem";
+import FoodDetails from "@/components/features/menu/food-details";
+import CreateUpdateFoodItem from "@/components/features/menu/create-update-food-item";
 import {
   Tabs,
   TabsContent,
@@ -37,21 +36,36 @@ import {
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
-import VegNonVegTooltip from "@/components/veg-nonveg-tooltip";
+import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 
-const MenuPage = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(null);
-  const [restaurantCategories, setRestaurantCategories] = useState<string[]>(
-    [],
+interface MenuPageProps {
+  initialFoodItems: AllFoodItems | null;
+  initialCategories: string[];
+  slug: string;
+}
+
+const MenuPage = ({
+  initialFoodItems,
+  initialCategories,
+  slug,
+}: MenuPageProps) => {
+  const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(
+    initialFoodItems,
   );
-  const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
+  const [restaurantCategories, setRestaurantCategories] =
+    useState<string[]>(initialCategories);
+  const [isPageLoading, setIsPageLoading] =
+    useState<boolean>(!initialFoodItems);
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
-  const [tabName, setTabName] = useState<string>("all");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "all";
+  const [tabName, setTabName] = useState<string>(initialTab);
   const [tabPages, setTabPages] = useState<{ [key: string]: number }>({
     all: 1,
   });
-  const [searchInput, setSearchInput] = useState<string>("");
+  const [searchInput, setSearchInput] = useState<string>(
+    searchParams.get("search") || "",
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -61,7 +75,15 @@ const MenuPage = () => {
   const currentPage = tabPages[tabName] || 1;
   const pathname = usePathname();
 
+  // Flag to prevent double fetching on mount if initial data matches
+  const isFirstRender = useRef(true);
+
   const fetchFoodItems = useCallback(async () => {
+    // Skip fetch on mount if we have initial data matching the request
+    if (isFirstRender.current && initialFoodItems) {
+      return;
+    }
+
     if (!slug) {
       toast.error("Restaurant slug is required to fetch food items");
       return;
@@ -73,7 +95,7 @@ const MenuPage = () => {
         setIsPageLoading(true);
         const response = await axios.get(
           `/food-item/${slug}?${tabName !== "search" ? `tab=${tabName}` : ""}${
-            searchInput.trim() ? `search=${searchInput.trim()}` : ""
+            searchInput.trim() ? `&search=${searchInput.trim()}` : ""
           }&includeArchived=true`,
         );
         setAllFoodItems({ ...response.data.data });
@@ -111,9 +133,21 @@ const MenuPage = () => {
       setIsPageChanging(false);
       setIsPageLoading(false);
     }
-  }, [slug, router, dispatch, tabName, currentPage, searchInput, pathname]);
+  }, [
+    slug,
+    router,
+    dispatch,
+    tabName,
+    currentPage,
+    searchInput,
+    pathname,
+    initialFoodItems,
+  ]);
 
   const fetchRestaurantCategories = useCallback(async () => {
+    if (isFirstRender.current && initialCategories.length > 0) {
+      return;
+    }
     if (!slug) {
       toast.error("Restaurant slug is required to fetch categories");
       return;
@@ -137,7 +171,7 @@ const MenuPage = () => {
       }
       setRestaurantCategories([]);
     }
-  }, [slug, router, dispatch, pathname]);
+  }, [slug, router, dispatch, pathname, initialCategories]);
 
   useEffect(() => {
     fetchRestaurantCategories();
@@ -145,6 +179,7 @@ const MenuPage = () => {
 
   useEffect(() => {
     fetchFoodItems();
+    isFirstRender.current = false; // Mark first render as done after effects run
   }, [fetchFoodItems]);
 
   const lastElementRef = useCallback(
@@ -178,6 +213,42 @@ const MenuPage = () => {
       [tabName]: 1,
     }));
   }, [tabName]);
+
+  useEffect(() => {
+    const currentParams = new URLSearchParams(searchParams.toString());
+
+    if (tabName === "all") {
+      currentParams.delete("tab");
+    } else {
+      currentParams.set("tab", tabName);
+    }
+
+    if (tabName !== "search") {
+      currentParams.delete("search");
+      if (searchInput) setSearchInput("");
+      if (searchInputRef.current) {
+        searchInputRef.current.value = "";
+      }
+    } else {
+      if (searchInput) {
+        currentParams.set("search", searchInput);
+      } else {
+        currentParams.delete("search");
+      }
+    }
+
+    const newSearchParamsString = currentParams.toString();
+    const oldSearchParamsString = searchParams.toString();
+
+    if (newSearchParamsString !== oldSearchParamsString) {
+      // Use window.history.replaceState to update URL without triggering a server-side refresh/refetch
+      window.history.replaceState(
+        null,
+        "",
+        `${pathname}${newSearchParamsString ? `?${newSearchParamsString}` : ""}`,
+      );
+    }
+  }, [tabName, searchInput, pathname, searchParams]);
 
   return (
     <div className="p-4">

@@ -28,14 +28,14 @@ import { IconReceipt, IconTable } from "@tabler/icons-react";
 import { useSocket } from "@/context/SocketContext";
 import { OrderDetails } from "@repo/ui/types/Order";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import OrderCard from "@/components/order-card";
+import OrderCard from "@/components/features/orders/order-card";
 import { cn } from "@repo/ui/lib/utils";
 import { AllTables } from "@repo/ui/types/Table";
 import Link from "next/link";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import type { AppDispatch } from "@/store/store";
 import type { StaffDashboardStats } from "@repo/ui/types/Stats";
-import StaffOrderDialog from "@/components/staff-order-dialog";
+import StaffOrderDialog from "@/components/features/orders/staff-order-dialog";
 
 const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -63,7 +63,9 @@ const ClientPage = () => {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const [orderResponse, statsResponse] = await Promise.all([
         axios.get(`/order/${slug}`),
-        axios.get(`/restaurant/${slug}/staff-dashboard-stats?timezone=${userTimezone}`),
+        axios.get(
+          `/restaurant/${slug}/staff-dashboard-stats?timezone=${userTimezone}`,
+        ),
       ]);
       if (orderResponse.data.success) {
         setLatestOrders(orderResponse.data.data);
@@ -83,12 +85,12 @@ const ClientPage = () => {
     } catch (error) {
       console.error(
         "Failed to fetch dashboard stats. Please try again later:",
-        error
+        error,
       );
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch dashboard stats. Please try again later"
+          "Failed to fetch dashboard stats. Please try again later",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
@@ -120,7 +122,7 @@ const ClientPage = () => {
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col">
         <div className="flex justify-end items-center px-6 pt-2">
-          <StaffOrderDialog/>
+          <StaffOrderDialog />
         </div>
         <div className="flex flex-col gap-4 md:gap-6 p-4 pt-2! lg:p-6">
           <div className="grid grid-cols-1 @2xl/main:grid-cols-2 @5xl/main:grid-cols-4 gap-4">
@@ -259,7 +261,9 @@ const ClientPage = () => {
                       </p>
                     </div>
                     <Link href={`/restaurant/${slug}/orders?tab=unPaid`}>
-                      <Button size="sm" variant="outline">View</Button>
+                      <Button size="sm" variant="outline">
+                        View
+                      </Button>
                     </Link>
                   </div>
                 </CardContent>
@@ -299,7 +303,7 @@ const ClientPage = () => {
                           "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate",
                           t.isOccupied
                             ? "bg-red-50 text-red-700 border border-red-100"
-                            : "bg-green-50 text-green-700 border border-green-100"
+                            : "bg-green-50 text-green-700 border border-green-100",
                         )}
                       >
                         <h3 className="font-medium">{t.tableName}</h3>

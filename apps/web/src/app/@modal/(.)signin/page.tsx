@@ -1,5 +1,5 @@
 "use client";
-import { SigninForm } from "@/components/signin-form";
+import { SigninForm } from "@/components/features/auth/signin-form";
 import {
   Dialog,
   DialogContent,

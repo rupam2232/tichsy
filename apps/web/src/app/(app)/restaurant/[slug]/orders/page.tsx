@@ -21,6 +21,60 @@ export async function generateMetadata({
   };
 }
 
-export default function page() {
-  return <ClientPage />;
+export default async function page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { slug } = await params;
+  const { tab = "all", search = "" } = await searchParams;
+
+  let initialOrders = null;
+
+  try {
+    const { default: serverAxios } = await import("@/utils/server-axios");
+
+    let query = "";
+    switch (tab) {
+      case "all":
+        query = "";
+        break;
+      case "new":
+        query = "status=pending";
+        break;
+      case "inProgress":
+        query = "status=preparing";
+        break;
+      case "ready":
+        query = "status=ready";
+        break;
+      case "unPaid":
+        query = "isPaid=false";
+        break;
+      case "completed":
+        query = "status=completed&status=cancelled";
+        break;
+      case "search":
+        query = `search=${search}`;
+        break;
+      default:
+        query = "";
+        break;
+    }
+
+    const response = await serverAxios.get(`/order/${slug}?${query}`);
+    if (
+      response.data &&
+      response.data.data &&
+      Array.isArray(response.data.data.orders)
+    ) {
+      initialOrders = response.data.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch orders server-side:", error);
+  }
+
+  return <ClientPage initialOrders={initialOrders} slug={slug} />;
 }

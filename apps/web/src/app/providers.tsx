@@ -1,40 +1,33 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Provider as ReduxProvider, useDispatch } from "react-redux";
-import { signIn, signOut } from "@/store/authSlice";
+import { signIn, signOut, UserState } from "@/store/authSlice";
 import store from "@/store/store";
 import { Toaster } from "@repo/ui/components/sonner";
-import axios from "@/utils/axiosInstance";
 import { SocketProvider } from "@/context/SocketContext";
 
-function FetchCurrentUser({ children }: { children: React.ReactNode }) {
+function StoreInitializer({ user }: { user?: UserState["user"] }) {
   const dispatch = useDispatch();
-
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      const response = await axios.get("/user/me");
-      if (response.data.success) {
-        dispatch(signIn(response.data.data));
-      } else {
-        dispatch(signOut());
-      }
-    } catch (error) {
-      console.error("Error fetching current user:", error);
+  useEffect(() => {
+    if (user) {
+      dispatch(signIn(user));
+    } else {
       dispatch(signOut());
     }
-  }, [dispatch]);
-
-  useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
-
-  return <>{children}</>;
+  }, [dispatch, user]);
+  return null;
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user?: UserState["user"];
+}) {
   return (
     <NextThemesProvider
       attribute="class"
@@ -43,12 +36,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <ReduxProvider store={store}>
+        <StoreInitializer user={user} />
         <GoogleOAuthProvider
           clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
         >
-          <SocketProvider>
-            <FetchCurrentUser>{children}</FetchCurrentUser>
-          </SocketProvider>
+          <SocketProvider>{children}</SocketProvider>
           <Toaster richColors expand={true} position="top-right" />
         </GoogleOAuthProvider>
       </ReduxProvider>

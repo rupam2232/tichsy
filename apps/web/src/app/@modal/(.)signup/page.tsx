@@ -1,5 +1,5 @@
 "use client";
-import { SignupForm } from "@/components/signup-form";
+import { SignupForm } from "@/components/features/auth/signup-form";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ export default function SignupModal() {
   useEffect(() => {
     setDrawerOpen(pathname === "/signup" || pathname.includes("/signup"));
   }, [pathname]);
-  
+
   return (
     <>
       <Dialog
