@@ -88,7 +88,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     }));
     res.status(400).json({
       success: false,
-      message: err.message ?? "Validation Error",
+      message: errors[0].message ?? "Validation Error",
       errors,
     });
   } else {

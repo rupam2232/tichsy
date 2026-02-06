@@ -19,9 +19,8 @@ import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
+import { signUpSchema, signInSchema, forgotPasswordSchema } from "@repo/types";
 const options = getCookieOptions();
-const passwordRegex =
-  /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&.,:;"'<>/?() [\] {}|\\/~`_^+#=-]{8,}$/;
 
 // Handles user registration with email/password, device/session logging, security event, and trial subscription creation. Sends welcome email and sets auth cookies.
 export const signup = async (
@@ -36,38 +35,15 @@ export const signup = async (
   const session = await startSession();
   try {
     session.startTransaction();
-    // Validate input
-    if (!req?.body?.email || !req?.body?.password || !req?.body?.fullName) {
-      throw new ApiError(
-        400,
-        "Please provide email, password, and full name to continue"
-      );
-    }
-    const { email, password, fullName } = req.body;
-
-    // Check for empty values
-    if ([email, password].some((value) => value?.trim() === "")) {
-      throw new ApiError(400, "Email and Password both fields are required");
-    }
+    session.startTransaction();
+    const validatedData = signUpSchema.parse(req.body);
+    const { email, password, fullName } = validatedData;
 
     // Prevent duplicate users
     const isUserExists = await User.findOne({ email }).session(session);
 
     if (isUserExists) {
       throw new ApiError(400, "User already exists");
-    }
-
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new ApiError(400, "Invalid email format");
-    }
-
-    // Validate password strength
-    if (!passwordRegex.test(password)) {
-      throw new ApiError(
-        400,
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
-      );
     }
 
     // Split full name into first and last names
@@ -197,14 +173,8 @@ export const signin = async (
   const session = await startSession();
   try {
     session.startTransaction();
-    // Validate required fields in request body
-    if (!req?.body?.email || !req?.body?.password) {
-      throw new ApiError(
-        400,
-        "Please provide a email and a password to continue"
-      );
-    }
-    const { email, password } = req.body;
+    const validatedData = signInSchema.parse(req.body);
+    const { email, password } = validatedData;
 
     // Find user by email and check password
     const user = await User.findOne({ email }).session(session);
@@ -641,19 +611,9 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
 // Handles password reset for unauthenticated users. Verifies email, validates new password, updates it, and sends a success email.
 export const forgotPassword = asyncHandler(
   async (req: Request, res: Response) => {
-    if (!req.body || !req.body.email || !req.body.password) {
-      throw new ApiError(400, "Email and password are required");
-    }
+    const validatedData = forgotPasswordSchema.parse(req.body);
 
-    const { email, password } = req.body;
-
-    // Validate password strength (reusing the central regex)
-    if (!passwordRegex.test(password)) {
-      throw new ApiError(
-        400,
-        "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, and one number"
-      );
-    }
+    const { email, password } = validatedData;
 
     const user = await User.findOne({ email });
 

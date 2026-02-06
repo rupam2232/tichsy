@@ -6,10 +6,15 @@ export {
   updateRestaurantSchema,
   addStaffSchema,
 } from "./schemas/restaurantSchema.js";
-export { signInSchema } from "./schemas/signInSchema.js";
-export { signUpSchema } from "./schemas/signUpSchema.js";
-export { forgotPasswordSchema } from "./schemas/forgotPasswordSchema.js";
+export {
+  signInSchema,
+  signUpSchema,
+  forgotPasswordSchema,
+} from "./schemas/authSchema.js";
 export { tableSchema } from "./schemas/tableSchema.js";
+export { sendOtpSchema, verifyOtpSchema } from "./schemas/otpSchema.js";
+export { verifyPaymentSchema } from "./schemas/paymentSchema.js";
+export { createOrderSchema } from "./schemas/orderSchema.js";
 
 // Interfaces
 export * from "./interfaces/ApiResponse.js";

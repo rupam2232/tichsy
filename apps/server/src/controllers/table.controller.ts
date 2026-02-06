@@ -6,6 +6,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Order } from "../models/order.model.js";
+import { tableSchema } from "@repo/types";
 
 export const createTable = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.tableName) {
@@ -18,7 +19,9 @@ export const createTable = asyncHandler(async (req, res) => {
 
   const restaurantSlug = req.params.restaurantSlug;
 
-  const { tableName, seatCount } = req.body;
+  const validatedData = tableSchema.parse(req.body);
+  const { tableName, seatCount } = validatedData;
+
   const user = req.user;
   if (user!.role !== "owner") {
     throw new ApiError(403, "You do not have permission to create a table");
@@ -31,7 +34,7 @@ export const createTable = asyncHandler(async (req, res) => {
     );
   }
 
-  if ((seatCount && Math.ceil(seatCount) < 1) || Math.ceil(seatCount) > 40) {
+  if (seatCount && (Math.ceil(seatCount) < 1 || Math.ceil(seatCount) > 40)) {
     throw new ApiError(400, "Seat count must be between 1 and 40");
   }
 
@@ -67,7 +70,7 @@ export const createTable = asyncHandler(async (req, res) => {
         restaurantId,
         tableName,
         qrSlug,
-        seatCount: Math.ceil(seatCount),
+        seatCount: seatCount ? Math.ceil(seatCount) : 1,
       });
       break; // Success, exit loop
     } catch (err: any) {
@@ -100,7 +103,9 @@ export const updateTable = asyncHandler(async (req, res) => {
   const qrSlug = req.params.qrSlug;
   const restaurantSlug = req.params.restaurantSlug;
 
-  const { tableName, seatCount } = req.body;
+  const validatedData = tableSchema.parse(req.body);
+  const { tableName, seatCount } = validatedData;
+
   const user = req.user;
 
   if (user!.role !== "owner") {
@@ -114,7 +119,7 @@ export const updateTable = asyncHandler(async (req, res) => {
     );
   }
 
-  if ((seatCount && Math.ceil(seatCount) < 1) || Math.ceil(seatCount) > 40) {
+  if (seatCount && (Math.ceil(seatCount) < 1 || Math.ceil(seatCount) > 40)) {
     throw new ApiError(400, "Seat count must be between 1 and 40");
   }
 
@@ -148,8 +153,8 @@ export const updateTable = asyncHandler(async (req, res) => {
   }
 
   table.tableName = tableName;
-  table.seatCount = Math.ceil(seatCount);
-  await table.save({ validateBeforeSave: false });
+  table.seatCount = Math.ceil(seatCount || table.seatCount);
+  await table.save();
 
   const totalTables = await Table.countDocuments({
     restaurantId: restaurant._id,
@@ -266,7 +271,7 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
   }
 
   table.isOccupied = !table.isOccupied;
-  await table.save({ validateBeforeSave: false });
+  await table.save();
 
   const totalTables = await Table.countDocuments({
     restaurantId: restaurant._id,
@@ -630,7 +635,7 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
     table.archivedReason = req.body?.archivedReason ?? "Archived by owner";
   }
 
-  await table.save({ validateBeforeSave: false });
+  await table.save();
 
   const totalTables = await Table.countDocuments({
     restaurantId: restaurant._id,

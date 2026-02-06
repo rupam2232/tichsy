@@ -10,7 +10,7 @@ import {
 } from "../service/foodItem.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, FilterQuery } from "mongoose";
 import { foodItemSchema } from "@repo/types";
 
 function hasDuplicates(arr: string[]): boolean {
@@ -97,7 +97,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
   // Check if the food item already exists
   const existingFoodItem = await FoodItem.findOne({
     restaurantId: restaurant._id,
-    foodName,
+    foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
   });
 
   if (existingFoodItem) {
@@ -183,7 +183,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       restaurant.staffIds &&
       restaurant.staffIds.length > 0 &&
       restaurant.staffIds
-        .map((id: any) => id.toString())
+        .map((id) => id.toString())
         .includes(user._id!.toString())
     ) {
       throw new ApiError(403, "This restaurant is closed");
@@ -236,7 +236,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   const decodedSearch = decodeURIComponent(search as string).trim();
 
-  const query: any = {
+  const query: FilterQuery<typeof FoodItem> = {
     restaurantId: restaurant._id,
     ...(category ? { category } : {}), // Filter by category if provided
     ...(foodType ? { foodType } : {}), // Filter by food type if provided
@@ -339,7 +339,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
   if (
     !foodItem.restaurantId ||
     typeof foodItem.restaurantId !== "object" ||
-    !("slug" in foodItem.restaurantId) ||
+    !("slug" in (foodItem.restaurantId as object)) ||
     (foodItem.restaurantId as any).slug !== req.params.restaurantSlug
   ) {
     throw new ApiError(404, "Food item not found");
@@ -350,7 +350,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     let isUserPartofRestaurant = false;
 
     if (user) {
-      const restaurantDetails = foodItem.restaurantId as any;
+      const restaurantDetails = foodItem.restaurantId as unknown as Restaurant;
       if (
         user.role === "owner" &&
         restaurantDetails.ownerId.toString() === user._id!.toString()
@@ -361,7 +361,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
         restaurantDetails.staffIds &&
         restaurantDetails.staffIds.length > 0 &&
         restaurantDetails.staffIds
-          .map((id: any) => id.toString())
+          .map((id) => id.toString())
           .includes(user._id!.toString())
       ) {
         isUserPartofRestaurant = true;
@@ -378,7 +378,9 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 
   // Rename the populated field from restaurantId to restaurantDetails
   const foodItemObj = foodItem.toObject ? foodItem.toObject() : foodItem;
+  // @ts-ignore - restaurantDetails is not in the type definition but we are adding it for the response
   (foodItemObj as any).restaurantDetails = foodItemObj.restaurantId;
+  // @ts-ignore
   delete (foodItemObj as any).restaurantId;
 
   res
@@ -518,6 +520,8 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid food item ID");
   }
 
+  const validatedData = foodItemSchema.parse(req.body);
+
   const restaurant = await Restaurant.findOne({
     slug: req.params.restaurantSlug,
     ownerId: req.user._id,
@@ -550,8 +554,6 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Cannot make changes in a archived food item");
   }
 
-  const validatedData = foodItemSchema.parse(req.body);
-
   const {
     foodName,
     price,
@@ -578,26 +580,27 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
       throw new ApiError(400, "All variant names must be unique.");
     }
   }
+  if (foodName !== foodItem.foodName) {
+    // Check if the food item with the same name already exists in the restaurant
+    const existingFoodItem = await FoodItem.findOne({
+      restaurantId: restaurant._id,
+      foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
+      _id: { $ne: foodItem._id }, // Exclude the current food item from the check ($ne means "not equal to")
+    });
 
-  // Check if the food item with the same name already exists in the restaurant
-  const existingFoodItem = await FoodItem.findOne({
-    restaurantId: restaurant._id,
-    foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
-    _id: { $ne: foodItem._id }, // Exclude the current food item from the check ($ne means "not equal to")
-  });
-
-  if (existingFoodItem) {
-    throw new ApiError(
-      400,
-      "Food item with this name already exists in the restaurant"
-    );
+    if (existingFoodItem) {
+      throw new ApiError(
+        400,
+        "Food item with this name already exists in the restaurant"
+      );
+    }
   }
   // Update the food item
   foodItem.foodName = foodName;
   foodItem.price = price;
   foodItem.discountedPrice = discountedPrice;
   foodItem.hasVariants = hasVariants;
-  foodItem.variants = variants as any;
+  foodItem.variants = variants as FoodVariantType[];
   foodItem.imageUrls = imageUrls;
   foodItem.category = category;
   foodItem.foodType = foodType;

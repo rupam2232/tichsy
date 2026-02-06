@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import cloudinary from "../utils/cloudinary.js";
 import { Restaurant } from "../models/restaurant.models.js";
+import { Types } from "mongoose";
 import {
   canAddCategory,
   canCreateRestaurant,
@@ -19,27 +20,19 @@ import { Table } from "../models/table.model.js";
 import { startOfMonth, startOfDay, endOfDay } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { User } from "../models/user.model.js";
+import {
+  createRestaurantSchema,
+  updateRestaurantSchema,
+  addCategorySchema,
+} from "@repo/types";
 
 export const createRestaurant = asyncHandler(async (req, res) => {
-  if (!req.body?.restaurantName || !req.body?.slug) {
-    throw new ApiError(400, "Restaurant name and slug are required.");
-  }
-  const { restaurantName, slug, description, address, logoUrl } = req.body;
+  const validatedData = createRestaurantSchema.parse(req.body);
+  const { restaurantName, slug, description, address, logoUrl } = validatedData;
   const ownerId = req.user!._id;
 
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can create restaurants.");
-  }
-
-  if (slug.length < 3 || slug.length > 20) {
-    throw new ApiError(400, "Slug must be between 3 to 20 characters long");
-  }
-
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new ApiError(
-      400,
-      "Slug can only contain lowercase letters, numbers, and hyphens"
-    );
   }
 
   await canCreateRestaurant(req.user!, req.subscription!);
@@ -74,7 +67,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to create restaurant.");
   }
 
-  req.user!.restaurantIds!.push(restaurant._id as any); // Type assertion to avoid TS error
+  req.user!.restaurantIds!.push(restaurant._id as Types.ObjectId);
   // Ensure the restaurantIds array is unique
   req.user!.restaurantIds = Array.from(new Set(req.user!.restaurantIds));
   // Save the user without validation to avoid triggering validation errors
@@ -141,7 +134,8 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   const isForMetaData = forMetaData === "true";
   let selectFields = "-staffIds -ownerId -__v -updatedAt";
   if (isForMetaData) {
-    selectFields = "-staffIds -ownerId -__v -updatedAt -createdAt -archivedAt -archivedReason -taxRate -taxLabel -isTaxIncludedInPrice";
+    selectFields =
+      "-staffIds -ownerId -__v -updatedAt -createdAt -archivedAt -archivedReason -taxRate -taxLabel -isTaxIncludedInPrice";
   }
 
   const restaurant = await Restaurant.findOne({ slug }).select(selectFields);
@@ -159,12 +153,11 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
   }
   const { slug } = req.params;
 
-  if (!req.body || !req.body.restaurantName || !req.body.newSlug) {
-    throw new ApiError(400, "Restaurant name and new slug are required");
-  }
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can update restaurant details");
   }
+
+  const validatedData = updateRestaurantSchema.parse(req.body);
 
   const {
     restaurantName,
@@ -175,28 +168,7 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
     categories,
     openingTime,
     closingTime,
-  } = req.body;
-
-  if (newSlug.length < 3 || newSlug.length > 20) {
-    throw new ApiError(400, "Slug must be between 3 to 20 characters long");
-  }
-
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(newSlug)) {
-    throw new ApiError(
-      400,
-      "Slug can only contain lowercase letters, numbers, and hyphens"
-    );
-  }
-
-  if (
-    (closingTime && closingTime.match(/^\d{2}:\d{2}$/) === null) ||
-    (openingTime && openingTime?.match(/^\d{2}:\d{2}$/) === null)
-  ) {
-    throw new ApiError(
-      400,
-      "openingTime and closingTime must be in HH:MM format (24-hour clock)"
-    );
-  }
+  } = validatedData;
 
   if (closingTime || openingTime) {
     if (!openingTime || !closingTime) {
@@ -212,35 +184,21 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
       slug: newSlug,
     });
     if (duplicateRestaurantSlug) {
-      throw new ApiError(400, "Slug already exists");
+      throw new ApiError(400, "Slug is already taken");
     }
   }
 
-  const duplicateRestaurantName = await Restaurant.find({
-    restaurantName,
+  const restaurant = await Restaurant.findOne({
+    slug,
     ownerId: req.user!._id,
-  });
-  if (duplicateRestaurantName.length > 1) {
-    throw new ApiError(400, "Restaurant name already exists");
-  }
-  let restaurant =
-    duplicateRestaurantName.length > 0 &&
-    duplicateRestaurantName[0].slug === newSlug
-      ? duplicateRestaurantName[0]
-      : null;
+  }).select("-staffIds -__v -updatedAt");
 
   if (!restaurant) {
-    const foundRestaurant = await Restaurant.findOne({
-      slug,
-    }).select("-staffIds -__v -updatedAt");
-    if (!foundRestaurant) {
-      throw new ApiError(404, "Restaurant not found");
-    } else if (
-      foundRestaurant.ownerId.toString() !== req.user!._id!.toString()
-    ) {
-      throw new ApiError(403, "You are not the owner of this restaurant");
-    }
-    restaurant = foundRestaurant;
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
+    throw new ApiError(403, "You are not the owner of this restaurant");
   }
 
   if (restaurant.isArchived) {
@@ -250,11 +208,22 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
     );
   }
 
+  if (restaurant.restaurantName !== restaurantName) {
+    const duplicateRestaurantName = await Restaurant.findOne({
+      restaurantName,
+      ownerId: req.user!._id,
+      _id: { $ne: restaurant._id },
+    });
+    if (duplicateRestaurantName) {
+      throw new ApiError(400, "Restaurant name is already taken");
+    }
+  }
+
   if (restaurant.slug !== newSlug) restaurant.slug = newSlug;
   restaurant.restaurantName = restaurantName;
   restaurant.description = description;
   restaurant.logoUrl = logoUrl;
-  restaurant.categories = categories;
+  if (categories) restaurant.categories = categories;
   restaurant.address = address;
   restaurant.openingTime = openingTime;
   restaurant.closingTime = closingTime;
@@ -289,7 +258,7 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
   if (restaurant.isArchived) {
     if (restaurant.isCurrentlyOpen) {
       restaurant.isCurrentlyOpen = false;
-      await restaurant.save({ validateBeforeSave: false });
+      await restaurant.save();
     }
     throw new ApiError(
       403,
@@ -350,7 +319,7 @@ export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
     restaurant.isCurrentlyOpen = false;
   }
 
-  await restaurant.save({ validateBeforeSave: false });
+  await restaurant.save();
 
   res
     .status(200)
@@ -368,14 +337,10 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Restaurant slug is required");
   }
   const { slug } = req.params;
-  if (
-    !req.body ||
-    !req.body?.category ||
-    typeof req.body.category !== "string" ||
-    req.body.category.trim() === ""
-  ) {
-    throw new ApiError(400, "Category is required");
-  }
+
+  const validatedData = addCategorySchema.parse(req.body);
+  const { category } = validatedData;
+
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can create restaurant categories");
   }
@@ -407,7 +372,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
   }
 
   // Add categories to the restaurant
-  restaurant.categories.push(req.body.category);
+  restaurant.categories.push(category);
   await restaurant.save();
 
   res

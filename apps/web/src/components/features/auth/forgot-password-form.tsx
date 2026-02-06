@@ -149,13 +149,7 @@ const ForgotPasswordForm = () => {
       setStep(2);
       return;
     }
-    if (!data.otp || data.otp.length !== 6) {
-      form.setError("otp", {
-        type: "manual",
-        message: "Please enter a valid 6-digit OTP",
-      });
-      return;
-    }
+
     try {
       const response = await axios.post("/auth/forgot-password", data);
       toast.success(response.data.message || "Password reset successful!");

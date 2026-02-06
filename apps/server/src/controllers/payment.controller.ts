@@ -16,6 +16,7 @@ import {
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
+import { verifyPaymentSchema } from "@repo/types";
 
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
@@ -185,16 +186,9 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
 });
 
 export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
-  if (
-    !req.body ||
-    !req.body.paymentId ||
-    !req.body.orderId ||
-    !req.body.signature
-  ) {
-    throw new ApiError(400, "paymentId, orderId and signature are required");
-  }
+  const validatedData = verifyPaymentSchema.parse(req.body);
 
-  const { paymentId, orderId, signature } = req.body;
+  const { paymentId, orderId, signature } = validatedData;
 
   if (
     !validatePaymentVerification(

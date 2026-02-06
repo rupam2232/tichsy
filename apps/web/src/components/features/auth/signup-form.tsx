@@ -142,34 +142,19 @@ export function SignupForm({
 
   const sendOtp = async () => {
     if (isSendingOtp) {
-      toast.info("OTP is already being sent. Please wait.");
+      toast.info("OTP is already being sent. Please wait");
       return;
     }
     if (
       resendTimer !== null ||
       (typeof resendTimer === "number" && resendTimer > 0)
     ) {
-      toast.info(`Please wait ${resendTimer} seconds before resending OTP.`);
+      toast.info(`Please wait ${resendTimer} seconds before resending OTP`);
       return;
     }
     const email = form.getValues("email");
     const name = form.getValues("fullName");
-    if (!email) {
-      form.setError("email", {
-        type: "manual",
-        message: "Please enter your email to receive the OTP.",
-      });
-      toast.error("Please enter your email to receive the OTP.");
-      return;
-    }
-    if (!name) {
-      form.setError("fullName", {
-        type: "manual",
-        message: "Please enter your full name to receive the OTP.",
-      });
-      toast.error("Please enter your full name to receive the OTP.");
-      return;
-    }
+
     try {
       setIsSendingOtp(true);
       const response = await axios.post("/otp/send", {
@@ -190,7 +175,7 @@ export function SignupForm({
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to send OTP. Please try again.",
+          "Failed to send OTP. Please try again",
       );
       console.error(
         axiosError.response?.data.message ||
@@ -202,13 +187,6 @@ export function SignupForm({
   };
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
-    if (!data.otp || data.otp.length !== 6) {
-      form.setError("otp", {
-        type: "manual",
-        message: "Please enter a valid 6-digit OTP",
-      });
-      return;
-    }
     setEmailSignupLoading(true);
     try {
       const response = await axios.post("/auth/signup", data);
@@ -487,10 +465,16 @@ export function SignupForm({
                   <Button
                     type="button"
                     className={cn("w-full", signupStep === 2 ? "hidden" : "")}
-                    onClick={() => {
+                    onClick={async () => {
                       if (signupStep === 1) {
                         // Validate the first step
-                        form.handleSubmit(() => {
+                        const isValid = await form.trigger([
+                          "fullName",
+                          "email",
+                          "password",
+                          "confirmPassword",
+                        ]);
+                        if (isValid) {
                           if (passwordScore < 3) {
                             form.setError("password", {
                               type: "manual",
@@ -501,7 +485,7 @@ export function SignupForm({
                           }
                           sendOtp();
                           setSignupStep(2);
-                        })();
+                        }
                       }
                     }}
                   >

@@ -9,20 +9,11 @@ import {
   verificationEmailTemplate,
 } from "../utils/emailTemplates.js";
 import { User } from "../models/user.model.js";
+import { sendOtpSchema, verifyOtpSchema } from "@repo/types";
 
 export const sendOtp = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.email || !req.body.context) {
-    throw new ApiError(400, "Email and context are required");
-  }
-  const { email, name, context } = req.body;
-
-  if (
-    context !== "signup" &&
-    context !== "change-password" &&
-    context !== "forgot-password"
-  ) {
-    throw new ApiError(400, "Invalid context");
-  }
+  const validatedData = sendOtpSchema.parse(req.body);
+  const { email, name, context } = validatedData;
 
   const user = await User.findOne({ email });
 
@@ -36,7 +27,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     }
   }
 
-  const otp = generateOtp();
+  const otp = generateOtp(6);
   const expires = new Date(Date.now() + 600000); // 10 minutes
 
   let otpDoc = await Otp.findOne({ email });
@@ -84,10 +75,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.email || !req.body.otp || !req.body.context) {
-    throw new ApiError(400, "Email, Otp and context are required");
-  }
-  const { email, otp, context } = req.body;
+  const validatedData = verifyOtpSchema.parse(req.body);
+  const { email, otp, context } = validatedData;
 
   const otpData = await Otp.findOne({ email });
 

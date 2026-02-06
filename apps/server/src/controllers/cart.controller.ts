@@ -5,15 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { isValidObjectId, Types } from "mongoose";
 import { Cart, CartItem } from "../models/cart.model.js";
 import { FoodItem } from "../models/foodItem.model.js";
-
-const options = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite:
-    process.env.NODE_ENV === "production"
-      ? ("None" as "none")
-      : ("Strict" as "strict"),
-};
+import { getCookieOptions } from "../utils/cookieOptions.js";
+const options = getCookieOptions();
 
 export const addToCart = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.foodId || !req.body.quantity) {

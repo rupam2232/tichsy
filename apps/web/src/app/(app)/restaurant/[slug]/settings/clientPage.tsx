@@ -726,7 +726,7 @@ const ClientPage = () => {
                     <Input
                       id="openingTime"
                       type="text"
-                      placeholder="E.g., 9:00"
+                      placeholder="E.g., 09:00"
                       autoComplete="openingTime"
                       {...field}
                     />
