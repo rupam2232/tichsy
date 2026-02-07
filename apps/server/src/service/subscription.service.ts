@@ -4,7 +4,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { type Restaurant as RestaurantType } from "../models/restaurant.models.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Coupon } from "../models/coupon.model.js";
-const isProduction = process.env?.NODE_ENV === "production";
+import { env } from "../env.js";
+const isProduction = env.NODE_ENV === "production";
 
 export async function checkStaffLimit(
   restaurant: RestaurantType,

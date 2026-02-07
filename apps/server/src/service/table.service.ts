@@ -5,7 +5,9 @@ import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
-const isProduction = process.env?.NODE_ENV === "production";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 
 export async function canCreateTable(
   subscription: SubscriptionType,

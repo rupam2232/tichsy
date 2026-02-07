@@ -12,7 +12,9 @@ import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
-const isProduction = process.env?.NODE_ENV === "production";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 
 export async function canCreateRestaurant(
   user: User,

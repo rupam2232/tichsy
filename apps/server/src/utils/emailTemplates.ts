@@ -1,3 +1,5 @@
+import { env } from "../env.js";
+
 export const verificationEmailTemplate = (
   name: string = "User",
   verificationCode: string,
@@ -24,7 +26,7 @@ export const verificationEmailTemplate = (
     <p>Enter this code on the verification page to complete your registration.</p>
     <p>This code will expire in ${codeExpiryTime} minutes for security reasons.</p>
     <p>If you didn't create an account with us, please ignore this email.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -65,7 +67,7 @@ export const emailResetSuccessTemplate = (
       <li>Avoid using the same password across multiple sites</li>
     </ul>
     <p>From now on you will not receive any e-mails from us on this Email id.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -103,7 +105,7 @@ export const passwordResetSuccessTemplate = (name: string): string => {
       <li>Avoid using the same password across multiple sites</li>
     </ul>
     <p>Thank you for helping us keep your account secure.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -138,7 +140,7 @@ export const passwordResetRequestTemplate = (
       <p style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4CAF50;">${verificationCode}</p>
     </div>
     <p>This OTP will expire in ${codeExpiryTime} minutes for security reasons.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -589,14 +591,14 @@ export const signupEmailTemplate = (name: string): string => {
   <![endif]-->
   </head>
   <body>
-    <span class="preheader">Thanks for trying out ${process.env.SERVER_NAME}. We’ve pulled together some information and resources to help you get started.</span>
+    <span class="preheader">Thanks for trying out ${env.SERVER_NAME}. We’ve pulled together some information and resources to help you get started.</span>
     <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td align="center">
           <table class="email-content" width="100%" cellpadding="0" cellspacing="0" role="presentation">
             <tr>
               <td class="email-masthead">
-                ${process.env.SERVER_NAME}
+                ${env.SERVER_NAME}
               </td>
             </tr>
             <!-- Email Body -->
@@ -611,7 +613,7 @@ export const signupEmailTemplate = (name: string): string => {
                         <p>Thanks for Signing up. We’re thrilled to have you on board.:</p>
                         <!-- Action -->
                         <p>Thanks,
-                          <br>${process.env.SERVER_NAME} team</p>
+                          <br>${env.SERVER_NAME} team</p>
                         <!-- Sub copy -->
                       </div>
                     </td>
@@ -650,7 +652,7 @@ export const newLoginDeviceTemplate = (
     <p><strong>Device:</strong> ${device}</p>
     <p><strong>IP Address:</strong> ${ipAddress}</p>
     <p>If this was you, you can ignore this message. If not, please secure your account immediately.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>
@@ -690,7 +692,7 @@ export const restaurantCreatedTemplate = (
       <li><strong>Address:</strong> ${address}</li>
     </ul>
     <p>You can now manage your restaurant and start serving customers.</p>
-    <p>Best regards,<br>Team ${process.env.SERVER_NAME}</p>
+    <p>Best regards,<br>Team ${env.SERVER_NAME}</p>
   </div>
   <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
     <p>This is an automated message, please do not reply to this email.</p>

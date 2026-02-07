@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { env } from "../env.js";
 
 /**
  * Connects to MongoDB using the connection string from environment variables.
@@ -10,7 +11,7 @@ export default async function connectDB() {
   try {
     // Try to connect to the MongoDB database
     const connectionInstance = await mongoose.connect(
-      process.env.MONGODB_URI as string
+      env.MONGODB_URI
     );
     console.log(
       `\nMongoDB connected successfully`,

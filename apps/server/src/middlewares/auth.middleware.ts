@@ -7,6 +7,7 @@ import type { User as UserType } from "../models/user.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
+import { env } from "../env.js";
 const options = getCookieOptions();
 
 export const verifyAuth = asyncHandler(async (req, res, next) => {
@@ -18,10 +19,7 @@ export const verifyAuth = asyncHandler(async (req, res, next) => {
   if (!refreshToken) throw new ApiError(401, "Unauthorized request");
   if (!accessToken) throw new ApiError(401, "Invalid Access Token");
 
-  const decoded = jwt.verify(
-    accessToken,
-    process.env.ACCESS_TOKEN_SECRET as string
-  );
+  const decoded = jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET);
   if (typeof decoded !== "object" || decoded === null) {
     throw new ApiError(401, "Invalid Access Token");
   }
@@ -67,10 +65,7 @@ export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
 
   let decoded = null;
   if (accessToken) {
-    decoded = jwt.verify(
-      accessToken,
-      process.env.ACCESS_TOKEN_SECRET as string
-    );
+    decoded = jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET);
     if (typeof decoded !== "object" || decoded === null) {
       next(); // If the token is invalid, just continue without attaching user
     } else {
@@ -85,14 +80,14 @@ export const verifyOptionalAuth = asyncHandler(async (req, res, next) => {
       } else {
         const deviceSession = await DeviceSession.findOne({
           userId: user._id,
-          refreshToken
+          refreshToken,
         });
 
         if (!deviceSession || deviceSession.revoked) {
           // If the device session is not found, or the refresh token does not match, or the session is revoked
           res
             .clearCookie("accessToken", options)
-            .clearCookie("refreshToken", options)
+            .clearCookie("refreshToken", options);
         } else {
           // Update the last active time of the device session
           deviceSession.lastActiveAt = new Date();

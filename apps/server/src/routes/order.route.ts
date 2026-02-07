@@ -12,6 +12,9 @@ import {
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 const router = Router();
 
 const createLimit = rateLimit({
@@ -24,8 +27,6 @@ const createLimit = rateLimit({
   },
 });
 
-const isProduction = process.env?.NODE_ENV === "production";
-
 router.post(
   "/:restaurantSlug/:tableQrSlug",
   isProduction ? createLimit : (req, res, next) => next(),
@@ -34,7 +35,7 @@ router.post(
 
 router
   .route("/:restaurantSlug/:orderId")
-  .get(verifyOptionalAuth,getOrderById) // Get order by ID
+  .get(verifyOptionalAuth, getOrderById) // Get order by ID
   .patch(verifyAuth, updateOrder); // Update order
 
 router.get("/by-ids", verifyOptionalAuth, getOrdersByIds);

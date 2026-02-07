@@ -1,7 +1,9 @@
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import type { Restaurant as RestaurantType } from "../models/restaurant.models.js";
-const isProduction = process.env?.NODE_ENV === "production";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 
 export const canRestaurantRecieveOrders = async (
   restaurant: RestaurantType

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { env } from "../env.js";
 
 type T = {
   success: boolean;
@@ -57,17 +58,17 @@ async function sendEmail(
 ): Promise<T> {
   try {
     const transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE,
+      service: env.EMAIL_SERVICE,
       auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASSWORD,
+        user: env.EMAIL,
+        pass: env.EMAIL_PASSWORD,
       },
     });
 
     for (const options of optionsArray) {
       if (context === options.context) {
         await transporter.sendMail({
-          from: `"${process.env.SERVER_NAME}" <${process.env.EMAIL}>`,
+          from: `"${env.SERVER_NAME}" <${env.EMAIL}>`,
           to: email,
           subject: options.subject,
           html: template,

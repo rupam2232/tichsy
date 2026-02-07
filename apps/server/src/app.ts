@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { ApiError } from "./utils/ApiError.js";
 import { ZodError } from "zod";
+import { env } from "./env.js";
 import userRoute from "./routes/user.route.js";
 import authRoute from "./routes/auth.route.js";
 import restaurantRoute from "./routes/restaurant.route.js";
@@ -31,11 +32,10 @@ app.use(cookieParser());
 app.use(helmet());
 
 // Determine if the app is running in development mode
-const isDev = process.env.NODE_ENV === "development";
-// Get allowed CORS origins from environment variable and trim whitespace
-const allowedOrigins = process.env
-  .CORS_ORIGIN!.split(",")
-  .map((origin) => origin.trim());
+
+const isDev = env.NODE_ENV === "development";
+// Get allowed CORS origins from environment variable
+const allowedOrigins = env.CORS_ORIGIN;
 
 // Configure CORS middleware with dynamic origin checking
 app.use(

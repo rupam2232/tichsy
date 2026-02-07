@@ -5,14 +5,13 @@ import jwt from "jsonwebtoken";
 import { accessTokenUser } from "../utils/jwt.js";
 import { Restaurant } from "../models/restaurant.models.js";
 import { isValidObjectId } from "mongoose";
+import { env } from "../env.js";
 
 let io: Server | null = null;
 export function setupSocketIO(server: http.Server) {
   io = new Server(server, {
     cors: {
-      origin: process.env.CORS_ORIGIN?.split(",").map((origin) =>
-        origin.trim()
-      ),
+      origin: env.CORS_ORIGIN,
       methods: ["GET", "POST"],
       credentials: true, // Allow cookies and credentials in CORS requests
     },
@@ -35,7 +34,7 @@ export function setupSocketIO(server: http.Server) {
         }
         const decoded = jwt.verify(
           accessToken,
-          process.env.ACCESS_TOKEN_SECRET as string
+          env.ACCESS_TOKEN_SECRET
         ) as accessTokenUser;
         const restaurant = await Restaurant.findById(activeRestaurantId);
         if (!restaurant) return socket.disconnect();

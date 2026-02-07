@@ -12,6 +12,9 @@ import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.j
 import { isSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 
 const router = Router();
 
@@ -24,8 +27,6 @@ const limit = rateLimit({
     throw new ApiError(429, "Too many attempts, please try again in a minute.");
   },
 });
-
-const isProduction = process.env?.NODE_ENV === "production";
 
 router
   .route("/:restaurantSlug")

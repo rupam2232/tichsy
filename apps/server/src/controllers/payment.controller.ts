@@ -17,6 +17,7 @@ import {
 } from "../config/subscriptionPlans.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
+import { env } from "../env.js";
 
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
@@ -27,7 +28,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   try {
     session.startTransaction();
     const webhookSignature = req.get("X-Razorpay-Signature");
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const webhookSecret = env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSignature || !webhookSecret) {
       throw new ApiError(400, "Webhook signature or secret is missing");
     }
@@ -194,7 +195,7 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     !validatePaymentVerification(
       { order_id: orderId, payment_id: paymentId },
       signature,
-      process.env.RAZORPAY_KEY_SECRET!
+      env.RAZORPAY_KEY_SECRET
     )
   ) {
     throw new ApiError(400, "Payment verification failed");

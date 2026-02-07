@@ -11,6 +11,9 @@ dotenv.config({
   path: "./.env",
 });
 
+// Validate environment variables immediately after loading
+import { env } from "./env.js";
+
 // Create an HTTP server using the Express app
 const server = http.createServer(app);
 
@@ -29,8 +32,8 @@ connectDB()
       throw err;
     });
     // Start the Express server on the specified port
-    server.listen(process.env.PORT || 8000, () => {
-      console.log(`Server is running at port: ${process.env.PORT || 8000}`);
+    server.listen(env.PORT || 8000, () => {
+      console.log(`Server is running at port: ${env.PORT || 8000}`);
     });
   })
   .catch((err) => {

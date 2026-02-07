@@ -20,6 +20,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { signUpSchema, signInSchema, forgotPasswordSchema } from "@repo/types";
+import { env } from "../env.js";
 const options = getCookieOptions();
 
 // Handles user registration with email/password, device/session logging, security event, and trial subscription creation. Sends welcome email and sets auth cookies.
@@ -133,11 +134,11 @@ export const signup = async (
       .status(201)
       .cookie("accessToken", accessToken, {
         ...options,
-        maxAge: Number(process.env.ACCESS_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+        maxAge: env.ACCESS_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", refreshToken, {
         ...options,
-        maxAge: Number(process.env.REFRESH_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+        maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
       })
       .json(
         new ApiResponse(
@@ -258,11 +259,11 @@ export const signin = async (
       .status(200)
       .cookie("accessToken", accessToken, {
         ...options,
-        maxAge: Number(process.env.ACCESS_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+        maxAge: env.ACCESS_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", refreshToken, {
         ...options,
-        maxAge: Number(process.env.REFRESH_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+        maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
       })
       .json(
         new ApiResponse(
@@ -299,7 +300,7 @@ export const google = async (
   try {
     session.startTransaction();
     // Verify Google ID token from request
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
     // Check if ID token is provided
     if (!req?.body?.idToken) {
       throw new ApiError(400, "Please provide a Google ID token to continue");
@@ -308,7 +309,7 @@ export const google = async (
     // Verify the ID token with Google
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     if (!payload || !payload.email) {
@@ -428,12 +429,11 @@ export const google = async (
         .status(200)
         .cookie("accessToken", accessToken, {
           ...options,
-          maxAge: Number(process.env.ACCESS_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+          maxAge: env.ACCESS_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
         })
         .cookie("refreshToken", refreshToken, {
           ...options,
-          maxAge:
-            Number(process.env.REFRESH_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+          maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
         })
         .json(
           new ApiResponse(
@@ -539,25 +539,15 @@ export const google = async (
         signupEmailTemplate(user[0].firstName ?? "User")
       );
 
-      // 12b. Set secure cookies for tokens and send response
-      const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite:
-          process.env.NODE_ENV === "production"
-            ? ("None" as "none")
-            : ("Strict" as "strict"),
-      };
       res
         .status(201)
         .cookie("accessToken", accessToken, {
           ...options,
-          maxAge: Number(process.env.ACCESS_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+          maxAge: env.ACCESS_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
         })
         .cookie("refreshToken", refreshToken, {
           ...options,
-          maxAge:
-            Number(process.env.REFRESH_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000,
+          maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
         })
         .json(
           new ApiResponse(

@@ -10,6 +10,9 @@ import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { verifyAuth } from "../middlewares/auth.middleware.js";
 import { verifyOtp } from "../middlewares/verifyOtp.middleare.js";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
 
 const router = Router();
 
@@ -24,7 +27,6 @@ const limiter = rateLimit({
   },
 });
 
-const isProduction = process.env?.NODE_ENV === "production";
 // Apply rate limiting only in production
 if (isProduction) router.use(limiter);
 

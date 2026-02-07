@@ -9,6 +9,7 @@ import { verifyAuth } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
+import { env } from "../env.js";
 const router = Router();
 
 const restaurantLogoLimit = rateLimit({
@@ -31,9 +32,9 @@ const foodItemImageLimit = rateLimit({
   },
 });
 
-const isProduction = process.env?.NODE_ENV === "production";
+const isProduction = env.NODE_ENV === "production";
 
-router.use(verifyAuth)
+router.use(verifyAuth);
 
 router
   .route("/restaurant-logo")
@@ -44,7 +45,8 @@ router
   )
   .delete(restaurantLogoDelete);
 
-  router.route("/food-item")
+router
+  .route("/food-item")
   .post(
     isProduction ? foodItemImageLimit : (req, res, next) => next(),
     upload.array("foodItemImages", 5),
