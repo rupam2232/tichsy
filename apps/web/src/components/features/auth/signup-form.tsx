@@ -94,6 +94,7 @@ export function SignupForm({
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
+    mode: "all",
     defaultValues: {
       email: "",
       password: "",
@@ -143,6 +144,7 @@ export function SignupForm({
   const sendOtp = async () => {
     if (isSendingOtp) {
       toast.info("OTP is already being sent. Please wait");
+      setSignupStep(2);
       return;
     }
     if (
@@ -150,11 +152,12 @@ export function SignupForm({
       (typeof resendTimer === "number" && resendTimer > 0)
     ) {
       toast.info(`Please wait ${resendTimer} seconds before resending OTP`);
+      setSignupStep(2);
       return;
     }
     const email = form.getValues("email");
     const name = form.getValues("fullName");
-
+    const toastId = toast.loading("Sending OTP...");
     try {
       setIsSendingOtp(true);
       const response = await axios.post("/otp/send", {
@@ -166,23 +169,57 @@ export function SignupForm({
         toast.error("Failed to send OTP. Please try again");
         return;
       }
-      form.setValue("otp", ""); // Clear the OTP field before sending a new OTP
-      toast.success(response.data.message || "OTP sent successfully!");
+      form.resetField("otp"); // Clear the OTP field and its state before sending a new OTP
+      toast.success(response.data.message || "OTP sent successfully!", {
+        id: toastId,
+      });
       startResendTimer();
       setIsOtpSent(true);
+      setSignupStep(2);
     } catch (error) {
       setSignupStep(1);
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
           "Failed to send OTP. Please try again",
+        {
+          id: toastId,
+        },
       );
       console.error(
         axiosError.response?.data.message ||
           "An error occurred while sending OTP",
       );
+      if (axiosError.response?.data.message.includes("email")) {
+        form.setError("email", {
+          type: "manual",
+          message: axiosError.response?.data.message,
+        });
+      }
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (signupStep === 1) {
+      // Validate the first step
+      const isValid = await form.trigger([
+        "fullName",
+        "email",
+        "password",
+        "confirmPassword",
+      ]);
+      if (isValid) {
+        if (passwordScore < 3) {
+          form.setError("password", {
+            type: "manual",
+            message: "Password is too weak. Please use a stronger password.",
+          });
+          return;
+        }
+        sendOtp();
+      }
     }
   };
 
@@ -196,6 +233,7 @@ export function SignupForm({
       if (setDrawerOpen) {
         setDrawerOpen(false);
       }
+      form.reset();
     } catch (error) {
       dispatch(signOut());
       const axiosError = error as AxiosError<ApiResponse>;
@@ -229,6 +267,14 @@ export function SignupForm({
             <form
               className="md:h-[84vh] overflow-y-auto overflow-x-hidden"
               onSubmit={form.handleSubmit(onSubmit)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (signupStep === 1) {
+                    e.preventDefault();
+                    handleContinue();
+                  }
+                }
+              }}
             >
               <ScrollArea className="h-full">
                 <div className="flex flex-col gap-6 p-6 md:p-8">
@@ -284,7 +330,7 @@ export function SignupForm({
                     <FormField
                       control={form.control}
                       name="fullName"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem
                           className={cn(signupStep !== 1 ? "hidden" : "")}
                         >
@@ -298,6 +344,7 @@ export function SignupForm({
                                 placeholder="Full Name"
                                 type="text"
                                 autoComplete="name"
+                                aria-invalid={fieldState.invalid}
                                 required
                                 {...field}
                               />
@@ -310,7 +357,7 @@ export function SignupForm({
                     <FormField
                       control={form.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem
                           className={cn(signupStep === 1 ? "" : "hidden")}
                         >
@@ -325,6 +372,7 @@ export function SignupForm({
                                 type="email"
                                 autoComplete="username"
                                 required
+                                aria-invalid={fieldState.invalid}
                                 {...field}
                               />
                             </InputGroup>
@@ -363,7 +411,7 @@ export function SignupForm({
                     <FormField
                       control={form.control}
                       name="confirmPassword"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem
                           className={cn(signupStep === 1 ? "" : "hidden")}
                         >
@@ -378,6 +426,7 @@ export function SignupForm({
                                 type={showConfirmPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 required
+                                aria-invalid={fieldState.invalid}
                                 {...field}
                               />
                               <InputGroupAddon align="inline-end">
@@ -465,29 +514,8 @@ export function SignupForm({
                   <Button
                     type="button"
                     className={cn("w-full", signupStep === 2 ? "hidden" : "")}
-                    onClick={async () => {
-                      if (signupStep === 1) {
-                        // Validate the first step
-                        const isValid = await form.trigger([
-                          "fullName",
-                          "email",
-                          "password",
-                          "confirmPassword",
-                        ]);
-                        if (isValid) {
-                          if (passwordScore < 3) {
-                            form.setError("password", {
-                              type: "manual",
-                              message:
-                                "Password is too weak. Please use a stronger password.",
-                            });
-                            return;
-                          }
-                          sendOtp();
-                          setSignupStep(2);
-                        }
-                      }
-                    }}
+                    onClick={handleContinue}
+                    disabled={isSendingOtp}
                   >
                     Continue to OTP
                   </Button>

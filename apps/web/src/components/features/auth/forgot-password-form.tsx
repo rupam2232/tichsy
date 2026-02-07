@@ -30,6 +30,7 @@ import {
   LockKeyhole,
   Mail,
   RotateCcw,
+  Send,
 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { useForm } from "react-hook-form";
@@ -89,6 +90,7 @@ const ForgotPasswordForm = () => {
   const sendOtp = async () => {
     if (isSendingOtp) {
       toast.info("OTP is already being sent. Please wait.");
+      setStep(2);
       return;
     }
     if (
@@ -96,6 +98,7 @@ const ForgotPasswordForm = () => {
       (typeof resendTimer === "number" && resendTimer > 0)
     ) {
       toast.info(`Please wait ${resendTimer} seconds before resending OTP.`);
+      setStep(2);
       return;
     }
     const email = form.getValues("email");
@@ -105,8 +108,10 @@ const ForgotPasswordForm = () => {
         message: "Please enter your email to receive the OTP.",
       });
       toast.error("Please enter your email to receive the OTP.");
+      setStep(1);
       return;
     }
+    const toastId = toast.loading("Sending OTP...");
     try {
       setIsSendingOtp(true);
       const response = await axios.post("/otp/send", {
@@ -117,23 +122,44 @@ const ForgotPasswordForm = () => {
         toast.error("Failed to send OTP. Please try again");
         return;
       }
-      form.setValue("otp", ""); // Clear the OTP field before sending a new OTP
-      toast.success(response.data.message || "OTP sent successfully!");
+      form.resetField("otp"); // Reset the OTP field before sending a new OTP
+      toast.success(response.data.message || "OTP sent successfully!", {
+        id: toastId,
+      });
       startResendTimer();
       setIsOtpSent(true);
+      setStep(2);
     } catch (error) {
       setStep(1);
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
           "Failed to send OTP. Please try again.",
+        {
+          id: toastId,
+        },
       );
       console.error(
         axiosError.response?.data.message ||
           "An error occurred while sending OTP",
       );
+      if (axiosError.response?.data.message.includes("email")) {
+        form.setError("email", {
+          type: "manual",
+          message: axiosError.response?.data.message,
+        });
+      }
     } finally {
       setIsSendingOtp(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (step === 1) {
+      const isValid = await form.trigger("email");
+      if (isValid) {
+        sendOtp();
+      }
     }
   };
 
@@ -153,6 +179,7 @@ const ForgotPasswordForm = () => {
     try {
       const response = await axios.post("/auth/forgot-password", data);
       toast.success(response.data.message || "Password reset successful!");
+      form.reset();
       router.replace("/signin");
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
@@ -179,12 +206,23 @@ const ForgotPasswordForm = () => {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form className="" onSubmit={form.handleSubmit(onSubmit)}>
+            <form
+              className=""
+              onSubmit={form.handleSubmit(onSubmit)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (step === 1) {
+                    e.preventDefault();
+                    handleContinue();
+                  }
+                }
+              }}
+            >
               <div className="space-y-4">
                 <FormField
                   control={form.control}
                   name="email"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className={cn(step === 1 ? "" : "hidden")}>
                       <FormControl>
                         <InputGroup className="w-full border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
@@ -197,6 +235,7 @@ const ForgotPasswordForm = () => {
                             type="email"
                             autoComplete="username"
                             required
+                            aria-invalid={fieldState.invalid}
                             {...field}
                           />
                         </InputGroup>
@@ -208,7 +247,7 @@ const ForgotPasswordForm = () => {
                 <FormField
                   control={form.control}
                   name="otp"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className={cn("", step === 2 ? "" : "hidden")}>
                       <FormLabel htmlFor="otp">
                         Enter OTP sent to {form.getValues("email")}
@@ -220,6 +259,7 @@ const ForgotPasswordForm = () => {
                           pattern={REGEXP_ONLY_DIGITS}
                           maxLength={6}
                           containerClassName="w-full"
+                          aria-invalid={fieldState.invalid}
                           {...field}
                         >
                           <InputOTPGroup className="gap-2 sm:gap-3 md:gap-4">
@@ -268,7 +308,7 @@ const ForgotPasswordForm = () => {
                       <FormControl>
                         <PasswordInput
                           id="password"
-                          placeholder="Password"
+                          placeholder="New Password"
                           autoComplete="new-password"
                           required
                           {...field}
@@ -286,7 +326,7 @@ const ForgotPasswordForm = () => {
                 <FormField
                   control={form.control}
                   name="confirmPassword"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className={cn(step === 2 ? "" : "hidden")}>
                       <FormControl>
                         <InputGroup className="w-full border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
@@ -295,10 +335,11 @@ const ForgotPasswordForm = () => {
                           </InputGroupAddon>
                           <InputGroupInput
                             id="confirm-password"
-                            placeholder="Confirm Password"
+                            placeholder="Confirm New Password"
                             type={showConfirmPassword ? "text" : "password"}
                             autoComplete="new-password"
                             required
+                            aria-invalid={fieldState.invalid}
                             {...field}
                           />
                           <InputGroupAddon align="inline-end">
@@ -320,17 +361,10 @@ const ForgotPasswordForm = () => {
                   <Button
                     type="button"
                     className={cn("w-full", step === 2 ? "hidden" : "")}
-                    onClick={async () => {
-                      if (step === 1) {
-                        const isValid = await form.trigger("email");
-                        if (isValid) {
-                          sendOtp();
-                          setStep(2);
-                        }
-                      }
-                    }}
+                    onClick={handleContinue}
+                    disabled={isSendingOtp}
                   >
-                    Send OTP
+                    Send OTP <Send />
                   </Button>
                   <Button
                     type="submit"

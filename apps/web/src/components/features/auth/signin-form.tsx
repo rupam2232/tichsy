@@ -68,6 +68,7 @@ export function SigninForm({
     try {
       const response = await axios.post("/auth/google", { idToken });
       dispatch(signIn(response.data.data));
+      form.reset();
       toast.success(response.data.message || "Sign in successful!");
       if (
         response.data?.message &&
@@ -102,6 +103,7 @@ export function SigninForm({
       const response = await axios.post("/auth/signin", data);
       dispatch(signIn(response.data.data));
       toast.success(response.data.message || "Sign in successful!");
+      form.reset();
       router.replace(redirectTo);
       if (setDrawerOpen) {
         setDrawerOpen(false);
@@ -183,7 +185,7 @@ export function SigninForm({
                     <FormField
                       control={form.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
                           <FormControl>
                             <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
@@ -196,6 +198,7 @@ export function SigninForm({
                                 type="email"
                                 autoComplete="username"
                                 required
+                                aria-invalid={fieldState.invalid}
                                 {...field}
                               />
                             </InputGroup>
@@ -207,7 +210,7 @@ export function SigninForm({
                     <FormField
                       control={form.control}
                       name="password"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
                           <FormControl>
                             <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
@@ -220,6 +223,7 @@ export function SigninForm({
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="current-password"
                                 required
+                                aria-invalid={fieldState.invalid}
                                 {...field}
                               />
                               <InputGroupAddon align="inline-end">
