@@ -8,6 +8,12 @@ import { TemporaryMedia } from "../models/temporaryMedia.model.js";
 import { FoodItem } from "../models/foodItem.model.js";
 import type { FoodItem as FoodItemType } from "../models/foodItem.model.js";
 import { isValidObjectId } from "mongoose";
+import {
+  foodItemImageDeleteSchema,
+  foodItemImageUploadSchema,
+  restaurantLogoDeleteSchema,
+  restaurantLogoUploadSchema,
+} from "@repo/types";
 
 export const restaurantLogoUpload = asyncHandler(async (req, res) => {
   const logoLocalPath = req.file?.path;
@@ -21,13 +27,16 @@ export const restaurantLogoUpload = asyncHandler(async (req, res) => {
   }
 
   let restaurant: Restaurant | null = null;
-  if (req.body.restaurantId) {
+  const validatedData = restaurantLogoUploadSchema.parse(req.body);
+  const { restaurantId } = validatedData;
+
+  if (restaurantId) {
     // If restaurantId is provided, update the corresponding restaurant
-    if (!isValidObjectId(req.body.restaurantId)) {
+    if (!isValidObjectId(restaurantId)) {
       fs.unlinkSync(logoLocalPath); // Remove the file if restaurantId is invalid
       throw new ApiError(400, "Invalid restaurant ID");
     }
-    restaurant = await Restaurant.findById(req.body.restaurantId);
+    restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       fs.unlinkSync(logoLocalPath); // Remove the file if restaurant is not found
       throw new ApiError(404, "Restaurant not found");
@@ -54,7 +63,7 @@ export const restaurantLogoUpload = asyncHandler(async (req, res) => {
   });
 
   // If restaurantId is provided, update the restaurant's logoUrl
-  if (req.body.restaurantId && restaurant) {
+  if (restaurantId && restaurant) {
     restaurant.logoUrl = uploadResponse.secure_url;
     await restaurant.save({ validateBeforeSave: false }); // Save the restaurant without validation
   }
@@ -71,11 +80,8 @@ export const restaurantLogoUpload = asyncHandler(async (req, res) => {
 });
 
 export const restaurantLogoDelete = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.mediaUrl) {
-    throw new ApiError(400, "Media URL is required");
-  }
-
-  const { mediaUrl } = req.body;
+  const validatedData = restaurantLogoDeleteSchema.parse(req.body);
+  const { mediaUrl, restaurantId } = validatedData;
 
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can delete restaurant logos");
@@ -89,15 +95,15 @@ export const restaurantLogoDelete = asyncHandler(async (req, res) => {
     mediaUrl: mediaUrl,
   });
 
-  if (req.body.restaurantId) {
-    if (!isValidObjectId(req.body.restaurantId)) {
+  if (restaurantId) {
+    if (!isValidObjectId(restaurantId)) {
       throw new ApiError(400, "Invalid restaurant ID");
     }
     if (!req.user!.restaurantIds || req.user!.restaurantIds.length === 0) {
       throw new ApiError(403, "User does not own any restaurants");
     }
     // If restaurantId is provided, check if the user owns that restaurant
-    restaurant = await Restaurant.findById(req.body.restaurantId);
+    restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       throw new ApiError(404, "Restaurant not found");
     }
@@ -132,7 +138,7 @@ export const restaurantLogoDelete = asyncHandler(async (req, res) => {
     // Remove the logo from TemporaryMedia
     await tempMedia.deleteOne();
   }
-  if (restaurant && restaurant.logoUrl === mediaUrl && req.body.restaurantId) {
+  if (restaurant && restaurant.logoUrl === mediaUrl && restaurantId) {
     // If the logo was in Restaurant, update the restaurant's logoUrl
     restaurant.logoUrl = undefined;
     await restaurant.save({ validateBeforeSave: false }); // Save the restaurant without validation
@@ -159,15 +165,18 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Only owners can upload menu item images");
   }
   let foodItem: FoodItemType | null = null;
-  if (req.body.foodItemId) {
+  const validatedData = foodItemImageUploadSchema.parse(req.body);
+  const { foodItemId } = validatedData;
+
+  if (foodItemId) {
     // If foodItemId is provided, update the corresponding food item
-    if (!isValidObjectId(req.body.foodItemId)) {
+    if (!isValidObjectId(foodItemId)) {
       imageLocalPaths.forEach((file: Express.Multer.File) => {
         fs.unlinkSync(file.path); // Remove the file if foodItemId is invalid
       });
       throw new ApiError(400, "Invalid food item ID");
     }
-    foodItem = await FoodItem.findById(req.body.foodItemId);
+    foodItem = await FoodItem.findById(foodItemId);
     if (!foodItem) {
       imageLocalPaths.forEach((file: Express.Multer.File) => {
         fs.unlinkSync(file.path); // Remove the file if food item is not found
@@ -234,7 +243,7 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
 
   await Promise.all(tempMediaPromises);
 
-  if (req.body.foodItemId && foodItem) {
+  if (foodItemId && foodItem) {
     // Add the new image URLs to the food item's images array
     foodItem.imageUrls!.push(...imageUrls); // Add new image URLs
     foodItem.imageUrls = Array.from(new Set(foodItem.imageUrls)); // Remove duplicates
@@ -247,10 +256,8 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
 });
 
 export const deleteFoodItemImage = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.mediaUrl) {
-    throw new ApiError(400, "Media URL is required");
-  }
-  const { mediaUrl } = req.body;
+  const validatedData = foodItemImageDeleteSchema.parse(req.body);
+  const { mediaUrl, foodItemId } = validatedData;
 
   if (req.user!.role !== "owner") {
     throw new ApiError(403, "Only owners can delete menu item images");
@@ -258,12 +265,12 @@ export const deleteFoodItemImage = asyncHandler(async (req, res) => {
 
   let foodItem: FoodItemType | null = null;
 
-  if (req.body.foodItemId) {
+  if (foodItemId) {
     // If foodItemId is provided, update the corresponding food item
-    if (!isValidObjectId(req.body.foodItemId)) {
+    if (!isValidObjectId(foodItemId)) {
       throw new ApiError(400, "Invalid food item ID");
     }
-    foodItem = await FoodItem.findById(req.body.foodItemId);
+    foodItem = await FoodItem.findById(foodItemId);
     if (!foodItem) {
       throw new ApiError(404, "Food item not found");
     }

@@ -15,6 +15,21 @@ export { tableSchema } from "./schemas/tableSchema.js";
 export { sendOtpSchema, verifyOtpSchema } from "./schemas/otpSchema.js";
 export { verifyPaymentSchema } from "./schemas/paymentSchema.js";
 export { createOrderSchema } from "./schemas/orderSchema.js";
+export {
+  addToCartSchema,
+  updateCartItemSchema,
+  removeFromCartSchema,
+} from "./schemas/cartSchema.js";
+export {
+  createSubscriptionSchema,
+  createOrUpdateSubscriptionSchema,
+} from "./schemas/subscriptionSchema.js";
+export {
+  restaurantLogoUploadSchema,
+  restaurantLogoDeleteSchema,
+  foodItemImageUploadSchema,
+  foodItemImageDeleteSchema,
+} from "./schemas/mediaSchema.js";
 
 // Interfaces
 export * from "./interfaces/ApiResponse.js";

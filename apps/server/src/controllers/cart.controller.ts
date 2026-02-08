@@ -6,18 +6,19 @@ import { isValidObjectId, Types } from "mongoose";
 import { Cart, CartItem } from "../models/cart.model.js";
 import { FoodItem } from "../models/foodItem.model.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
+import {
+  addToCartSchema,
+  removeFromCartSchema,
+  updateCartItemSchema,
+} from "@repo/types";
 const options = getCookieOptions();
 
 export const addToCart = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.foodId || !req.body.quantity) {
-    throw new ApiError(400, "Food ID and quantity are required");
-  }
-
+  const validatedData = addToCartSchema.parse(req.body);
+  const { foodId, quantity, variantName } = validatedData;
   if (!req.params || !req.params.restaurantSlug) {
     throw new ApiError(400, "Restaurant slug is required");
   }
-
-  const { foodId, quantity, variantName } = req.body;
   const restaurantSlug = req.params.restaurantSlug;
 
   if (!isValidObjectId(foodId)) {
@@ -103,7 +104,7 @@ export const addToCart = asyncHandler(async (req, res) => {
         quantity,
         variantName,
         restaurantSlug,
-      } as CartItem);
+      } as unknown as CartItem);
     }
     cart.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Reset expiration date
     await cart.save();
@@ -123,12 +124,10 @@ export const removeFromCart = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Food ID and restaurant slug are required");
   }
 
-  if (!req.body || !req.body.quantity || isNaN(req.body.quantity)) {
-    throw new ApiError(400, "Quantity must be greater than zero");
-  }
+  const validatedData = removeFromCartSchema.parse(req.body);
+  const { quantity, variantName } = validatedData;
 
   const { foodId, restaurantSlug } = req.params;
-  const { quantity, variantName } = req.body;
 
   if (!isValidObjectId(foodId)) {
     throw new ApiError(400, "Invalid food ID");
@@ -180,17 +179,10 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Food ID and restaurant slug are required");
   }
 
-  if (
-    !req.body ||
-    !req.body.quantity ||
-    isNaN(req.body.quantity) ||
-    req.body.quantity <= 0
-  ) {
-    throw new ApiError(400, "Quantity must be greater than zero");
-  }
+  const validatedData = updateCartItemSchema.parse(req.body);
+  const { quantity, variantName } = validatedData;
 
   const { foodId, restaurantSlug } = req.params;
-  const { quantity, variantName } = req.body;
 
   if (!isValidObjectId(foodId)) {
     throw new ApiError(400, "Invalid food ID");

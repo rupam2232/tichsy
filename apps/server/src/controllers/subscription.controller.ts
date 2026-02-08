@@ -4,9 +4,12 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   SUBSCRIPTION_PLANS,
-  SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
 import { razorpay } from "../utils/razorpay.js";
+import {
+  createOrUpdateSubscriptionSchema,
+  createSubscriptionSchema,
+} from "@repo/types";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
   const subscription = await Subscription.findOne({ userId: req.user!._id });
@@ -83,7 +86,7 @@ export const createOrUpdateSubscription = asyncHandler(async (req, res) => {
     trialExpiresAt,
     subscriptionStartDate,
     subscriptionEndDate,
-  } = req.body;
+  } = createOrUpdateSubscriptionSchema.parse(req.body);
 
   const subscription = await Subscription.findOneAndUpdate(
     { userId: req.user!._id },
@@ -109,11 +112,8 @@ export const createOrUpdateSubscription = asyncHandler(async (req, res) => {
 });
 
 export const createSubscription = asyncHandler(async (req, res) => {
-  if (!req.body || !req.body.plan) {
-    throw new ApiError(400, "Plan is required to create a subscription");
-  }
-
-  const plan = req.body.plan as SubscriptionPlan;
+  const validatedData = createSubscriptionSchema.parse(req.body);
+  const plan = validatedData.plan;
   if (!SUBSCRIPTION_PLANS[plan]) {
     throw new ApiError(400, "Invalid plan selected");
   }
