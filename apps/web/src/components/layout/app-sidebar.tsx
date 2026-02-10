@@ -8,7 +8,6 @@ import {
   IconTable,
   IconToolsKitchen,
   IconLayoutDashboard,
-  IconChartBar,
   IconUser,
   IconUsers,
   IconCreditCard,
@@ -92,11 +91,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconUser,
       showInSidebar: user?.role === "owner",
       subItems: [
-        {
-          title: "Owner Dashboard",
-          url: `/restaurant/${restaurantSlug}/owner-dashboard`,
-          icon: IconChartBar,
-        },
         {
           title: "Staff Management",
           url: `/restaurant/${restaurantSlug}/staff-management`,

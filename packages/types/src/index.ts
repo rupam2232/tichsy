@@ -58,6 +58,9 @@ export {
 export {
   type StaffDashboardStats,
   type OwnerDashboardStats,
+  type DashboardStats,
+  type DashboardOperations,
+  type DashboardAnalytics,
 } from "./interfaces/Stats.js";
 
 export { type CurrentSubscription } from "./interfaces/Subscription.js";

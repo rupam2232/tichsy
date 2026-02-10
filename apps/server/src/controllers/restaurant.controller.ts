@@ -1235,3 +1235,422 @@ export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, restaurant, "Staff removed successfully"));
 });
+
+// Operations endpoint - Fast, live data for Staff & Owners
+export const getDashboardOperations = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug) {
+    throw new ApiError(400, "Restaurant slug is required");
+  }
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  // Role verification - Both staff and owner can access
+  if (req.user!.role === "owner") {
+    if (restaurant.ownerId.toString() !== req.user!.id) {
+      throw new ApiError(403, "You can't access this data");
+    }
+  } else if (req.user!.role === "staff") {
+    if (
+      !restaurant.staffIds ||
+      !restaurant.staffIds.map((id) => id.toString()).includes(req.user!.id)
+    ) {
+      throw new ApiError(403, "You can't access this data");
+    }
+  } else {
+    throw new ApiError(403, "Unauthorized role");
+  }
+
+  // --- Operations Stats (Live Data) ---
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
+  const startOfTodayInTZ = startOfDay(nowInTZ);
+  const startOfToday = fromZonedTime(startOfTodayInTZ, timeZone);
+  const endOfTodayInTZ = endOfDay(nowInTZ);
+  const endOfToday = fromZonedTime(endOfTodayInTZ, timeZone);
+
+  const yesterdayInTZ = new Date(nowInTZ);
+  yesterdayInTZ.setDate(yesterdayInTZ.getDate() - 1);
+  const startOfYesterdayInTZ = startOfDay(yesterdayInTZ);
+  const startOfYesterday = fromZonedTime(startOfYesterdayInTZ, timeZone);
+  const endOfYesterdayInTZ = endOfDay(yesterdayInTZ);
+  const endOfYesterday = fromZonedTime(endOfYesterdayInTZ, timeZone);
+
+  const [
+    newOrders,
+    inProgressOrders,
+    tableStats,
+    todayTotalOrders,
+    yesterdayTotalOrdersAgg,
+    unPaidCompletedOrders,
+    readyOrders,
+  ] = await Promise.all([
+    Order.countDocuments({
+      restaurantId: restaurant._id,
+      status: "pending",
+    }),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          status: "preparing",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+    Table.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          isArchived: false, // Ensure we don't count archived tables
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          occupiedTableCount: {
+            $sum: { $cond: [{ $eq: ["$isOccupied", true] }, 1, 0] },
+          },
+          freeTableCount: {
+            $sum: { $cond: [{ $eq: ["$isOccupied", false] }, 1, 0] },
+          },
+        },
+      },
+    ]),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          createdAt: { $gte: startOfToday, $lte: endOfToday },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          createdAt: { $gte: startOfYesterday, $lte: endOfYesterday },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          status: "completed",
+          isPaid: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          status: "ready",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  const todayTotal = todayTotalOrders[0]?.total || 0;
+  const yesterdayTotal = yesterdayTotalOrdersAgg[0]?.total || 0;
+
+  let totalOrderChangePercent = 0;
+  if (yesterdayTotal !== 0) {
+    totalOrderChangePercent =
+      ((todayTotal - yesterdayTotal) / yesterdayTotal) * 100;
+  } else if (todayTotal > 0) {
+    totalOrderChangePercent = 100;
+  }
+
+  const operations = {
+    newOrders,
+    inProgressOrders: inProgressOrders[0]?.total || 0,
+    occupiedTables: tableStats[0]?.occupiedTableCount || 0,
+    freeTables: tableStats[0]?.freeTableCount || 0,
+    todayTotalOrders: todayTotal,
+    yesterdayTotalOrders: yesterdayTotal,
+    totalOrderChangePercent,
+    unPaidCompletedOrders: unPaidCompletedOrders[0]?.total || 0,
+    readyOrders: readyOrders[0]?.total || 0,
+  };
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        operations,
+        "Dashboard operations retrieved successfully"
+      )
+    );
+});
+
+// Analytics endpoint - Slower, historical data for Owners only
+export const getDashboardAnalytics = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug) {
+    throw new ApiError(400, "Restaurant slug is required");
+  }
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const { startDate, endDate } = req.query;
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  // Role verification - OWNER ONLY
+  if (
+    req.user!.role !== "owner" ||
+    restaurant.ownerId.toString() !== req.user!.id
+  ) {
+    throw new ApiError(403, "You can't access this data");
+  }
+
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
+  const startOfTodayInTZ = startOfDay(nowInTZ);
+  const startOfToday = fromZonedTime(startOfTodayInTZ, timeZone);
+  const endOfTodayInTZ = endOfDay(nowInTZ);
+  const endOfToday = fromZonedTime(endOfTodayInTZ, timeZone);
+
+  // Determine date range for analytics
+  let queryStart: Date;
+  let queryEnd: Date;
+
+  if (startDate && endDate) {
+    queryStart = fromZonedTime(
+      startOfDay(toZonedTime(new Date(startDate as string), timeZone)),
+      timeZone
+    );
+    queryEnd = fromZonedTime(
+      endOfDay(toZonedTime(new Date(endDate as string), timeZone)),
+      timeZone
+    );
+  } else {
+    // Default to last 30 days
+    const thirtyDaysAgo = new Date(nowInTZ);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+    queryStart = fromZonedTime(startOfDay(thirtyDaysAgo), timeZone);
+    queryEnd = endOfToday;
+  }
+
+  // 1. Sales & Orders in selected period
+  const [periodSalesAgg, periodOrdersAgg] = await Promise.all([
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          isPaid: true,
+          status: "completed",
+          createdAt: { $gte: queryStart, $lte: queryEnd },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]),
+    Order.countDocuments({
+      restaurantId: restaurant._id,
+      status: "completed",
+      createdAt: { $gte: queryStart, $lte: queryEnd },
+    }),
+  ]);
+
+  // 2. All Time Sales
+  const allTimeSalesAgg = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        isPaid: true,
+        status: "completed",
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+  ]);
+
+  // 3. Sales Trend
+  const rawSalesTrend = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        status: "completed",
+        createdAt: { $gte: queryStart, $lte: queryEnd },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$createdAt",
+            timezone: timeZone,
+          },
+        },
+        total: { $sum: "$totalAmount" },
+        orders: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const salesTrendMap = new Map(rawSalesTrend.map((item) => [item._id, item]));
+  const salesTrend = [];
+  let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
+  const loopEndDateInTZ = new Date(toZonedTime(queryEnd, timeZone));
+
+  while (loopDateInTZ <= loopEndDateInTZ) {
+    const year = loopDateInTZ.getFullYear();
+    const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+    const day = String(loopDateInTZ.getDate()).padStart(2, "0");
+    const dateString = `${year}-${month}-${day}`;
+
+    if (salesTrendMap.has(dateString)) {
+      salesTrend.push(salesTrendMap.get(dateString));
+    } else {
+      salesTrend.push({ _id: dateString, total: 0, orders: 0 });
+    }
+    loopDateInTZ.setDate(loopDateInTZ.getDate() + 1);
+  }
+
+  // 4. Top Food Items
+  const topFoodItems = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        createdAt: { $gte: queryStart, $lte: queryEnd },
+      },
+    },
+    { $unwind: "$foodItems" },
+    {
+      $group: {
+        _id: "$foodItems.foodItemId",
+        variantName: { $first: "$foodItems.variantName" },
+        count: { $sum: "$foodItems.quantity" },
+      },
+    },
+    { $sort: { count: -1 } },
+    { $limit: 5 },
+    {
+      $lookup: {
+        from: "fooditems",
+        localField: "_id",
+        foreignField: "_id",
+        as: "foodItem",
+      },
+    },
+    { $unwind: "$foodItem" },
+    {
+      $project: {
+        _id: 1,
+        foodName: "$foodItem.foodName",
+        firstImageUrl: { $arrayElemAt: ["$foodItem.imageUrls", 0] },
+        variantName: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  // 5. Top Tables
+  const topTables = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        tableId: { $exists: true, $ne: null },
+        createdAt: { $gte: queryStart, $lte: queryEnd },
+      },
+    },
+    { $group: { _id: "$tableId", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 5 },
+    {
+      $lookup: {
+        from: "tables",
+        localField: "_id",
+        foreignField: "_id",
+        as: "table",
+      },
+    },
+    { $unwind: "$table" },
+    { $project: { _id: 1, tableName: "$table.tableName", count: 1 } },
+  ]);
+
+  // 6. Today's Sales specifically for the KPI card
+  const todaySalesAgg = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        isPaid: true,
+        status: "completed",
+        createdAt: { $gte: startOfToday, $lte: endOfToday },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+  ]);
+
+  const overview = {
+    kpis: {
+      allTimeSales: {
+        value: allTimeSalesAgg[0]?.total || 0,
+        description: "Total revenue to date",
+      },
+      totalCompletedOrders: {
+        value: periodOrdersAgg,
+        description: "Orders in selected period",
+      },
+      thisMonthSales: {
+        value: periodSalesAgg[0]?.total || 0,
+        description: "Sales in selected period",
+      },
+      todaySales: {
+        value: todaySalesAgg[0]?.total || 0,
+        description: "Today's sales revenue",
+      },
+    },
+    salesTrend,
+    topFoodItems,
+    topTables,
+  };
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        overview,
+        "Dashboard analytics retrieved successfully"
+      )
+    );
+});

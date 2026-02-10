@@ -17,7 +17,7 @@ export async function generateMetadata({
   }
   return {
     title: `Dashboard | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Manage your restaurant's dashboard.`,
+    description: `View your restaurant's performance and orders.`,
   };
 }
 
