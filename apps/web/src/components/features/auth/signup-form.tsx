@@ -53,7 +53,6 @@ import {
   RotateCcw,
   User,
 } from "lucide-react";
-import { REGEXP_ONLY_DIGITS } from "input-otp";
 import Link from "next/link";
 
 export function SignupForm({
@@ -469,7 +468,6 @@ export function SignupForm({
                             <InputOTP
                               disabled={!isOtpSent || isSendingOtp}
                               id="otp"
-                              pattern={REGEXP_ONLY_DIGITS}
                               maxLength={6}
                               {...field}
                             >

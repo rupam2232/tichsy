@@ -35,8 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/table";
-import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
-import { AvatarImage } from "@radix-ui/react-avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/components/avatar";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import OrderStatusDropdown from "./order-status-dropdown";

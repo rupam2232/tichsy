@@ -49,7 +49,6 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@repo/ui/components/input-otp";
-import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
@@ -256,7 +255,6 @@ const ForgotPasswordForm = () => {
                         <InputOTP
                           disabled={!isOtpSent || isSendingOtp}
                           id="otp"
-                          pattern={REGEXP_ONLY_DIGITS}
                           maxLength={6}
                           containerClassName="w-full"
                           aria-invalid={fieldState.invalid}
