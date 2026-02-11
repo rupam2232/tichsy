@@ -16,8 +16,6 @@ import {
   updateRestaurantDetails,
   updateRestaurantLogo,
   getRestaurantCategories,
-  getStaffDashboardStats,
-  getOwnerDashboardStats,
   getAllStaffOfRestaurant,
   addStaffToRestaurant,
   removeStaffFromRestaurant,

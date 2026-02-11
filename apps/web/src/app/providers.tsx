@@ -6,7 +6,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Provider as ReduxProvider, useDispatch } from "react-redux";
 import { signIn, signOut, UserState } from "@/store/authSlice";
 import store from "@/store/store";
-import { Toaster } from "@repo/ui/components/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { SocketProvider } from "@/context/SocketContext";
 
 function StoreInitializer({ user }: { user?: UserState["user"] }) {
