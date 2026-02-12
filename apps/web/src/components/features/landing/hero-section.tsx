@@ -125,7 +125,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 animate="visible"
               >
                 <h1 className="text-4xl tracking-tighter font-geist bg-clip-text text-transparent mx-auto md:text-6xl bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.75)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
-                  {subtitle.regular}
+                  {subtitle.regular}{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-500 dark:from-emerald-300 dark:to-green-200">
                     {subtitle.gradient}
                   </span>
@@ -164,7 +164,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
               </motion.div>
             </div>
             {bottomImage && (
-              <div className="mt-32 mx-10 relative z-10">
+              <div className="mt-32 mx-10 relative z-10 aspect-video">
                 <Image
                   src={bottomImage.light}
                   className="w-full shadow-lg rounded-lg border border-gray-200 dark:hidden"
@@ -181,6 +181,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
             )}
           </div>
         </section>
+        <div className="absolute bottom-0 z-40 inset-x-0 h-20 bg-gradient-to-t from-background via-white dark:via-background to-transparent w-full pointer-events-none" />
       </div>
     );
   }

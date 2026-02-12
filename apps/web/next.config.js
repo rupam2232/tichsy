@@ -3,10 +3,10 @@ const nextConfig = {
   transpilePackages: ["@repo/ui"],
   images: {
     remotePatterns: [{
-    protocol: 'https',
-    hostname: 'res.cloudinary.com',
-    pathname: '/rupam-mondal/**',
-  },],
+      protocol: 'https',
+      hostname: 'res.cloudinary.com',
+      pathname: '/rupam-mondal/**',
+    }],
   },
 };
 

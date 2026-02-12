@@ -169,8 +169,17 @@ export default function SelectTable() {
                 >
                   <div
                     className={cn(
-                      "rounded-md ring-3 ring-transparent cursor-pointer transition-all duration-200 relative hover:ring-primary p-0.5",
-                      isSelected && "text-white ring-primary",
+                      "rounded-md ring-3 ring-transparent cursor-pointer transition-all duration-200 relative  p-0.5",
+                      isSelected && table.isArchived
+                        ? "ring-secondary-foreground/50"
+                        : isSelected && table.isOccupied
+                          ? "ring-destructive"
+                          : isSelected && "ring-primary",
+                      table.isArchived
+                        ? "hover:ring-secondary-foreground/50"
+                        : table.isOccupied
+                          ? "hover:ring-destructive"
+                          : "hover:ring-primary",
                     )}
                     onClick={() => handleTableSelect(table)}
                   >
@@ -178,10 +187,10 @@ export default function SelectTable() {
                       className={cn(
                         "flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md rounded-lg truncate whitespace-pre-wrap",
                         table.isArchived
-                          ? "bg-muted text-muted-foreground border border-muted-foreground"
+                          ? "bg-muted text-muted-foreground/80 border"
                           : table.isOccupied
-                            ? "bg-red-100 text-red-700 border border-red-300"
-                            : "bg-green-100 text-green-700 border border-green-300",
+                            ? "bg-red-500/20 border border-red-500/50"
+                            : "bg-green-500/20 border border-green-500/50",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">

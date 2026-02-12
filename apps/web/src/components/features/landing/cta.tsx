@@ -1,28 +1,35 @@
-"use client";
 import { Button } from "@repo/ui/components/button";
-import { motion } from "motion/react";
+import Link from "next/link";
+import { Glow } from "./glow";
 
 export default function CTA() {
   return (
-    <section className="py-24 text-center px-6 md:px-16 relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary/70 via-background/50 to-background"></div>
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="text-4xl font-bold mb-6"
-      >
-        Ready to Modernize Your Restaurant?
-      </motion.h2>
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="flex justify-center gap-4"
-      >
-        <Button className="px-6 py-3">Start Free</Button>
-        <Button variant="outline" className="px-6 py-3">Book Demo</Button>
-      </motion.div>
+    <section className="mx-auto sm:px-4 py-20 md:pb-20">
+      <div className="relative group overflow-hidden rounded-3xl px-4 sm:px-16 py-16 text-center">
+        <div className="mx-auto max-w-2xl relative z-10">
+          <h2 className="text-4xl font-bold tracking-tighter text-primary-foreground sm:text-4xl md:text-5xl">
+            Ready to modernize your restaurant ?
+          </h2>
+          <p className="mt-4 text-lg text-primary-foreground/90">
+            Join hundreds of restaurants streamlining their operations with{" "}
+            {process.env.NEXT_PUBLIC_APP_NAME}. Start your free trial today.
+          </p>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row justify-center relative z-10">
+          <Button
+            size="lg"
+            variant="secondary"
+            className="gap-2 font-semibold dark:bg-white dark:text-black bg-black hover:bg-black/80 text-white"
+            asChild
+          >
+            <Link href="/signup">Start Your 30-Day Free Trial Today</Link>
+          </Button>
+        </div>
+        <div className="absolute left-0 top-0 h-full w-full translate-y-[1rem] opacity-80 transition-all duration-500 ease-in-out group-hover:translate-y-[-2rem] group-hover:opacity-100">
+          <Glow variant="bottom" className="animate-appear-zoom delay-300" />
+        </div>
+      </div>
     </section>
   );
 }

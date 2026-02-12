@@ -1,21 +1,16 @@
-"use client";
-import { HeroSection } from "./hero-section-dark";
+import { HeroSection } from "./hero-section";
 
 export default function Hero() {
   return (
     <HeroSection
-      title="Modern POS for Restaurants"
+      title={`Introducing ${process.env.NEXT_PUBLIC_APP_NAME}`}
       subtitle={{
-        regular: "Simplify your workflow with",
-        gradient: " our all-in-one solution",
+        regular: "Modernize Operations with",
+        gradient: "Seamless QR Ordering",
       }}
-      description="Simplify orders, manage tables, and accept payments — all powered by QR codes."
-      ctaText="Get Started"
+      description="Empower your restaurant with lightning-fast orders and real-time table management. Delight guests and boost revenue effortlessly."
+      ctaText="Start Your 7-Day Free Trial"
       ctaHref="/signup"
-      // bottomImage={{
-      //   light: "https://www.launchuicomponents.com/app-light.png",
-      //   dark: "https://www.launchuicomponents.com/app-dark.png",
-      // }}
       gridOptions={{
         angle: 65,
         opacity: 0.4,
@@ -23,7 +18,6 @@ export default function Hero() {
         lightLineColor: "#4a4a4a",
         darkLineColor: "#6e6e6e",
       }}
-      className="h-screen"
     />
   );
 }

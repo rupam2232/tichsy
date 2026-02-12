@@ -24,12 +24,8 @@ export default function NavbarComp() {
     },
     {
       name: "Pricing",
-      link: "#pricing",
-    },
-    {
-      name: "Contact",
-      link: "#contact",
-    },
+      link: "/pricing",
+    }
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,7 +53,7 @@ export default function NavbarComp() {
                 variant="secondary"
                 className="shadow-xs hover:bg-primary-foreground/10 font-medium hover:translate-none"
               >
-                Sign in
+                Sign In
               </NavbarButton>
               <NavbarButton
                 href="/signup"
@@ -65,7 +61,7 @@ export default function NavbarComp() {
                 variant="primary"
                 className="bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
               >
-                Get Started free
+                Try for free
               </NavbarButton>
             </>
           )}
@@ -126,7 +122,7 @@ export default function NavbarComp() {
                   variant="primary"
                   className="w-full bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
                 >
-                  Get Started free
+                  Try for free
                 </NavbarButton>
               </>
             )}

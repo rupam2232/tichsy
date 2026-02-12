@@ -11,7 +11,6 @@ import Link from "next/link";
 
 import React, { useRef, useState } from "react";
 
-
 interface NavbarProps {
   children: React.ReactNode;
   className?: string;
@@ -69,7 +68,6 @@ export const Navbar = ({ children, className }: NavbarProps) => {
   return (
     <motion.div
       ref={ref}
-      // IMPORTANT: Change this to class of `fixed` if you want the navbar to be fixed
       className={cn("sticky inset-x-0 top-20 z-40 w-full", className)}
     >
       {React.Children.map(children, (child) =>
@@ -88,11 +86,11 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
   return (
     <motion.div
       animate={{
-        backdropFilter: visible ? "blur(10px)" : "none",
+        backdropFilter: visible ? "blur(10px)" : "blur(5px)",
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "40%" : "100%",
+        width: visible ? "40%" : "85%",
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -104,7 +102,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         minWidth: "900px",
       }}
       className={cn(
-        "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-full bg-transparent px-4 py-2 lg:flex dark:bg-transparent",
+        "relative z-[60] mx-auto hidden w-[85%] max-w-7xl flex-row items-center justify-between self-start rounded-full bg-transparent px-4 py-2 lg:flex dark:bg-transparent",
         visible && "bg-white/80 dark:bg-neutral-950/80",
         className,
       )}
@@ -128,7 +126,17 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
       {items.map((item, idx) => (
         <Link
           onMouseEnter={() => setHovered(idx)}
-          onClick={onItemClick}
+          onClick={(e) => {
+            if (item.link.startsWith("#")) {
+              e.preventDefault();
+              const element = document.querySelector(item.link);
+              if (element) {
+                element.scrollIntoView({ behavior: "smooth" });
+                window.history.pushState(null, "", window.location.href);
+              }
+            }
+            onItemClick?.();
+          }}
           className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300"
           key={`link-${idx}`}
           href={item.link}
@@ -226,16 +234,22 @@ export const MobileNavToggle = ({
   onClick: () => void;
 }) => {
   return isOpen ? (
-    <IconX className={cn("text-black dark:text-white", className)} onClick={onClick} />
+    <IconX
+      className={cn("text-black dark:text-white", className)}
+      onClick={onClick}
+    />
   ) : (
-    <IconMenu2 className={cn("text-black dark:text-white", className)} onClick={onClick} />
+    <IconMenu2
+      className={cn("text-black dark:text-white", className)}
+      onClick={onClick}
+    />
   );
 };
 
 export const NavbarLogo = () => {
   return (
-    <a
-      href="#"
+    <Link
+      href="/"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
       <img
@@ -244,8 +258,10 @@ export const NavbarLogo = () => {
         width={30}
         height={30}
       />
-      <span className="font-medium text-black dark:text-white">{process.env.NEXT_PUBLIC_APP_NAME}</span>
-    </a>
+      <span className="font-medium text-black dark:text-white">
+        {process.env.NEXT_PUBLIC_APP_NAME}
+      </span>
+    </Link>
   );
 };
 
