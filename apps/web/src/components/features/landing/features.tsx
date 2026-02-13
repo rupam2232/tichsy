@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@repo/ui/lib/utils";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import QrCodeAnimation from "./qr-code-animation";
 
 interface FeatureCardProps {

@@ -4,7 +4,7 @@ import { Glow } from "./glow";
 
 export default function CTA() {
   return (
-    <section className="mx-auto sm:px-4 py-20 md:pb-20">
+    <section id="cta" className="mx-auto sm:px-4 py-20 md:pb-20">
       <div className="relative group overflow-hidden rounded-3xl px-4 sm:px-16 py-16 text-center">
         <div className="mx-auto max-w-2xl relative z-10">
           <h2 className="text-4xl font-bold tracking-tighter text-primary-foreground sm:text-4xl md:text-5xl">
@@ -23,7 +23,7 @@ export default function CTA() {
             className="gap-2 font-semibold dark:bg-white dark:text-black bg-black hover:bg-black/80 text-white"
             asChild
           >
-            <Link href="/signup">Start Your 30-Day Free Trial Today</Link>
+            <Link href="/signup">Start Your 7-Day Free Trial Today</Link>
           </Button>
         </div>
         <div className="absolute left-0 top-0 h-full w-full translate-y-[1rem] opacity-80 transition-all duration-500 ease-in-out group-hover:translate-y-[-2rem] group-hover:opacity-100">

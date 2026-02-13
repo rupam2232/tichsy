@@ -3,6 +3,7 @@ import { HeroSection } from "./hero-section";
 export default function Hero() {
   return (
     <HeroSection
+      id="hero"
       title={`Introducing ${process.env.NEXT_PUBLIC_APP_NAME}`}
       subtitle={{
         regular: "Modernize Operations with",

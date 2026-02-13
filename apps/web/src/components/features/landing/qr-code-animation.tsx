@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Utensils, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Phone } from "@/components/ui/phone";
@@ -13,12 +13,13 @@ export default function QrCodeAnimation() {
   );
 
   useEffect(() => {
+    let scanTimeout: NodeJS.Timeout;
+    let successTimeout: NodeJS.Timeout;
+    let menuTimeout: NodeJS.Timeout;
     const cycleAnimation = () => {
       setStage("scanning");
-      let successTimeout: NodeJS.Timeout;
-      let menuTimeout: NodeJS.Timeout;
       // Scan for 3 seconds
-      const scanTimeout = setTimeout(() => {
+      scanTimeout = setTimeout(() => {
         setStage("scanned");
         // Show checkmark/success for 0.5s before showing menu
         successTimeout = setTimeout(() => {
@@ -26,18 +27,17 @@ export default function QrCodeAnimation() {
           // Stay on menu for 4 seconds before resetting
           menuTimeout = setTimeout(() => {
             cycleAnimation();
-          }, 4000);
+          }, 2000);
         }, 800);
       }, 2000);
-
-      return () => {
-        clearTimeout(scanTimeout);
-        clearTimeout(successTimeout);
-        clearTimeout(menuTimeout);
-      };
     };
 
     cycleAnimation();
+    return () => {
+      clearTimeout(scanTimeout);
+      clearTimeout(successTimeout);
+      clearTimeout(menuTimeout);
+    };
   }, []);
 
   return (
@@ -76,7 +76,7 @@ export default function QrCodeAnimation() {
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="mt-6 text-xs font-medium text-white/70"
+                className="mt-6 text-xs font-medium text-muted-foreground"
               >
                 Scan QR Code
               </motion.p>

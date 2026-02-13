@@ -100,7 +100,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
 
     return (
       <div className={cn("relative", className)} ref={ref} {...props}>
-        <div className="absolute top-0 z-[0] h-full w-full bg-primary/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+        <div className="absolute top-0 z-[0] h-full w-full dark:bg-primary/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
         <section className="relative h-full max-w-full mx-auto z-1">
           <RetroGrid {...gridOptions} />
           <div className="max-w-screen-xl z-10 mx-auto px-4 py-28 gap-12 md:px-8">
@@ -181,7 +181,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
             )}
           </div>
         </section>
-        <div className="absolute bottom-0 z-40 inset-x-0 h-20 bg-gradient-to-t from-background via-white dark:via-background to-transparent w-full pointer-events-none" />
+        <div className="absolute bottom-0 z-20 inset-x-0 h-10 bg-gradient-to-t from-background via-background/40 to-transparent w-full pointer-events-none" />
       </div>
     );
   }

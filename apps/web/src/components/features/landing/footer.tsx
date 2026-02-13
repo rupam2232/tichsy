@@ -385,10 +385,17 @@ const footerLinks = [
   {
     title: "Product",
     links: [
-      { id: 1, title: "Features", url: "#features" },
+      { id: 1, title: "Features", url: "/#features" },
       { id: 2, title: "Pricing", url: "/pricing" },
     ],
-  },
+  }, {
+    title: "Socials",
+    links: [
+      { id: 3, title: "LinkedIn", url: "https://linkedin.com/in/rupam2232" },
+      { id: 4, title: "X/Twitter", url: "https://x.com/rupam2232" },
+      { id: 5, title: "Github", url: "https://github.com/rupam2232" },
+    ],
+  }
 ];
 
 export default function Footer() {
@@ -410,7 +417,7 @@ export default function Footer() {
           <ToggleTheme />
         </div>
         <div className="pt-5 md:w-1/2">
-          <div className="flex flex-wrap gap-4 items-start justify-between md:flex-row md:items-center md:justify-between gap-y-5 lg:pl-10">
+          <div className="flex flex-wrap gap-4 items-start justify-between md:flex-row gap-y-5 lg:pl-10">
             {footerLinks.map((column, columnIndex) => (
               <ul key={columnIndex} className="flex flex-col gap-y-2">
                 <li className="mb-2 text-sm font-semibold">{column.title}</li>
@@ -437,7 +444,7 @@ export default function Footer() {
             text={process.env.NEXT_PUBLIC_APP_NAME?.toUpperCase() || "Footer"}
             fontSize={140}
             fitText={true}
-            className="h-full w-full"
+            className="w-full"
             squareSize={2}
             gridGap={tablet ? 2 : 3}
             color="#6B7280"
