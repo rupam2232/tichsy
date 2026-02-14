@@ -3,10 +3,7 @@ import "@repo/ui/styles/globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: {
-    default: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
-    template: `%s | ${process.env.NEXT_PUBLIC_APP_NAME}`,
-  },
+  title: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
   description:
     "The best point of sale system for restaurants, cafes, and retail businesses. Streamline orders, manage tables, and accept payments with QR codes.",
   keywords: [

@@ -12,6 +12,7 @@ export interface Subscription extends Document {
   trialExpiresAt?: Date; // When the trial expires
   subscriptionStartDate?: Date; // When the subscription starts
   subscriptionEndDate?: Date; // When the subscription ends
+  period: "monthly" | "yearly" | "trial";
   previousPlan?: "starter" | "medium" | "pro"; // Previous plan before downgrade
   gracePeriodEndsAt?: Date; // When grace period ends
   isOverLimit?: boolean; // Whether the subscription is over the limit
@@ -29,17 +30,21 @@ const subscriptionSchema: Schema<Subscription> = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       unique: true,
-      required: [true, "Id of the user is required"],
+      required: [true, "User Id is required"],
       immutable: true,
     },
     plan: {
       type: String,
       enum: ["starter", "medium", "pro"],
     },
+    period: {
+      type: String,
+      enum: ["monthly", "yearly", "trial"],
+      default: "monthly",
+    },
     isTrial: {
       type: Boolean,
       default: false,
-      required: [true, "isTrial field is required"],
     },
     trialExpiresAt: {
       type: Date,

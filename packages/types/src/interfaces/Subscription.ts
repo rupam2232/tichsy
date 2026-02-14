@@ -7,4 +7,5 @@ export interface CurrentSubscription {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   isTrial?: boolean;
+  period?: "monthly" | "yearly" | "trial";
 }

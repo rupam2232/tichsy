@@ -8,6 +8,7 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface SubscriptionHistory extends Document {
   userId: Types.ObjectId; // Reference to the User
   plan?: "starter" | "medium" | "pro"; // Subscription plan name
+  period: "monthly" | "yearly" | "trial";
   amount: Number; // Payment that user has made
   isTrial: boolean; // Whether the subscription is a trial
   trialExpiresAt?: Date; // When the trial expires
@@ -15,6 +16,12 @@ export interface SubscriptionHistory extends Document {
   subscriptionEndDate?: Date; // When the subscription ends
   transactionId?: string; // UPI/Card transaction reference (if any)
   paymentGateway?: string; // Payment gateway used (e.g., "Razorpay", "Stripe")
+  action?: "create" | "renew" | "upgrade" | "downgrade";
+  subtotal?: number; // Base plan price
+  discountAmount?: number; // Total discount (proration + coupons)
+  discountReason?: string; // "upgrade", "coupon:CODE", etc.
+  taxAmount?: number; // Total tax/fees added (GST + Gateway Fee)
+  totalAmount?: number; // Final amount paid
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
@@ -33,6 +40,12 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
     plan: {
       type: String,
       enum: ["starter", "medium", "pro"],
+      immutable: true,
+    },
+    period: {
+      type: String,
+      enum: ["monthly", "yearly", "trial"],
+      default: "monthly",
       immutable: true,
     },
     amount: {
@@ -62,9 +75,38 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
     transactionId: {
       type: String,
       immutable: true,
+      unique: true,
     },
     paymentGateway: {
       type: String,
+      immutable: true,
+    },
+    action: {
+      type: String,
+      enum: ["create", "renew", "upgrade", "downgrade"],
+      default: "create",
+      immutable: true,
+    },
+    subtotal: {
+      type: Number,
+      immutable: true,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      immutable: true,
+    },
+    discountReason: {
+      type: String,
+      immutable: true,
+    },
+    taxAmount: {
+      type: Number,
+      default: 0,
+      immutable: true,
+    },
+    totalAmount: {
+      type: Number,
       immutable: true,
     },
     createdAt: {

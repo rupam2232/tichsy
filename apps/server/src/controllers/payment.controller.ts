@@ -65,15 +65,43 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
         throw new ApiError(400, "Payment status is not captured");
       }
       if (paymentEntity.notes?.paymentType === "subscription") {
-        const period = paymentEntity.notes.period ?? "monthly";
-        if (period === "monthly") {
-          const plan = paymentEntity.notes?.plan as SubscriptionPlan;
+        const {
+          userId,
+          plan: planName,
+          period: periodNote,
+          amount: expectedTotalAmount,
+          action,
+          taxAmount,
+        } = paymentEntity.notes;
+
+        if (!userId || !planName) {
+          throw new ApiError(400, "Missing userId or plan in payment notes");
+        }
+
+        const period = periodNote ?? "monthly";
+        if (period === "monthly" || period === "yearly") {
+          const plan = planName as SubscriptionPlan;
           if (!SUBSCRIPTION_PLANS[plan]) {
             throw new ApiError(400, "Invalid plan selected");
           }
 
-          const expectedAmount = SUBSCRIPTION_PLANS[plan].price * 100; // in paise
-          if (paymentEntity.amount !== expectedAmount) {
+          // Verification: Checking if paid amount matches the amount calculated earlier and put in notes
+          // If notes.amount exists, use it. Otherwise fall back to standard plan price
+          let expectedAmountPaise = 0;
+
+          if (expectedTotalAmount) {
+            expectedAmountPaise = Number(expectedTotalAmount) * 100;
+          } else {
+            // Fallback if no specific amount in notes (legacy/direct call)
+            const basePrice =
+              period === "yearly"
+                ? SUBSCRIPTION_PLANS[plan].priceYearly
+                : SUBSCRIPTION_PLANS[plan].priceMonthly;
+            expectedAmountPaise = basePrice * 100;
+          }
+
+          // Allow a small margin for floating point errors if needed, but integers should be exact
+          if (paymentEntity.amount !== expectedAmountPaise) {
             razorpay.payments.refund(paymentEntity.id, {
               amount: paymentEntity.amount,
               speed: "optimum",
@@ -90,20 +118,55 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           throw new ApiError(400, "Invalid period selected");
         }
 
-        const subscription = await Subscription.findOneAndUpdate(
-          { userId: paymentEntity.notes?.userId },
-          {
-            isSubscriptionActive: true,
-            plan: paymentEntity.notes?.plan,
-            isTrial: false,
-            trialExpiresAt: undefined,
-            subscriptionStartDate: new Date(),
-            subscriptionEndDate: calculateSubscriptionExpiryDate(
-              period === "monthly" ? 30 : 365
-            ),
-          },
-          { new: true, upsert: true }
-        ).session(session);
+        const existingHistory = await SubscriptionHistory.findOne({
+          transactionId: paymentEntity.id,
+        }).session(session);
+
+        if (existingHistory) {
+          await session.commitTransaction();
+          session.endSession();
+          res
+            .status(200)
+            .json(new ApiResponse(200, true, "Webhook already processed"));
+          return;
+        }
+
+        let subscription = await Subscription.findOne({
+          userId: userId,
+        }).session(session);
+
+        if (subscription) {
+          subscription.isSubscriptionActive = true;
+          subscription.plan = planName;
+          subscription.period = period;
+          subscription.isTrial = false;
+          subscription.trialExpiresAt = undefined;
+          subscription.previousPlan = subscription.plan;
+          subscription.subscriptionStartDate = new Date();
+          subscription.subscriptionEndDate = calculateSubscriptionExpiryDate(
+            period === "monthly" ? 30 : 365
+          );
+          await subscription.save({ session });
+        } else {
+          const [newSubscription] = await Subscription.create(
+            [
+              {
+                userId: userId,
+                isSubscriptionActive: true,
+                plan: planName,
+                period: period,
+                isTrial: false,
+                trialExpiresAt: undefined,
+                subscriptionStartDate: new Date(),
+                subscriptionEndDate: calculateSubscriptionExpiryDate(
+                  period === "monthly" ? 30 : 365
+                ),
+              },
+            ],
+            { session }
+          );
+          subscription = newSubscription;
+        }
 
         if (!subscription) {
           throw new ApiError(500, "Failed to create or update subscription");
@@ -114,12 +177,23 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
             {
               userId: subscription.userId,
               plan: subscription.plan,
+              period: period,
               amount: paymentEntity.amount / 100,
               isTrial: false,
               subscriptionStartDate: subscription.subscriptionStartDate,
               subscriptionEndDate: subscription.subscriptionEndDate,
               transactionId: paymentEntity.id,
               paymentGateway: "Razorpay",
+              action: action || "create",
+              subtotal: paymentEntity.notes.subtotal
+                ? Number(paymentEntity.notes.subtotal)
+                : 0,
+              discountAmount: paymentEntity.notes.discountAmount
+                ? Number(paymentEntity.notes.discountAmount)
+                : 0,
+              discountReason: paymentEntity.notes.discountReason,
+              taxAmount: taxAmount ? Number(taxAmount) : 0,
+              totalAmount: paymentEntity.amount / 100,
             },
           ],
           { session }
