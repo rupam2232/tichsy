@@ -47,6 +47,10 @@ export function setupSocketIO(server: http.Server) {
           return socket.disconnect();
         }
 
+        // Join user-specific room
+        socket.join(`user_${decoded._id}`);
+        console.log(`User ${decoded._id} joined their personal room`);
+
         if (decoded.role === "owner") {
           if (decoded._id !== restaurant.ownerId.toString()) {
             return socket.disconnect();
@@ -70,6 +74,7 @@ export function setupSocketIO(server: http.Server) {
         // socket.data.restaurantId = restaurantId; // Store for later use
         console.log(`User joined ${activeRestaurantId} room`);
       } catch (err) {
+        console.error("Socket authentication error:", err);
         socket.disconnect();
       }
     });

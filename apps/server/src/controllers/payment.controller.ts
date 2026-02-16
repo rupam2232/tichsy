@@ -3,6 +3,7 @@ import {
   validateWebhookSignature,
 } from "razorpay/dist/utils/razorpay-utils.js";
 import { razorpay } from "../utils/razorpay.js";
+import { io } from "../socket/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Payment } from "../models/payment.model.js";
@@ -18,6 +19,16 @@ import {
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
 import { env } from "../env.js";
+import { Payments } from "razorpay/dist/types/payments.js";
+
+interface RazorpayWebhookBody {
+  event: string;
+  payload?: {
+    payment?: {
+      entity?: Payments.RazorpayPayment;
+    };
+  };
+}
 
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
@@ -42,7 +53,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
       throw new ApiError(400, "Invalid webhook signature");
     }
 
-    const webhookBody = req.body;
+    const webhookBody = req.body as RazorpayWebhookBody;
     const paymentEntity = webhookBody.payload?.payment?.entity;
     const webhookEvent = webhookBody.event;
 
@@ -79,43 +90,42 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
         }
 
         const period = periodNote ?? "monthly";
-        if (period === "monthly" || period === "yearly") {
-          const plan = planName as SubscriptionPlan;
-          if (!SUBSCRIPTION_PLANS[plan]) {
-            throw new ApiError(400, "Invalid plan selected");
-          }
-
-          // Verification: Checking if paid amount matches the amount calculated earlier and put in notes
-          // If notes.amount exists, use it. Otherwise fall back to standard plan price
-          let expectedAmountPaise = 0;
-
-          if (expectedTotalAmount) {
-            expectedAmountPaise = Number(expectedTotalAmount) * 100;
-          } else {
-            // Fallback if no specific amount in notes (legacy/direct call)
-            const basePrice =
-              period === "yearly"
-                ? SUBSCRIPTION_PLANS[plan].priceYearly
-                : SUBSCRIPTION_PLANS[plan].priceMonthly;
-            expectedAmountPaise = basePrice * 100;
-          }
-
-          // Allow a small margin for floating point errors if needed, but integers should be exact
-          if (paymentEntity.amount !== expectedAmountPaise) {
-            razorpay.payments.refund(paymentEntity.id, {
-              amount: paymentEntity.amount,
-              speed: "optimum",
-              notes: {
-                reason: "Payment amount does not match the plan selected",
-              },
-            });
-            throw new ApiError(
-              400,
-              "Payment amount does not match the plan selected"
-            );
-          }
-        } else {
+        if (period !== "monthly" && period !== "yearly") {
           throw new ApiError(400, "Invalid period selected");
+        }
+        const plan = planName as SubscriptionPlan;
+        if (!SUBSCRIPTION_PLANS[plan]) {
+          throw new ApiError(400, "Invalid plan selected");
+        }
+
+        // Verification: Checking if paid amount matches the amount calculated earlier and put in notes
+        // If notes.amount exists, use it. Otherwise fall back to standard plan price
+        let expectedAmountPaise = 0;
+
+        if (expectedTotalAmount) {
+          expectedAmountPaise = Math.round(Number(expectedTotalAmount) * 100);
+        } else {
+          // Fallback if no specific amount in notes (legacy/direct call)
+          const basePrice =
+            period === "yearly"
+              ? SUBSCRIPTION_PLANS[plan].priceYearly
+              : SUBSCRIPTION_PLANS[plan].priceMonthly;
+          expectedAmountPaise = Math.round(basePrice * 100);
+        }
+
+        // Check if the amount paid matches the expected amount exactly
+        if (paymentEntity.amount !== expectedAmountPaise) {
+          razorpay.payments.refund(paymentEntity.id, {
+            amount: paymentEntity.amount,
+            speed: "optimum",
+            notes: {
+              reason: "Payment amount does not match the plan selected",
+            },
+          });
+          throw new ApiError(
+            400,
+            "Payment amount does not match the plan selected"
+          );
         }
 
         const existingHistory = await SubscriptionHistory.findOne({
@@ -137,7 +147,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
 
         if (subscription) {
           subscription.isSubscriptionActive = true;
-          subscription.plan = planName;
+          subscription.plan = plan;
           subscription.period = period;
           subscription.isTrial = false;
           subscription.trialExpiresAt = undefined;
@@ -153,7 +163,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
               {
                 userId: userId,
                 isSubscriptionActive: true,
-                plan: planName,
+                plan: plan,
                 period: period,
                 isTrial: false,
                 trialExpiresAt: undefined,
@@ -198,6 +208,18 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           ],
           { session }
         );
+
+        // Emit socket event for real-time notification
+        if (io) {
+          io.to(`user_${userId}`).emit("subscription_success", {
+            plan: plan,
+            period: period,
+            amount: paymentEntity.amount / 100,
+            currency: paymentEntity.currency,
+            productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
+            action: action || "create",
+          });
+        }
       } else if (paymentEntity.notes?.paymentType === "order") {
         const paymentDoc = await Payment.findOne({
           gatewayOrderId: paymentEntity.order_id,
@@ -230,8 +252,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
             paymentDoc.gatewayPaymentId = paymentEntity.id;
             paymentDoc.transactionId =
               paymentEntity.acquirer_data?.upi_transaction_id ||
-              paymentEntity.acquirer_data?.rrn ||
-              null;
+              paymentEntity.acquirer_data?.rrn;
             await paymentDoc.save();
 
             // Update order status to paid

@@ -141,65 +141,66 @@ export function UpdatePlanDialog({
                     )}
                   >
                     <motion.div layout="position" className="p-3 sm:p-4">
-                      <div className="flex items-start justify-between gap-2 sm:gap-3">
-                        <div className="flex min-w-0 flex-1 gap-2 sm:gap-3">
-                          <RadioGroupItem
-                            value={plan.id}
-                            id={plan.id}
-                            className="pointer-events-none mt-0.5 flex-shrink-0 sm:mt-1"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                              <Label
-                                htmlFor={plan.id}
-                                className="cursor-pointer text-sm leading-tight font-semibold sm:text-base sm:font-medium"
-                              >
-                                {plan.title}
-                              </Label>
-                              {plan.badge && (
-                                <Badge
-                                  variant="secondary"
-                                  className="h-5 flex-shrink-0 px-1.5 py-0 text-[10px] sm:h-auto sm:px-2 sm:py-0.5 sm:text-xs"
+                      <div className="flex min-w-0 flex-1 gap-2 sm:gap-3">
+                        <RadioGroupItem
+                          value={plan.id}
+                          id={plan.id}
+                          className="pointer-events-none mt-0.5 flex-shrink-0 sm:mt-1"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="grid grid-cols-3 items-start justify-between gap-1.5 sm:gap-2">
+                            <div className="col-span-2 ">
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <Label
+                                  htmlFor={plan.id}
+                                  className="cursor-pointer text-sm leading-tight font-semibold sm:text-base sm:font-medium"
                                 >
-                                  {plan.badge}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed sm:text-xs">
-                              {plan.description}
-                            </p>
-                            {plan.features.length > 0 && (
-                              <div className="pt-2 sm:pt-3">
-                                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                  {plan.features.map(
-                                    (feature, featureIndex) => (
-                                      <div
-                                        key={featureIndex}
-                                        className="bg-muted/20 flex flex-shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 sm:gap-2 sm:rounded-lg"
-                                      >
-                                        <Circle className="fill-primary text-primary h-2 w-2" />
-                                        <span className="text-muted-foreground text-[10px] leading-none whitespace-nowrap sm:text-xs">
-                                          {feature.name}
-                                        </span>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
+                                  {plan.title}
+                                </Label>
+                                {plan.badge && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="h-5 flex-shrink-0 px-1.5 py-0 text-[10px] sm:h-auto sm:px-2 sm:py-0.5 sm:text-xs"
+                                  >
+                                    {plan.badge}
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="min-w-[60px] flex-shrink-0 text-right sm:min-w-[80px]">
-                          <div className="text-base leading-tight font-bold sm:text-xl sm:font-semibold">
-                            {parseFloat(getCurrentPrice(plan)) >= 0
-                              ? `${plan.currency}${getCurrentPrice(plan)}`
-                              : getCurrentPrice(plan)}
-                          </div>
-                          <div className="text-muted-foreground mt-0.5 text-[10px] sm:text-xs">
-                            /{isYearly ? "year" : "month"}
+                              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed sm:text-xs">
+                                {plan.description}
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="text-base leading-tight font-bold sm:text-xl sm:font-semibold">
+                                {parseFloat(getCurrentPrice(plan)) >= 0
+                                  ? `${plan.currency}${getCurrentPrice(plan)}`
+                                  : getCurrentPrice(plan)}
+                              </div>
+                              <div className="text-muted-foreground mt-0.5 text-[10px] sm:text-xs">
+                                /{isYearly ? "year" : "month"}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
+                      {plan.features.length > 0 && (
+                        <div className="pt-2 sm:pt-3">
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                            {plan.features.map((feature, featureIndex) => (
+                              <div
+                                key={featureIndex}
+                                className="bg-muted/20 flex items-center gap-1.5 rounded-md border px-2 py-1 sm:gap-2 sm:rounded-lg"
+                              >
+                                <Circle className="fill-primary text-primary h-2 w-2" />
+                                <span className="text-muted-foreground text-[10px] sm:text-xs leading-none">
+                                  {feature.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
 
                     <AnimatePresence initial={false}>

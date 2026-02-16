@@ -19,7 +19,7 @@ export default function Features() {
         "Give your customers the power to see menu and order directly from their table. Seamless, fast, and completely frictionless.",
       skeleton: <SkeletonOne />,
       className:
-        "col-span-1 md:col-span-2 lg:row-span-2 border-b md:border-r dark:border-neutral-800 md:flex",
+        "col-span-1  border-b md:border-r dark:border-neutral-800 md:flex items-center",
     },
     {
       title: "Live Table Management",
@@ -34,13 +34,13 @@ export default function Features() {
         "Monitor sales, popular items in real-time with intuitive dashboards and reports.",
       skeleton: <SkeletonThree />,
       className:
-        "col-span-1 md:col-span-1 border-b md:border-r dark:border-neutral-800 flex flex-col justify-between",
+        "col-span-1 md:col-span-2 border-b md:border-r dark:border-neutral-800 flex flex-col md:flex-row justify-between",
     },
   ];
   return (
     <section
       id="features"
-      className="relative z-20 py-10 lg:py-40 max-w-7xl mx-auto"
+      className="relative z-20 py-30 lg:py-40 max-w-7xl mx-auto"
     >
       <div className="px-8">
         <h4 className="text-3xl lg:text-5xl lg:leading-tight max-w-5xl mx-auto text-center tracking-tight font-medium text-black dark:text-white">
@@ -54,7 +54,7 @@ export default function Features() {
       </div>
 
       <div className="relative">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-rows-2 mt-12 xl:border rounded-md dark:border-neutral-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-rows-2 mt-12 xl:border rounded-md dark:border-neutral-800">
           {features.map((feature) => (
             <FeatureCard
               key={feature.title}
@@ -62,7 +62,7 @@ export default function Features() {
               title={feature.title}
               description={feature.description}
             >
-              <div className="w-full">{feature.skeleton}</div>
+              <div className="w-full h-full">{feature.skeleton}</div>
             </FeatureCard>
           ))}
         </div>
@@ -92,7 +92,7 @@ const FeatureCard = ({
 
 const FeatureTitle = ({ children }: { children?: React.ReactNode }) => {
   return (
-    <h3 className="max-w-5xl mx-auto text-left tracking-tight text-black dark:text-white text-xl md:text-2xl md:leading-snug">
+    <h3 className="max-w-5xl mx-auto text-left tracking-tight text-xl md:text-2xl md:leading-snug font-semibold">
       {children}
     </h3>
   );
@@ -103,7 +103,7 @@ const FeatureDescription = ({ children }: { children?: React.ReactNode }) => {
     <p
       className={cn(
         "text-sm md:text-base max-w-4xl text-left mx-auto",
-        "text-neutral-500 text-center font-normal dark:text-neutral-300",
+        "text-muted-foreground text-center font-normal",
         "text-left max-w-sm mx-0 md:text-sm my-2",
       )}
     >
@@ -115,26 +115,26 @@ const FeatureDescription = ({ children }: { children?: React.ReactNode }) => {
 export const SkeletonOne = () => {
   return (
     <div className="relative flex px-2 gap-10 h-full">
-      <div className="w-full h-full bg-card group">
+      <div className="w-full h-full group">
         <div className="h-full flex flex-1 flex-col justify-center items-center space-y-2">
           <QrCodeAnimation />
         </div>
       </div>
 
       {/* top and bottom */}
-      <div className="absolute bottom-0 z-40 inset-x-0 h-20 bg-gradient-to-t from-background via-white dark:via-background to-transparent w-full pointer-events-none" />
-      <div className="absolute top-0 z-40 inset-x-0 h-20 bg-gradient-to-b from-background via-transparent to-transparent w-full pointer-events-none" />
+      {/* <div className="absolute bottom-0 z-40 inset-x-0 h-20 bg-gradient-to-t from-background via-white dark:via-background to-transparent w-full pointer-events-none" />
+      <div className="absolute top-0 z-40 inset-x-0 h-20 bg-gradient-to-b from-background via-transparent to-transparent w-full pointer-events-none" /> */}
       {/* left and right */}
-      <div className="hidden md:block absolute left-0 z-40 inset-y-0 h-full w-20 bg-gradient-to-r from-background via-white dark:via-background to-transparent pointer-events-none" />
-      <div className="hidden md:block absolute right-0 z-40 inset-y-0 h-full w-20 bg-gradient-to-l from-background via-transparent to-transparent pointer-events-none" />
+      {/* <div className="hidden md:block absolute left-0 z-40 inset-y-0 h-full w-20 bg-gradient-to-r from-background via-white dark:via-background to-transparent pointer-events-none" />
+      <div className="hidden md:block absolute right-0 z-40 inset-y-0 h-full w-20 bg-gradient-to-l from-background via-transparent to-transparent pointer-events-none" /> */}
     </div>
   );
 };
 
 export const SkeletonTwo = () => {
   return (
-    <div className="relative flex flex-col items-start py-8 pb-0 gap-10 h-full overflow-hidden">
-      <div className="h-32 w-full overflow-hidden rounded-lg border bg-background/50">
+    <div className="relative py-8 pb-0 h-full overflow-hidden">
+      <div className="h-full w-full overflow-hidden rounded-lg border bg-background/50">
         <div className="grid grid-cols-3 gap-1 h-full place-items-center opacity-50">
           <div className="w-8 h-8 rounded bg-green-500/20 border border-green-500/50 text-xs flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary">
             T1
@@ -166,7 +166,7 @@ export const SkeletonThree = () => {
           hover: {
             scaleY: [1, 1.2, 0.8, 1],
             transition: {
-              repeat: Infinity,
+              repeat: 1,
               repeatType: "mirror",
               duration: 3,
               ease: "easeInOut",
@@ -183,7 +183,7 @@ export const SkeletonThree = () => {
           hover: {
             scaleY: [1, 1.3, 0.7, 1],
             transition: {
-              repeat: Infinity,
+              repeat: 1,
               repeatType: "mirror",
               duration: 3.2,
               ease: "easeInOut",
@@ -200,7 +200,7 @@ export const SkeletonThree = () => {
           hover: {
             scaleY: [1, 1.4, 0.6, 1],
             transition: {
-              repeat: Infinity,
+              repeat: 1,
               repeatType: "mirror",
               duration: 3.1,
               ease: "easeInOut",
@@ -217,7 +217,7 @@ export const SkeletonThree = () => {
           hover: {
             scaleY: [1, 1.1, 0.9, 1],
             transition: {
-              repeat: Infinity,
+              repeat: 1,
               repeatType: "mirror",
               duration: 3.3,
               ease: "easeInOut",
@@ -234,7 +234,7 @@ export const SkeletonThree = () => {
           hover: {
             scaleY: [1, 1.25, 0.75, 1],
             transition: {
-              repeat: Infinity,
+              repeat:   1,
               repeatType: "mirror",
               duration: 3.4,
               ease: "easeInOut",

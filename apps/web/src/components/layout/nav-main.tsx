@@ -73,7 +73,7 @@ export function NavMain({
                     onClick={closeSidebarForMobile}
                   >
                     <SidebarMenuButton
-                      className={`cursor-pointer ${pathname === item.url ? "bg-accent-foreground hover:bg-accent-foreground/90 font-medium text-sidebar-accent hover:text-sidebar-accent" : "text-sidebar-accent-foreground"}`}
+                      className={`cursor-pointer ${(pathname === item.url || pathname.includes(item.url ?? "")) ? "bg-accent-foreground hover:bg-accent-foreground/90 font-medium text-sidebar-accent hover:text-sidebar-accent" : "text-sidebar-accent-foreground"}`}
                       tooltip={item.title}
                     >
                       {item.icon && <item.icon />}

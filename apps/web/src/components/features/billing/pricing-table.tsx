@@ -33,7 +33,7 @@ const getDiscountPercent = (plan: PlanProps) => {
   );
 };
 
-export function PricingTableSix({ plans, onPlanSelect }: PricingTableSixProps) {
+export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
   const [isYearly, setIsYearly] = useState(false);
 
   return (

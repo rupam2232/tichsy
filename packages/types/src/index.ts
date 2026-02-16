@@ -21,8 +21,7 @@ export {
   removeFromCartSchema,
 } from "./schemas/cartSchema.js";
 export {
-  createSubscriptionSchema,
-  createOrUpdateSubscriptionSchema,
+  createSubscriptionSchema
 } from "./schemas/subscriptionSchema.js";
 export {
   restaurantLogoUploadSchema,

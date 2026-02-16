@@ -1,4 +1,5 @@
 "use client";
+
 import { Loader2 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import axios from "@/utils/axiosInstance";
@@ -9,7 +10,8 @@ import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 import type { ApiResponse, CurrentSubscription } from "@repo/types";
 import { RootState } from "@/store/store";
-import { SubscriptionManagement } from "@/components/billingsdk/subscription-management";
+import { SubscriptionManagement } from "@/components/features/billing/subscription-management";
+import { SubscriptionHistoryList } from "@/components/features/billing/subscription-history-list";
 import { plans, type CurrentPlan } from "@/lib/billingsdk-config";
 
 const ClientPage = () => {
@@ -77,7 +79,6 @@ const ClientPage = () => {
       toast.info("You are already subscribed to this plan");
       return;
     }
-
     router.push(`/billing/checkout?plan=${planId}&period=${period}`);
   };
 
@@ -89,7 +90,7 @@ const ClientPage = () => {
     );
   }
 
-  // Transform backend data to frontend model
+  // Transforming backend data to frontend model
   const activePlan = currentSubscription?.plan
     ? plans.find((p) => p.id === currentSubscription.plan)
     : null;
@@ -118,9 +119,8 @@ const ClientPage = () => {
   };
 
   return (
-    <section className="p-4 sm:p-6 w-full max-w-7xl mx-auto">
+    <section className="p-4 sm:p-6 w-full max-w-2xl mx-auto">
       <SubscriptionManagement
-        className="max-w-2xl mx-auto"
         currentPlan={currentPlanData}
         updatePlan={{
           currentPlan: currentPlanData.plan,
@@ -137,6 +137,7 @@ const ClientPage = () => {
               : "Purchase Plan",
         }}
       />
+      <SubscriptionHistoryList />
     </section>
   );
 };

@@ -1,4 +1,5 @@
 import { Subscription } from "../models/subscription.model.js";
+import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -7,10 +8,7 @@ import {
   SubscriptionPlanHierarchy,
 } from "../config/subscriptionPlans.js";
 import { razorpay } from "../utils/razorpay.js";
-import {
-  createOrUpdateSubscriptionSchema,
-  createSubscriptionSchema,
-} from "@repo/types";
+import { createSubscriptionSchema } from "@repo/types";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
   const subscription = await Subscription.findOne({ userId: req.user!._id });
@@ -142,6 +140,10 @@ export const createSubscription = asyncHandler(async (req, res) => {
         }
       }
     }
+
+    if (newLevel === currentLevel) {
+      action = "renew";
+    }
   }
 
   // If credit > newPrice, we might set charge to 0.
@@ -243,6 +245,10 @@ export const previewSubscription = asyncHandler(async (req, res) => {
         }
       }
     }
+
+    if (newLevel === currentLevel) {
+      action = "renew";
+    }
   }
 
   // If credit > newPrice, we might set charge to 0.
@@ -264,10 +270,22 @@ export const previewSubscription = asyncHandler(async (req, res) => {
         discountReason:
           action === "upgrade" && proratedCredit > 0 ? "Proration Credit" : "",
         taxAmount: platformFee,
-        totalAmount: totalAmount,
+        totalAmount,
         action,
       },
       "Subscription preview calculated successfully"
     )
   );
+});
+
+export const getSubscriptionHistory = asyncHandler(async (req, res) => {
+  const history = await SubscriptionHistory.find({ userId: req.user!._id })
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, history, "Subscription history fetched successfully")
+    );
 });

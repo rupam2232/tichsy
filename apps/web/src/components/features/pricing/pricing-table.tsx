@@ -2,8 +2,8 @@
 
 import {
   PlanProps,
-  PricingTableSix,
-} from "@/components/billingsdk/pricing-table-six";
+  PricingTable,
+} from "../billing/pricing-table";
 import { useRouter } from "next/navigation";
 
 export default function PricingTable() {
@@ -56,7 +56,7 @@ export default function PricingTable() {
   ];
 
   return (
-    <PricingTableSix
+    <PricingTable
       plans={plans}
       onPlanSelect={() => router.push("/billing")}
     />

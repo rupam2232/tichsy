@@ -12,11 +12,10 @@ import { Separator } from "@repo/ui/components/separator";
 import { Calendar, Circle, CreditCard } from "lucide-react";
 import { CurrentPlan } from "@/lib/billingsdk-config";
 import { cn } from "@repo/ui/lib/utils";
-
 import {
   UpdatePlanDialog,
   type UpdatePlanDialogProps,
-} from "@/components/billingsdk/update-plan-dialog";
+} from "./update-plan-dialog";
 
 export interface SubscriptionManagementProps {
   className?: string;
@@ -31,7 +30,7 @@ export function SubscriptionManagement({
 }: SubscriptionManagementProps) {
   return (
     <div className={cn("w-full text-left", className)}>
-      <Card className="bg-card">
+      <Card>
         <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
           <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
             <div className="bg-muted rounded-lg p-1.5 sm:p-2">
