@@ -56,9 +56,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     const handleConnect = () => {
       if (activeRestaurant?._id) {
-        socket.emit("authenticate", activeRestaurant._id);
+        socket.emit("joinRestaurantRoom", activeRestaurant._id);
         console.log(
-          "Emitted authenticate event with restaurant ID:",
+          "Emitted joinRestaurantRoom event with restaurant ID:",
           activeRestaurant._id,
           socket.id,
         );

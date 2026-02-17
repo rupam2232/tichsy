@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useSocket } from "@/context/SocketContext";
 import { PaymentSuccessDialog } from "./payment-success-dialog";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store/store";
+import { fetchSubscriptionDetails } from "@/store/subscriptionSlice";
 
 interface SubscriptionSuccessEvent {
   plan: string;
@@ -17,6 +20,7 @@ interface SubscriptionSuccessEvent {
 export function SubscriptionSuccessListener() {
   const socket = useSocket();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const [open, setOpen] = useState(false);
   const [eventData, setEventData] = useState<SubscriptionSuccessEvent | null>(
     null,
@@ -30,8 +34,8 @@ export function SubscriptionSuccessListener() {
       setEventData(data);
       setOpen(true);
 
-      // Refresh current page data
       router.refresh();
+      dispatch(fetchSubscriptionDetails());
     };
 
     socket.on("subscription_success", handleSubscriptionSuccess);
@@ -39,7 +43,7 @@ export function SubscriptionSuccessListener() {
     return () => {
       socket.off("subscription_success", handleSubscriptionSuccess);
     };
-  }, [socket, router]);
+  }, [socket, router, dispatch]);
 
   if (!eventData) return null;
 

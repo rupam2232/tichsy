@@ -26,16 +26,22 @@ export function setupSocketIO(server: http.Server) {
       ?.find((cookie) => cookie.startsWith("accessToken="))
       ?.split("=")[1];
     socket.data.accessToken = accessToken;
+    if (!accessToken) {
+      return socket.disconnect();
+    }
+    const decoded = jwt.verify(
+      accessToken,
+      env.ACCESS_TOKEN_SECRET
+    ) as accessTokenUser;
+    // Join user-specific room
+    socket.join(`user_${decoded._id}`);
+    console.log(`User ${decoded._id} joined their personal room`);
 
-    socket.on("authenticate", async (activeRestaurantId) => {
+    socket.on("joinRestaurantRoom", async (activeRestaurantId) => {
       try {
-        if (!accessToken) {
+        if (!isValidObjectId(activeRestaurantId)) {
           return socket.disconnect();
         }
-        const decoded = jwt.verify(
-          accessToken,
-          env.ACCESS_TOKEN_SECRET
-        ) as accessTokenUser;
         const restaurant = await Restaurant.findById(activeRestaurantId);
         if (!restaurant) return socket.disconnect();
         if (
@@ -46,10 +52,6 @@ export function setupSocketIO(server: http.Server) {
         ) {
           return socket.disconnect();
         }
-
-        // Join user-specific room
-        socket.join(`user_${decoded._id}`);
-        console.log(`User ${decoded._id} joined their personal room`);
 
         if (decoded.role === "owner") {
           if (decoded._id !== restaurant.ownerId.toString()) {
@@ -71,7 +73,6 @@ export function setupSocketIO(server: http.Server) {
           return socket.disconnect();
         }
 
-        // socket.data.restaurantId = restaurantId; // Store for later use
         console.log(`User joined ${activeRestaurantId} room`);
       } catch (err) {
         console.error("Socket authentication error:", err);

@@ -23,15 +23,32 @@ const cartSlice = createSlice({
     addToCart: (state, action: PayloadAction<CartItem>) => {
       state.push(action.payload);
     },
-    removeFromCart: (state, action: PayloadAction<{foodId: string; variantName?: string}>) => {
-      return state.filter((item) => item.foodId !== action.payload.foodId || item.variantName !== action.payload.variantName);
+    removeFromCart: (
+      state,
+      action: PayloadAction<{ foodId: string; variantName?: string }>,
+    ) => {
+      return state.filter(
+        (item) =>
+          item.foodId !== action.payload.foodId ||
+          item.variantName !== action.payload.variantName,
+      );
     },
     editCartItem: (
       state,
-      action: PayloadAction<{ foodId: string; quantity: number; variantName?: string }>
+      action: PayloadAction<{
+        foodId: string;
+        quantity: number;
+        variantName?: string;
+      }>,
     ) => {
       const { foodId, quantity, variantName } = action.payload;
-      const existingItem = state.find((item) => item.foodId === foodId && (variantName ? item.variantName === variantName : (item.variantName === null || item.variantName === undefined)));
+      const existingItem = state.find(
+        (item) =>
+          item.foodId === foodId &&
+          (variantName
+            ? item.variantName === variantName
+            : item.variantName === null || item.variantName === undefined),
+      );
 
       if (existingItem) {
         existingItem.quantity = quantity;
@@ -44,13 +61,14 @@ const cartSlice = createSlice({
       state,
       action: PayloadAction<{
         backendItems: CartItem[];
-      }>
+      }>,
     ) => {
       const { backendItems } = action.payload;
       const backendMap = new Map<string, CartItem>();
 
       backendItems.forEach((item) => {
-        const key = item.foodId + (item.variantName || "") + item.restaurantSlug;
+        const key =
+          item.foodId + (item.variantName || "") + item.restaurantSlug;
         backendMap.set(key, item);
       });
 

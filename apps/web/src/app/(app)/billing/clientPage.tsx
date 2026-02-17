@@ -1,58 +1,27 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
-import axios from "@/utils/axiosInstance";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
-import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
-import { AxiosError } from "axios";
-import type { ApiResponse, CurrentSubscription } from "@repo/types";
-import { RootState } from "@/store/store";
+import { RootState, AppDispatch } from "@/store/store";
+import { fetchSubscriptionDetails } from "@/store/subscriptionSlice";
 import { SubscriptionManagement } from "@/components/features/billing/subscription-management";
 import { SubscriptionHistoryList } from "@/components/features/billing/subscription-history-list";
 import { plans, type CurrentPlan } from "@/lib/billingsdk-config";
 
 const ClientPage = () => {
-  const [currentSubscription, setCurrentSubscription] =
-    useState<CurrentSubscription | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { currentSubscription, loading } = useSelector(
+    (state: RootState) => state.subscription,
+  );
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const user = useSelector((state: RootState) => state.auth.user);
 
-  const fetchSubscriptionDetails = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get("/subscription");
-      setCurrentSubscription(response.data.data);
-    } catch (error) {
-      console.error(
-        "Failed to fetch subscription details. Please try again later:",
-        error,
-      );
-      const axiosError = error as AxiosError<ApiResponse>;
-      // If 404, it just means no subscription, which is fine.
-      if (axiosError.response?.status !== 404) {
-        toast.error(
-          axiosError.response?.data.message ||
-            "Failed to fetch subscription details. Please try again later",
-        );
-      }
-
-      if (axiosError.response?.status === 401) {
-        dispatch(signOut());
-        router.push("/signin?redirect=/billing");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [dispatch, router]);
-
   useEffect(() => {
-    fetchSubscriptionDetails();
-  }, [fetchSubscriptionDetails]);
+    dispatch(fetchSubscriptionDetails());
+  }, [dispatch]);
 
   const handleUpdatePlan = async (
     planId: string,

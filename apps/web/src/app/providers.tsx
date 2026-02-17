@@ -8,12 +8,15 @@ import { signIn, signOut, UserState } from "@/store/authSlice";
 import store from "@/store/store";
 import { Toaster } from "@/components/ui/sonner";
 import { SocketProvider } from "@/context/SocketContext";
+import { fetchSubscriptionDetails } from "@/store/subscriptionSlice";
+import type { AppDispatch } from "@/store/store";
 
 function StoreInitializer({ user }: { user?: UserState["user"] }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     if (user) {
       dispatch(signIn(user));
+      dispatch(fetchSubscriptionDetails());
     } else {
       dispatch(signOut());
     }
