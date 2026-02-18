@@ -18,6 +18,7 @@ import {
 } from "../config/subscriptionPlans.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
+import { createNotification } from "../service/notification.service.js";
 import { env } from "../env.js";
 import { Payments } from "razorpay/dist/types/payments.js";
 
@@ -220,6 +221,18 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
             action: action || "create",
           });
         }
+
+        await createNotification({
+          recipient: userId,
+          type: "system",
+          title: "Subscription Activated",
+          message: `Your ${plan} plan has been successfully activated.`,
+          data: {
+            paymentId: paymentEntity.id,
+            plan,
+            period,
+          },
+        });
       } else if (paymentEntity.notes?.paymentType === "order") {
         const paymentDoc = await Payment.findOne({
           gatewayOrderId: paymentEntity.order_id,

@@ -13,6 +13,7 @@ import { startSession } from "mongoose";
 import { io } from "../socket/index.js";
 import { OrderNoCounter } from "../models/orderNoCounter.model.js";
 import { createOrderSchema } from "@repo/types";
+import { createNotification } from "../service/notification.service.js";
 
 export const createOrder = asyncHandler(async (req, res, next) => {
   const session = await startSession();
@@ -261,6 +262,32 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         order: socketIoOrderData,
         message: "A new order has been placed",
       });
+
+      // Send in-app notifications to owner and staff
+      const notificationRecipients = [
+        restaurant.ownerId,
+        ...(restaurant.staffIds || []),
+      ];
+
+      await Promise.all(
+        notificationRecipients.map((recipientId) =>
+          createNotification({
+            recipient: recipientId,
+            type: "order",
+            title: `New Order #${order[0].orderNo}`,
+            message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
+            mergeKey: `new_order_${restaurant.id}`,
+            pluralTitle: "{count} New Orders",
+            pluralMessage: `You have {count} new orders waiting.`,
+            data: {
+              orderId: order[0]._id,
+              imageUrl: restaurant.logoUrl,
+              restaurantSlug: restaurant.slug,
+            },
+          })
+        )
+      );
+
       res
         .status(201)
         .json(
@@ -282,6 +309,32 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         order: socketIoOrderData,
         message: "A new order has been placed",
       });
+
+      // Send in-app notifications to owner and staff
+      const notificationRecipients = [
+        restaurant.ownerId,
+        ...(restaurant.staffIds || []),
+      ];
+
+      await Promise.all(
+        notificationRecipients.map((recipientId) =>
+          createNotification({
+            recipient: recipientId,
+            type: "order",
+            title: `New Order #${order[0].orderNo}`,
+            message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
+            mergeKey: `new_order_${restaurant.id}`,
+            pluralTitle: "{count} New Orders",
+            pluralMessage: `You have {count} new orders waiting.`,
+            data: {
+              orderId: order[0]._id,
+              imageUrl: restaurant.logoUrl,
+              restaurantSlug: restaurant.slug,
+            },
+          })
+        )
+      );
+
       res
         .status(201)
         .json(

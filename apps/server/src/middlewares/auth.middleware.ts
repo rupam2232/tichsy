@@ -8,9 +8,10 @@ import { DeviceSession } from "../models/deviceSession.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
 import { env } from "../env.js";
+import { Request, Response, NextFunction } from "express";
 const options = getCookieOptions();
 
-export const verifyAuth = asyncHandler(async (req, res, next) => {
+export const verifyAuth = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const accessToken =
     req.cookies?.accessToken ||
     req.header("Authorization")?.replace("Bearer ", "");

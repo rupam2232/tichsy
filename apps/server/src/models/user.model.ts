@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
  * Includes both traditional and OAuth fields.
  */
 export interface User extends Document {
+  _id: Types.ObjectId;
   firstName?: string;
   lastName?: string;
   email: string;

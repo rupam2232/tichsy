@@ -17,8 +17,13 @@ import {
 import axios from "@/utils/axiosInstance";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
+import { markNotificationAsReadByMergeKey } from "@/store/notificationSlice";
 import { AxiosError } from "axios";
-import { OrderDetails as OrderDetailsType, Order, ApiResponse } from "@repo/types";
+import {
+  OrderDetails as OrderDetailsType,
+  Order,
+  ApiResponse,
+} from "@repo/types";
 import OrderCard from "@/components/features/orders/order-card";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Card, CardFooter } from "@repo/ui/components/card";
@@ -26,6 +31,7 @@ import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
 import { cn } from "@repo/ui/lib/utils";
 import { useSocket } from "@/context/SocketContext";
+import { AppDispatch } from "@/store/store";
 
 interface OrdersPageProps {
   initialOrders: OrderDetailsType;
@@ -44,7 +50,7 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
     all: 1,
   });
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const observer = useRef<IntersectionObserver>(null);
   const currentPage = tabPages[tabName] || 1;
@@ -58,6 +64,10 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
 
   const fetchOrders = useCallback(async () => {
     // Skip fetch on mount if we have initial data
+    if (isFirstRender.current && (tabName === "new" || tabName === "all")) {
+      dispatch(markNotificationAsReadByMergeKey(`new_order_${slug}`));
+    }
+
     if (isFirstRender.current && initialOrders) {
       return;
     }

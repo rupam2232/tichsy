@@ -5,6 +5,7 @@ import restaurantsReducer, { RestaurantsState } from "./restaurantSlice";
 import cartReducer, { CartItem } from "./cartSlice";
 import orderHistoryReducer, { OrderHistoryItem } from "./orderHistorySlice";
 import subscriptionReducer, { SubscriptionState } from "./subscriptionSlice";
+import notificationReducer, { NotificationState } from "./notificationSlice";
 
 type State = {
   auth: {
@@ -15,6 +16,7 @@ type State = {
   cart: CartItem[];
   orderHistory: OrderHistoryItem[];
   subscription: SubscriptionState;
+  notifications: NotificationState;
 };
 
 const preloadedState: State = (() => {
@@ -38,6 +40,15 @@ const preloadedState: State = (() => {
             loading: false,
             error: null,
           },
+          notifications: {
+            notifications: [],
+            total: 0,
+            unreadCount: 0,
+            loading: false,
+            error: null,
+            page: 1,
+            totalPages: 1,
+          },
         };
   } catch {
     return {
@@ -56,6 +67,15 @@ const preloadedState: State = (() => {
         loading: false,
         error: null,
       },
+      notifications: {
+        notifications: [],
+        total: 0,
+        unreadCount: 0,
+        loading: false,
+        error: null,
+        page: 1,
+        totalPages: 1,
+      },
     };
   }
 })();
@@ -67,6 +87,7 @@ const store = configureStore({
     cart: cartReducer,
     orderHistory: orderHistoryReducer,
     subscription: subscriptionReducer,
+    notifications: notificationReducer,
   },
   preloadedState,
 });

@@ -5,7 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { Avatar, AvatarImage, AvatarFallback } from "@repo/ui/components/avatar";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@repo/ui/components/avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Select,
@@ -20,6 +24,7 @@ import { ApiResponse } from "@repo/types";
 import { signOut } from "@/store/authSlice";
 import { toast } from "sonner";
 import { setActiveRestaurant } from "@/store/restaurantSlice";
+import { NotificationBell } from "@/components/shared/notifications/notification-bell";
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);
@@ -169,28 +174,31 @@ export function SiteHeader() {
         ) : (
           <h3 className="text-base font-medium">{pageTitle.current}</h3>
         )}
-        <div className="ml-auto md:flex items-center gap-2 hidden">
-          {currentTime ? (
-            <span className="text-sm text-gray-500">
-              {`${currentTime
-                .toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: true,
-                })
-                .toUpperCase()}`}
-              {`, `}
-              {`${currentTime.toLocaleDateString("en-US", {
-                weekday: "short",
-                year: "numeric",
-                month: "long",
-                day: "2-digit",
-              })}`}
-            </span>
-          ) : (
-            <span className="text-sm text-gray-500">Loading time...</span>
-          )}
+        <div className="ml-auto flex items-center gap-2">
+          <NotificationBell />
+          <div className="md:flex items-center gap-2 hidden">
+            {currentTime ? (
+              <span className="text-sm text-gray-500">
+                {`${currentTime
+                  .toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: true,
+                  })
+                  .toUpperCase()}`}
+                {`, `}
+                {`${currentTime.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "long",
+                  day: "2-digit",
+                })}`}
+              </span>
+            ) : (
+              <span className="text-sm text-gray-500">Loading time...</span>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -20,9 +20,7 @@ export {
   updateCartItemSchema,
   removeFromCartSchema,
 } from "./schemas/cartSchema.js";
-export {
-  createSubscriptionSchema
-} from "./schemas/subscriptionSchema.js";
+export { createSubscriptionSchema } from "./schemas/subscriptionSchema.js";
 export {
   restaurantLogoUploadSchema,
   restaurantLogoDeleteSchema,
@@ -69,3 +67,5 @@ export {
   type TableDetails,
   type AllTables,
 } from "./interfaces/Table.js";
+
+export { type Notification } from "./interfaces/Notification.js";

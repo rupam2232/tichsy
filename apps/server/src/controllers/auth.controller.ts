@@ -57,9 +57,9 @@ export const signup = async (
     });
 
     // Generate JWT tokens for authentication
-    const refreshToken = generateRefreshToken(user[0]._id as string);
+    const refreshToken = generateRefreshToken(user[0]._id.toString());
     const accessToken = generateAccessToken({
-      _id: user[0]._id as string,
+      _id: user[0]._id.toString(),
       role: user[0].role,
       email: user[0].email,
     });
@@ -191,9 +191,9 @@ export const signin = async (
     }
 
     // Generate JWT tokens for authentication
-    const refreshToken = generateRefreshToken(user._id as string);
+    const refreshToken = generateRefreshToken(user._id.toString());
     const accessToken = generateAccessToken({
-      _id: user._id as string,
+      _id: user._id.toString(),
       role: user.role,
       email: user.email,
       firstName: user.firstName || "",
@@ -360,9 +360,9 @@ export const google = async (
         await user.save({ session });
       }
       // Existing user: generate tokens and manage device session
-      const refreshToken = generateRefreshToken(user._id as string);
+      const refreshToken = generateRefreshToken(user._id.toString());
       const accessToken = generateAccessToken({
-        _id: user._id as string,
+        _id: user._id.toString(),
         email: user.email,
         role: user.role,
         firstName: user.firstName || "",
@@ -472,9 +472,9 @@ export const google = async (
       );
 
       // Generate tokens for new user
-      const refreshToken = generateRefreshToken(user[0]._id as string);
+      const refreshToken = generateRefreshToken(user[0]._id.toString());
       const accessToken = generateAccessToken({
-        _id: user[0]._id as string,
+        _id: user[0]._id.toString(),
         email: user[0].email,
         role: user[0].role,
         firstName: "",

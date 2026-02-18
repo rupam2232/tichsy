@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SidebarInset, SidebarProvider } from "@repo/ui/components/sidebar";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { SubscriptionSuccessListener } from "@/components/features/billing/subscription-success-listener";
+import { NotificationListener } from "@/components/shared/notifications/notification-listener";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <SiteHeader />
             {children}
             <SubscriptionSuccessListener />
+            <NotificationListener />
           </>
           <ScrollBar
             orientation="vertical"
