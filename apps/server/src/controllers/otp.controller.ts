@@ -7,7 +7,7 @@ import sendEmail from "../utils/sendEmail.js";
 import {
   passwordResetRequestTemplate,
   verificationEmailTemplate,
-} from "../utils/emailTemplates.js";
+} from "../templates/emailTemplates.js";
 import { User } from "../models/user.model.js";
 import { sendOtpSchema, verifyOtpSchema } from "@repo/types";
 

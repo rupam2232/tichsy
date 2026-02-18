@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "@/utils/axiosInstance";
-import {
-  InvoiceHistory,
-  type InvoiceItem,
-} from "./invoice-history";
+import { InvoiceHistory, type InvoiceItem } from "./invoice-history";
 import { Loader2 } from "lucide-react";
 import { ApiResponse } from "@repo/types";
 import { AxiosError } from "axios";
@@ -48,7 +45,7 @@ export function SubscriptionHistoryList() {
         // Map backend data to frontend model
         const formattedHistory: InvoiceItem[] = data.map(
           (item: SubscriptionHistoryItem) => ({
-            id: item.transactionId || item._id,
+            id: item._id,
             date: item.createdAt
               ? new Date(item.createdAt).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -63,7 +60,7 @@ export function SubscriptionHistoryList() {
               : item.plan
                 ? `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan - ${item.period ?? "monthly"}`
                 : "",
-            invoiceUrl: "#", // Placeholder until we have invoice generation
+            invoiceUrl: "",
           }),
         );
 
@@ -86,6 +83,45 @@ export function SubscriptionHistoryList() {
 
     fetchHistory();
   }, [dispatch, router]);
+
+  const handleDownload = async (invoiceId: string) => {
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await axios.get(
+        `/subscription/history/${invoiceId}/receipt`,
+        {
+          params: { timezone: timeZone },
+          responseType: "blob",
+        },
+      );
+
+      // Create a blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Extract filename from content-disposition if possible, or use default
+      const contentDisposition = response.headers["content-disposition"];
+      let fileName = `receipt-${invoiceId}.pdf`;
+      if (contentDisposition) {
+        const matches = /filename=([^;]+)/.exec(contentDisposition);
+        if (matches && matches[1]) {
+          fileName = matches[1].replace(/['"]/g, "");
+        }
+      }
+
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download receipt:", error);
+      toast.error("Failed to download receipt. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -117,6 +153,7 @@ export function SubscriptionHistoryList() {
         invoices={history}
         title="Subscription History"
         description="View your recent transactions and download invoices."
+        onDownload={handleDownload}
       />
     </div>
   );

@@ -8,22 +8,26 @@ export async function middleware(request: NextRequest) {
   const protectedRoutes = [
     "/home",
     "/billing",
+    "/restaurant",
+  ];
+
+  const authRoutes = [
+    "/signin",
+    "/signup",
+    "/forgot-password",
   ];
 
   // Redirect logic
   if (
     !accessToken &&
-    (protectedRoutes.includes(request.nextUrl.pathname) ||
-      request.nextUrl.pathname.startsWith("/restaurant"))
+    protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
   ) {
     return NextResponse.redirect(new URL("/signin?redirect=" + request.nextUrl.pathname, request.url));
   }
 
   if (
     accessToken &&
-    (request.nextUrl.pathname.startsWith("/signin") ||
-      request.nextUrl.pathname.startsWith("/signup") ||
-      request.nextUrl.pathname.startsWith("/forgot-password"))
+    authRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
   ) {
     return NextResponse.redirect(new URL("/home", request.url));
   }

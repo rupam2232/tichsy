@@ -13,7 +13,7 @@ import { checkStaffLimit } from "../service/subscription.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { restaurantCreatedTemplate } from "../utils/emailTemplates.js";
+import { restaurantCreatedTemplate } from "../templates/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";

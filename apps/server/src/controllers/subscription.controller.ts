@@ -9,9 +9,13 @@ import {
 } from "../config/subscriptionPlans.js";
 import { razorpay } from "../utils/razorpay.js";
 import { createSubscriptionSchema } from "@repo/types";
+import { generateSubscriptionReceiptPdf } from "../utils/generateSubscriptionReceiptPdf.js";
+import { isValidObjectId } from "mongoose";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
-  const subscription = await Subscription.findOne({ userId: req.user!._id });
+  const subscription = await Subscription.findOne({
+    userId: req.user!._id,
+  }).select("-__v -createdAt -updatedAt");
   if (!subscription) {
     throw new ApiError(404, "Subscription not found");
   }
@@ -288,4 +292,41 @@ export const getSubscriptionHistory = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, history, "Subscription history fetched successfully")
     );
+});
+
+export const downloadReceipt = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  if (!isValidObjectId(id)) {
+    throw new ApiError(400, "Invalid receipt ID");
+  }
+
+  const subscriptionHistory = await SubscriptionHistory.findById(id);
+
+  if (!subscriptionHistory) {
+    throw new ApiError(404, "Receipt not found");
+  }
+
+  // Ensure user owns this receipt
+  if (subscriptionHistory.userId.toString() !== req.user!.id) {
+    throw new ApiError(403, "You do not have permission to view this receipt");
+  }
+
+  const userName = [req.user!.firstName, req.user!.lastName]
+    .filter(Boolean)
+    .join(" ");
+
+  const stream = await generateSubscriptionReceiptPdf(subscriptionHistory, {
+    name: userName || req.user!.email,
+    email: req.user!.email,
+    timeZone,
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=receipt-${subscriptionHistory.transactionId || id}.pdf`
+  );
+
+  stream.pipe(res);
 });

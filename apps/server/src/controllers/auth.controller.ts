@@ -14,7 +14,7 @@ import {
   newLoginDeviceTemplate,
   passwordResetSuccessTemplate,
   signupEmailTemplate,
-} from "../utils/emailTemplates.js";
+} from "../templates/emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";

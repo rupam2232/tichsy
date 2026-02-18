@@ -300,8 +300,8 @@ export default function ClientPage() {
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Tax (Fee Recovery 2.5%)
+                    <span className="text-muted-foreground mr-2">
+                      Payment Processing Fee (2.5%)
                     </span>
                     <span>₹{previewData?.taxAmount.toFixed(2)}</span>
                   </div>
