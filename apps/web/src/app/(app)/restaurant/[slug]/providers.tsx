@@ -10,7 +10,6 @@ import type { ApiResponse } from "@repo/types";
 import axios from "@/utils/axiosInstance";
 import { setActiveRestaurant } from "@/store/restaurantSlice";
 import type { AppDispatch, RootState } from "@/store/store";
-import { useNewOrderListener } from "@/hooks/useNewOrderListener";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const activeRestaurant = useSelector(
@@ -22,8 +21,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   // Ref to keep the latest restaurant data for the connect handler
   const connectHandlerRef = useRef<(() => void) | null>(null);
-  // Register new order listener globally
-  useNewOrderListener();
 
   useEffect(() => {
     if (!slug) return;

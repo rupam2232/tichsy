@@ -63,11 +63,11 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
   const isFirstRender = useRef(true);
 
   const fetchOrders = useCallback(async () => {
-    // Skip fetch on mount if we have initial data
     if (isFirstRender.current && (tabName === "new" || tabName === "all")) {
       dispatch(markNotificationAsReadByMergeKey(`new_order_${slug}`));
     }
 
+    // Skip fetch on mount if we have initial data
     if (isFirstRender.current && initialOrders) {
       return;
     }

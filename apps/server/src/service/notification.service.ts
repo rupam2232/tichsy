@@ -4,7 +4,7 @@ import { Types } from "mongoose";
 
 export const createNotification = async (data: {
   recipient: string | Types.ObjectId;
-  type: string;
+  type: Notification["type"];
   title: string;
   message: string;
   data?: any;
@@ -149,5 +149,16 @@ export const markNotificationAsReadByMergeKey = async (
     { read: true },
     { new: true }
   );
+  return notification;
+};
+
+export const deleteNotification = async (
+  notificationId: string,
+  userId: string | Types.ObjectId
+) => {
+  const notification = await Notification.findOneAndDelete({
+    _id: notificationId,
+    recipient: userId,
+  });
   return notification;
 };

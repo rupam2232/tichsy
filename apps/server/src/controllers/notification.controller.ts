@@ -6,7 +6,8 @@ import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  markNotificationAsReadByMergeKey
+  markNotificationAsReadByMergeKey,
+  deleteNotification as deleteNotificationService,
 } from "../service/notification.service.js";
 
 export const getUserNotifications = asyncHandler(
@@ -64,11 +65,32 @@ export const markReadByMergeKey = asyncHandler(
       key,
       req.user._id
     );
-
     res
       .status(200)
       .json(
         new ApiResponse(200, updatedNotification, "Notification marked as read")
       );
+  }
+);
+
+export const deleteNotification = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    if (!req.user?._id) {
+      throw new ApiError(401, "User not found");
+    }
+
+    const deletedNotification = await deleteNotificationService(
+      id,
+      req.user._id
+    );
+
+    if (!deletedNotification) {
+      throw new ApiError(404, "Notification not found");
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Notification deleted successfully"));
   }
 );

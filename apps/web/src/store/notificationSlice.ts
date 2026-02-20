@@ -26,7 +26,7 @@ const initialState: NotificationState = {
 export const fetchNotifications = createAsyncThunk(
   "notifications/fetchNotifications",
   async (
-    { page, limit }: { page: number; limit: number },
+    { page = 1, limit = 10 }: { page?: number; limit?: number },
     { rejectWithValue },
   ) => {
     try {
@@ -88,6 +88,21 @@ export const markNotificationAsReadByMergeKey = createAsyncThunk(
       return rejectWithValue(
         axiosError.response?.data?.message ||
           "Failed to mark notifications as read",
+      );
+    }
+  },
+);
+
+export const deleteNotification = createAsyncThunk(
+  "notifications/deleteNotification",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await axios.delete(`/notification/${id}`);
+      return id;
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiResponse>;
+      return rejectWithValue(
+        axiosError.response?.data?.message || "Failed to delete notification",
       );
     }
   },
@@ -193,6 +208,18 @@ const notificationSlice = createSlice({
       .addCase(markAllNotificationsAsRead.fulfilled, (state) => {
         state.notifications.forEach((n) => (n.read = true));
         state.unreadCount = 0;
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        const id = action.payload;
+        const index = state.notifications.findIndex((n) => n._id === id);
+        if (index !== -1) {
+          const notification = state.notifications[index];
+          if (!notification?.read) {
+            state.unreadCount = Math.max(0, state.unreadCount - 1);
+          }
+          state.notifications.splice(index, 1);
+          state.total = Math.max(0, state.total - 1);
+        }
       });
   },
 });
