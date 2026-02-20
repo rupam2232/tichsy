@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { ChevronLeft, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@repo/ui/components/button";
 import { IconSalad } from "@tabler/icons-react";
@@ -108,12 +108,15 @@ const CheckoutClientPage = () => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link
-          href={`/${restaurantSlug}/menu?tableId=${tableId}`}
-          className="hover:text-foreground/80 mb-4 inline-block"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-4 pl-0! bg-transparent! hover:bg-transparent! group"
+          onClick={() => router.back()}
         >
-          ← Back to Menu
-        </Link>
+          <ChevronLeft className="group-hover:-translate-x-0.5 transition-transform" />
+          Back to Menu
+        </Button>
         <h1 className="text-3xl font-bold">Cart</h1>
       </div>
       {cartItems.length === 0 ? (

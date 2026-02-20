@@ -35,11 +35,13 @@ const ClinetFoodMenu = ({
   slug,
   tableId,
   isStaffCreatingOrder = false,
+  className,
   scrollClassName,
 }: {
   slug: string;
   tableId: string | null;
   isStaffCreatingOrder: boolean;
+  className?: string;
   scrollClassName?: string;
 }) => {
   const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(null);
@@ -226,7 +228,7 @@ const ClinetFoodMenu = ({
 
   if (isTableDataLoading) {
     return (
-      <div className="p-4 text-center">
+      <div className={cn("p-4 text-center", className)}>
         <Loader2 className="animate-spin mx-auto" />
         <p>Please wait while we load the table data...</p>
       </div>
@@ -235,7 +237,7 @@ const ClinetFoodMenu = ({
 
   if (!tableDetails && !isStaffCreatingOrder) {
     return (
-      <div className="p-4 text-center text-balance">
+      <div className={cn("p-4 text-center text-balance", className)}>
         Sorry, we couldn&apos;t find your table details. Please refresh the page
         or scan the QR code again.
       </div>
@@ -244,7 +246,7 @@ const ClinetFoodMenu = ({
 
   if (tableDetails?.isOccupied && !isStaffCreatingOrder) {
     return (
-      <div className="p-4 text-center text-balance">
+      <div className={cn("p-4 text-center text-balance", className)}>
         This table is currently occupied. Please try again later. Or contact
         restaurant staff for assistance.
       </div>
@@ -252,7 +254,7 @@ const ClinetFoodMenu = ({
   }
 
   return (
-    <div className={cn("relative", { "p-4": !isStaffCreatingOrder })}>
+    <div className={cn("relative", { "p-4": !isStaffCreatingOrder }, className)}>
       <Tabs
         className="mb-24"
         defaultValue="all"

@@ -145,7 +145,7 @@ export const markNotificationAsReadByMergeKey = async (
   userId: string | Types.ObjectId
 ) => {
   const notification = await Notification.findOneAndUpdate(
-    { mergeKey, recipient: userId },
+    { mergeKey, recipient: userId, read: false },
     { read: true },
     { new: true }
   );

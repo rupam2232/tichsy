@@ -6,7 +6,7 @@ export const addToCartSchema = z.object({
     .number("Quantity must be a number")
     .min(1, "Quantity must be greater than zero")
     .int("Quantity must be an integer"),
-  variantName: z.string("Variant name must be a string").optional(),
+  variantName: z.string("Variant name must be a string").optional().nullable(),
 });
 
 export const updateCartItemSchema = z.object({
@@ -14,7 +14,7 @@ export const updateCartItemSchema = z.object({
     .number("Quantity must be a number")
     .min(1, "Quantity must be greater than zero")
     .int("Quantity must be an integer"),
-  variantName: z.string("Variant name must be a string").optional(),
+  variantName: z.string("Variant name must be a string").optional().nullable(),
 });
 
 export const removeFromCartSchema = z.object({

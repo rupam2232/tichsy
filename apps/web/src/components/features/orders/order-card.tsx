@@ -15,7 +15,7 @@ import {
   ButtonGroup,
   ButtonGroupSeparator,
 } from "@repo/ui/components/button-group";
-import { ChevronDown, Info, Loader2 } from "lucide-react";
+import { CheckCheck, ChevronDown, Info, Loader2 } from "lucide-react";
 import { IconReceipt } from "@tabler/icons-react";
 import { Button } from "@repo/ui/components/button";
 import { Card, CardContent } from "@repo/ui/components/card";
@@ -262,7 +262,8 @@ const OrderCard = ({
                       handleUpdatePaidStatus({ markCompleted: true })
                     }
                   >
-                    Mark as Paid & Complete
+                    <CheckCheck />
+                    Mark Paid & Complete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

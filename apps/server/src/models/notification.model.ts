@@ -28,7 +28,6 @@ const notificationSchema = new Schema<Notification>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     type: {
       type: String,
@@ -70,6 +69,9 @@ const notificationSchema = new Schema<Notification>(
 
 // Create TTL index on expiresAt
 notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+// Create index for mergeKey and read
+notificationSchema.index({ recipient: 1, mergeKey: 1, read: 1 });
 
 /**
  * Mongoose model for the Notification schema.
