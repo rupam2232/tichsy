@@ -10,6 +10,7 @@ import {
 import { NotificationItem } from "@/components/shared/notifications/notification-item";
 import { Button } from "@repo/ui/components/button";
 import { CheckCheck, Loader2 } from "lucide-react";
+import PushNotificationRequest from "@/components/shared/notifications/push-notification-request";
 
 export default function NotificationsPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -64,8 +65,10 @@ export default function NotificationsPage() {
       </div>
 
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <PushNotificationRequest />
         {showFullLoader ? (
           <div className="flex h-32 items-center justify-center text-muted-foreground">
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
             Loading notifications...
           </div>
         ) : notifications.length === 0 ? (

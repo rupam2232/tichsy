@@ -18,6 +18,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { CheckCheck, Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/navigation";
+import PushNotificationRequest from "./push-notification-request";
 
 interface NotificationDropdownProps {
   children: React.ReactNode;
@@ -71,7 +72,7 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
         forceMount
       >
         <DropdownMenuLabel className="flex items-center justify-between font-normal">
-          <span className="font-semibold">Notifications</span>
+          <span className="font-semibold text-foreground">Notifications</span>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -86,8 +87,10 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-250px)]">
+          <PushNotificationRequest />
           {showFullLoader ? (
             <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
               Loading...
             </div>
           ) : notifications.length === 0 ? (
