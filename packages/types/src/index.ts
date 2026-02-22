@@ -53,9 +53,6 @@ export {
 } from "./interfaces/Restaurant.js";
 
 export {
-  type StaffDashboardStats,
-  type OwnerDashboardStats,
-  type DashboardStats,
   type DashboardOperations,
   type DashboardAnalytics,
 } from "./interfaces/Stats.js";

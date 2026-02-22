@@ -254,11 +254,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       await order[0].save({ session });
       await session.commitTransaction();
       session.endSession();
-      io?.to(`restaurant_${restaurant._id}_staff`).emit("newOrder", {
-        order: socketIoOrderData,
-        message: "A new order has been placed",
-      });
-      io?.to(`restaurant_${restaurant._id}_owner`).emit("newOrder", {
+      io?.to(`restaurant_${restaurant._id}`).emit("newOrder", {
         order: socketIoOrderData,
         message: "A new order has been placed",
       });
@@ -278,7 +274,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
             message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
             mergeKey: `new_order_${restaurant.slug}`,
             pluralTitle: "{count} New Orders",
-            pluralMessage: `You have {count} new orders waiting.`,
+            pluralMessage: `You have {count} new orders waiting`,
             data: {
               orderId: order[0]._id,
               orderNo: order[0].orderNo,
@@ -302,11 +298,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       // For cash payments
       await session.commitTransaction();
       session.endSession();
-      io?.to(`restaurant_${restaurant._id}_staff`).emit("newOrder", {
-        order: socketIoOrderData,
-        message: "A new order has been placed",
-      });
-      io?.to(`restaurant_${restaurant._id}_owner`).emit("newOrder", {
+      io?.to(`restaurant_${restaurant._id}`).emit("newOrder", {
         order: socketIoOrderData,
         message: "A new order has been placed",
       });
@@ -326,7 +318,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
             message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
             mergeKey: `new_order_${restaurant.slug}`,
             pluralTitle: "{count} New Orders",
-            pluralMessage: `You have {count} new orders waiting.`,
+            pluralMessage: `You have {count} new orders waiting`,
             data: {
               orderId: order[0]._id,
               orderNo: order[0].orderNo,
@@ -712,11 +704,13 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
     restaurantId: restaurant._id,
     ...(req.query.isPaid ? { isPaid: req.query.isPaid === "true" } : {}),
     ...(status
-      ? !Array.isArray(status)
-        ? { status }
-        : status.length > 0
+      ? Array.isArray(status)
+        ? status.length > 0
           ? { status: { $in: status } }
           : {}
+        : status.toString().split(",").length > 0
+          ? { status: { $in: status.toString().split(",") } }
+          : { status: status.toString() }
       : {}),
   };
 
@@ -1192,7 +1186,11 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   if (status === "cancelled" && order.isPaid) {
-    // If the order is cancelled and already paid, we should handle the refund logic here
+    // If the order is cancelled and already paid
+    throw new ApiError(
+      400,
+      "Cannot cancel an already paid order"
+    );
   }
 
   if (status === "completed" && !order.isPaid) {
@@ -1211,17 +1209,31 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   await order.save();
-  // If the order is completed, update the table status
   if (status === "completed" || status === "cancelled") {
     const table = await Table.findOne({ _id: order.tableId });
     if (table) {
       table.isOccupied = false; // Mark the table as not occupied
       table.currentOrderId = undefined; // Clear the current order
       await table.save({ validateBeforeSave: false });
+
+      io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {
+        message: "Table is now available",
+        table: table,
+      });
     }
   }
 
-  io?.to(`order_${order._id}`).emit("orderUpdate", order);
+  const socketIoOrderData = {
+    ...order.toObject(),
+    restaurant: { slug: restaurant.slug, _id: restaurant._id },
+  };
+
+  io?.to(`order_${order._id}`).emit("orderUpdate", socketIoOrderData);
+
+  io?.to(`restaurant_${restaurant.id}`).emit("orderUpdated", {
+    message: "Order status updated",
+    order: socketIoOrderData,
+  });
 
   res
     .status(200)
@@ -1401,6 +1413,18 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     await session.commitTransaction();
     session.endSession();
 
+    const socketIoOrderData = {
+      ...order.toObject(),
+      restaurant: { slug: restaurant.slug, _id: restaurant._id },
+    };
+
+    io?.to(`order_${order._id}`).emit("orderUpdate", socketIoOrderData);
+
+    io?.to(`restaurant_${restaurant.id}`).emit("orderUpdated", {
+      message: "Order updated",
+      order: socketIoOrderData,
+    });
+
     res
       .status(200)
       .json(new ApiResponse(200, order, "Order updated successfully"));
@@ -1490,6 +1514,11 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
       table.isOccupied = false; // Mark the table as not occupied
       table.currentOrderId = undefined; // Clear the current order
       await table.save({ validateBeforeSave: false });
+
+      io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {
+        message: "Table is now available",
+        table: table,
+      });
     }
   }
 
@@ -1498,7 +1527,17 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   }
   await order.save();
 
-  io?.to(`order_${order._id}`).emit("orderUpdate", order);
+  const socketIoOrderData = {
+    ...order.toObject(),
+    restaurant: { slug: restaurant.slug, _id: restaurant._id },
+  };
+
+  io?.to(`order_${order._id}`).emit("orderUpdate", socketIoOrderData);
+
+  io?.to(`restaurant_${restaurant.id}`).emit("orderUpdated", {
+    message: "Order payment status updated",
+    order: socketIoOrderData,
+  });
 
   res
     .status(200)

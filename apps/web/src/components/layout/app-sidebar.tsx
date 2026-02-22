@@ -9,9 +9,9 @@ import {
   IconToolsKitchen,
   IconLayoutDashboard,
   IconUser,
-  IconUsers,
   IconCreditCard,
   IconHome,
+  IconChartBar,
 } from "@tabler/icons-react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -69,6 +69,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconLayoutDashboard,
     },
     {
+      title: "Analytics",
+      url: `/restaurant/${restaurantSlug}/analytics`,
+      showInSidebar: user?.role === "owner",
+      icon: IconChartBar,
+    },
+    {
       title: "Orders",
       url: `/restaurant/${restaurantSlug}/orders`,
       showInSidebar: true,
@@ -87,21 +93,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconToolsKitchen,
     },
     {
-      title: "Owner",
-      icon: IconUser,
+      title: "Staffs",
+      url: `/restaurant/${restaurantSlug}/staff-management`,
       showInSidebar: user?.role === "owner",
-      subItems: [
-        {
-          title: "Staff Management",
-          url: `/restaurant/${restaurantSlug}/staff-management`,
-          icon: IconUsers,
-        },
-        {
-          title: "Settings",
-          url: `/restaurant/${restaurantSlug}/settings`,
-          icon: IconSettings,
-        },
-      ],
+      icon: IconUser,
+    },
+    {
+      title: "Settings",
+      url: `/restaurant/${restaurantSlug}/settings`,
+      showInSidebar: user?.role === "owner",
+      icon: IconSettings,
     },
   ];
 

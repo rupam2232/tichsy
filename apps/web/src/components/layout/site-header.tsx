@@ -25,6 +25,12 @@ import { signOut } from "@/store/authSlice";
 import { toast } from "sonner";
 import { setActiveRestaurant } from "@/store/restaurantSlice";
 import { NotificationBell } from "@/components/shared/notifications/notification-bell";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@repo/ui/components/tooltip";
+import { Kbd } from "@repo/ui/components/kbd";
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);
@@ -117,7 +123,14 @@ export function SiteHeader() {
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-11 px-1 backdrop-blur-sm bg-background/70 rounded-t-2xl">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarTrigger className="-ml-1" />
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            Toggle Sidebar <span className="text-[10px]"><Kbd className="text-[11px] font-medium">Ctrl + B</Kbd></span>
+          </TooltipContent>
+        </Tooltip>
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4 bg-zinc-400"

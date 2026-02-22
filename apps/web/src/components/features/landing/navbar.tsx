@@ -10,13 +10,18 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import Link from "next/link";
+import { Kbd } from "@repo/ui/components/kbd";
+import { Button } from "@repo/ui/components/button";
+import { useRouter } from "next/navigation";
 
 export default function NavbarComp() {
   const authenticated = useSelector((state: RootState) => state.auth.status);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
   const navItems = [
     {
       name: "Features",
@@ -25,10 +30,22 @@ export default function NavbarComp() {
     {
       name: "Pricing",
       link: "/pricing",
-    }
+    },
   ];
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        router.push("/home");
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [router]);
+
   return (
     <Navbar className="fixed top-5">
       {/* Desktop Navigation */}
@@ -40,10 +57,17 @@ export default function NavbarComp() {
             <NavbarButton
               href="/home"
               as={Link}
-              variant="primary"
-              className="bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
+              className="p-0 rounded-md bg-transparent hover:translate-none"
             >
-              Open App
+              <Button>
+                Open App{" "}
+                <Kbd
+                  data-icon="inline-end"
+                  className="bg-black text-white translate-x-1"
+                >
+                  ⏎
+                </Kbd>
+              </Button>
             </NavbarButton>
           ) : (
             <>

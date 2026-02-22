@@ -793,11 +793,11 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
 
   const [
     newOrders,
-    inProgressOrders,
+    preparingOrders,
     tableStats,
     todayTotalOrders,
     yesterdayTotalOrdersAgg,
-    unPaidCompletedOrders,
+    unpaidOrders,
     readyOrders,
   ] = await Promise.all([
     Order.countDocuments({
@@ -869,7 +869,7 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
       {
         $match: {
           restaurantId: restaurant._id,
-          status: "completed",
+          status: { $ne: "cancelled" },
           isPaid: false,
         },
       },
@@ -909,13 +909,13 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
 
   const operations = {
     newOrders,
-    inProgressOrders: inProgressOrders[0]?.total || 0,
+    preparingOrders: preparingOrders[0]?.total || 0,
     occupiedTables: tableStats[0]?.occupiedTableCount || 0,
     freeTables: tableStats[0]?.freeTableCount || 0,
     todayTotalOrders: todayTotal,
     yesterdayTotalOrders: yesterdayTotal,
     totalOrderChangePercent,
-    unPaidCompletedOrders: unPaidCompletedOrders[0]?.total || 0,
+    unpaidOrders: unpaidOrders[0]?.total || 0,
     readyOrders: readyOrders[0]?.total || 0,
   };
 

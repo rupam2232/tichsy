@@ -1,16 +1,16 @@
-export interface StaffDashboardStats {
+export interface DashboardOperations {
   newOrders: number;
-  inProgressOrders: number;
+  preparingOrders: number;
   occupiedTables: number;
   freeTables: number;
   todayTotalOrders: number;
   yesterdayTotalOrders: number;
   totalOrderChangePercent: number;
-  unPaidCompletedOrders: number;
+  unpaidOrders: number;
   readyOrders: number;
 }
 
-export interface OwnerDashboardStats {
+export interface DashboardAnalytics {
   kpis: {
     allTimeSales: {
       value: number;
@@ -47,12 +47,3 @@ export interface OwnerDashboardStats {
     tableName: string;
   }[];
 }
-
-export interface DashboardStats {
-  role: "owner" | "staff";
-  overview?: OwnerDashboardStats; // Only present if role is 'owner'
-  operations: StaffDashboardStats; // Always present
-}
-
-export type DashboardOperations = StaffDashboardStats;
-export type DashboardAnalytics = OwnerDashboardStats;

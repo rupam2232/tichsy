@@ -45,11 +45,11 @@ import {
 import { Calendar } from "@repo/ui/components/calendar";
 import { format } from "date-fns";
 
-interface AnalyticsTabProps {
+interface AnalyticsContentProps {
   slug: string;
 }
 
-export function AnalyticsTab({ slug }: AnalyticsTabProps) {
+export function AnalyticsContent({ slug }: AnalyticsContentProps) {
   const [analyticsData, setAnalyticsData] = useState<DashboardAnalytics | null>(
     null,
   );

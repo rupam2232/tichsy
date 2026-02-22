@@ -57,7 +57,6 @@ export function setupSocketIO(server: http.Server) {
           if (decoded._id !== restaurant.ownerId.toString()) {
             return socket.disconnect();
           }
-          socket.join(`restaurant_${activeRestaurantId}_owner`);
         } else if (decoded.role === "staff") {
           if (
             !restaurant.staffIds?.some(
@@ -66,13 +65,8 @@ export function setupSocketIO(server: http.Server) {
           ) {
             return socket.disconnect();
           }
-          socket.join(`restaurant_${activeRestaurantId}_staff`);
-        } else if (decoded.role === "admin") {
-          socket.join(`restaurant_${activeRestaurantId}_admin`);
-        } else {
-          return socket.disconnect();
         }
-
+        socket.join(`restaurant_${activeRestaurantId}`);
         console.log(`User joined ${activeRestaurantId} room`);
       } catch (err) {
         console.error("Socket authentication error:", err);
