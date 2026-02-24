@@ -118,7 +118,8 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-  extraNameKey
+  extraNameKey,
+  valueIcon
 }: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
   React.ComponentProps<"div"> & {
     hideLabel?: boolean
@@ -127,6 +128,7 @@ function ChartTooltipContent({
     nameKey?: string
     labelKey?: string
     extraNameKey?: string
+    valueIcon?: string
     payload?: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
     label?: any // eslint-disable-line @typescript-eslint/no-explicit-any
   }) {
@@ -238,7 +240,7 @@ function ChartTooltipContent({
                     </div>
                     {item.value && (
                       <span className="text-foreground font-mono font-medium tabular-nums">
-                        {item.value.toLocaleString()}
+                        {valueIcon && valueIcon}{item.value.toLocaleString()}
                       </span>
                     )}
                     {extraNameKey && item.payload && item.payload[extraNameKey] && (<>

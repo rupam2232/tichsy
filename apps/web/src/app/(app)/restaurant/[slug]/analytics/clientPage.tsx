@@ -2,7 +2,11 @@
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
-import { AnalyticsContent } from "./analytics-content";
+import { KpiCards } from "@/components/features/analytics/kpi-cards";
+import { RevenueChart } from "@/components/features/analytics/revenue-chart";
+import { TrendingItems } from "@/components/features/analytics/trending-items";
+import { TopCategories } from "@/components/features/analytics/top-categories";
+import { TopTables } from "@/components/features/analytics/top-tables";
 
 const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -19,18 +23,34 @@ const ClientPage = () => {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6">
+    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6 @container/main">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl font-bold tracking-tight">Analytics</h2>
           <p className="text-sm text-muted-foreground">
-            Deep dive into your restaurant&apos;s historical performance.
+            Monitor your restaurant&apos;s performance and track key metrics.
           </p>
         </div>
       </div>
 
       <div className="space-y-4 pt-4">
-        <AnalyticsContent slug={slug} />
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
+          <KpiCards slug={slug} />
+
+          <div className="grid grid-cols-1 @3xl/main:grid-cols-12 gap-6">
+            <div className="col-span-1 @3xl/main:col-span-8 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
+              <RevenueChart slug={slug} />
+            </div>
+            <div className="col-span-1 @3xl/main:col-span-4 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
+              <TopCategories slug={slug} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 @2xl/main:grid-cols-2">
+            <TrendingItems slug={slug} />
+            <TopTables slug={slug} />
+          </div>
+        </div>
       </div>
     </div>
   );

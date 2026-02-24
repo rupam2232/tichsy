@@ -16,15 +16,15 @@ export interface DashboardAnalytics {
       value: number;
       description: string;
     };
-    totalCompletedOrders: {
+    allTimeOrders: {
       value: number;
       description: string;
     };
-    thisMonthSales: {
+    averageOrderValue: {
       value: number;
       description: string;
     };
-    todaySales: {
+    activeMenuItems: {
       value: number;
       description: string;
     };
@@ -45,5 +45,10 @@ export interface DashboardAnalytics {
     _id: string;
     count: number;
     tableName: string;
+  }[];
+  categoryBreakdown: {
+    _id: string;
+    totalRevenue: number;
+    count: number;
   }[];
 }

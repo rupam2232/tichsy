@@ -15,6 +15,7 @@ import { cn } from "@repo/ui/lib/utils";
 import type { DashboardOperations, ApiResponse } from "@repo/types";
 import { useSocket } from "@/context/SocketContext";
 import type { AxiosError } from "axios";
+import { toast } from "sonner";
 
 interface MetricsOverviewProps {
   slug: string;
@@ -37,11 +38,13 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
       setOperationsData(operationsRes.data.data || null);
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
+      console.error(error);
+      toast.error(
+        axiosError.response?.data?.message || "Failed to fetch operations",
+      );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push(`/signin?redirect=/restaurant/${slug}/dashboard`);
-      } else {
-        console.error(error);
       }
     }
   }, [slug, dispatch, router]);

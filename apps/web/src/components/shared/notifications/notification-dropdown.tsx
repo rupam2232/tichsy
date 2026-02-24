@@ -95,7 +95,7 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
-              No notifications
+              No notification
             </div>
           ) : (
             <div className="grid">

@@ -17,7 +17,13 @@ import { restaurantCreatedTemplate } from "../templates/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";
-import { startOfDay, endOfDay } from "date-fns";
+import {
+  startOfDay,
+  endOfDay,
+  subDays,
+  startOfMonth,
+  subMonths,
+} from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { User } from "../models/user.model.js";
 import {
@@ -25,6 +31,7 @@ import {
   updateRestaurantSchema,
   addCategorySchema,
 } from "@repo/types";
+import { FoodItem } from "../models/foodItem.model.js";
 
 export const createRestaurant = asyncHandler(async (req, res) => {
   const validatedData = createRestaurantSchema.parse(req.body);
@@ -930,21 +937,16 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
     );
 });
 
-// Analytics endpoint - Slower, historical data for Owners only
-export const getDashboardAnalytics = asyncHandler(async (req, res) => {
+export const getAnalyticsKPIs = asyncHandler(async (req, res) => {
   if (!req.params || !req.params.slug) {
     throw new ApiError(400, "Restaurant slug is required");
   }
   const { slug } = req.params;
   const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
-  const { startDate, endDate } = req.query;
 
   const restaurant = await Restaurant.findOne({ slug });
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
-  }
+  if (!restaurant) throw new ApiError(404, "Restaurant not found");
 
-  // Role verification - OWNER ONLY
   if (
     req.user!.role !== "owner" ||
     restaurant.ownerId.toString() !== req.user!.id
@@ -954,14 +956,152 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
 
   const nowUtc = new Date();
   const nowInTZ = toZonedTime(nowUtc, timeZone);
-  const startOfTodayInTZ = startOfDay(nowInTZ);
-  const startOfToday = fromZonedTime(startOfTodayInTZ, timeZone);
   const endOfTodayInTZ = endOfDay(nowInTZ);
   const endOfToday = fromZonedTime(endOfTodayInTZ, timeZone);
 
-  // Determine date range for analytics
+  // Time bounds for current and prev 30-day rolling windows
+  const startOfCurrentMonth = startOfMonth(endOfToday);
+  const startOfPreviousMonth = subMonths(startOfCurrentMonth, 1);
+
+  const [
+    allTimeSalesAgg,
+    allTimeOrdersCount,
+    currentMonthSalesAgg,
+    previousMonthSalesAgg,
+    currentMonthOrdersCount,
+    previousMonthOrdersCount,
+    activeMenuItemsCount,
+  ] = await Promise.all([
+    // 1. All Time Sales
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          isPaid: true,
+          status: "completed",
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]),
+    // 2. All Time Orders
+    Order.countDocuments({
+      restaurantId: restaurant._id,
+      isPaid: true,
+      status: "completed",
+    }),
+    // 3. Current Month Sales
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          isPaid: true,
+          status: "completed",
+          createdAt: { $gte: startOfCurrentMonth, $lte: endOfToday },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]),
+    // 4. Previous Month Sales
+    Order.aggregate([
+      {
+        $match: {
+          restaurantId: restaurant._id,
+          isPaid: true,
+          status: "completed",
+          createdAt: { $gte: startOfPreviousMonth, $lt: startOfCurrentMonth },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]),
+    // 5. Current Month Orders
+    Order.countDocuments({
+      restaurantId: restaurant._id,
+      isPaid: true,
+      status: "completed",
+      createdAt: { $gte: startOfCurrentMonth, $lte: endOfToday },
+    }),
+    // 6. Previous Month Orders
+    Order.countDocuments({
+      restaurantId: restaurant._id,
+      isPaid: true,
+      status: "completed",
+      createdAt: { $gte: startOfPreviousMonth, $lt: startOfCurrentMonth },
+    }),
+    // 7. Active Menu Items Count
+    FoodItem.countDocuments({
+      restaurantId: restaurant._id,
+      isAvailable: true,
+      isArchived: false,
+    }),
+  ]);
+
+  // Extract raw values
+  const totalRevenue = allTimeSalesAgg[0]?.total || 0;
+  const currentMonthRevenue = currentMonthSalesAgg[0]?.total || 0;
+  const previousMonthRevenue = previousMonthSalesAgg[0]?.total || 0;
+
+  // Percentage Calculations (Avoid divide by zero)
+  const calculatePercentageString = (current: number, previous: number) => {
+    if (previous === 0) {
+      if (current === 0) return "0% from last month";
+      return "+100% from last month"; // If previous was 0 but we have sales, practically an infinite increase, 100% is safe UI
+    }
+    const delta = ((current - previous) / previous) * 100;
+    const sign = delta > 0 ? "+" : "";
+    return `${sign}${delta.toFixed(1)}% from last month`;
+  };
+
+  const salesDeltaString = calculatePercentageString(
+    currentMonthRevenue,
+    previousMonthRevenue
+  );
+  const ordersDeltaString = calculatePercentageString(
+    currentMonthOrdersCount,
+    previousMonthOrdersCount
+  );
+
+  const averageOrderValue =
+    allTimeOrdersCount > 0 ? totalRevenue / allTimeOrdersCount : 0;
+
+  const kpis = {
+    allTimeSales: {
+      value: totalRevenue,
+      description: salesDeltaString,
+    },
+    allTimeOrders: {
+      value: allTimeOrdersCount,
+      description: ordersDeltaString,
+    },
+    averageOrderValue: {
+      value: averageOrderValue,
+      description: "Average spend per order",
+    },
+    activeMenuItems: {
+      value: activeMenuItemsCount,
+      description: "Current active offerings",
+    },
+  };
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, kpis, "KPIs retrieved successfully"));
+});
+
+export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug)
+    throw new ApiError(400, "Restaurant slug is required");
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const { startDate, endDate, groupBy = "day" } = req.query;
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant || restaurant.ownerId.toString() !== req.user!.id)
+    throw new ApiError(403, "You can't access this data");
+
   let queryStart: Date;
   let queryEnd: Date;
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
 
   if (startDate && endDate) {
     queryStart = fromZonedTime(
@@ -973,51 +1113,28 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
       timeZone
     );
   } else {
-    // Default to last 30 days
     const thirtyDaysAgo = new Date(nowInTZ);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
     queryStart = fromZonedTime(startOfDay(thirtyDaysAgo), timeZone);
-    queryEnd = endOfToday;
+    queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
   }
 
-  // 1. Sales & Orders in selected period
-  const [periodSalesAgg, periodOrdersAgg] = await Promise.all([
-    Order.aggregate([
-      {
-        $match: {
-          restaurantId: restaurant._id,
-          isPaid: true,
-          status: "completed",
-          createdAt: { $gte: queryStart, $lte: queryEnd },
-        },
-      },
-      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-    ]),
-    Order.countDocuments({
-      restaurantId: restaurant._id,
-      status: "completed",
-      createdAt: { $gte: queryStart, $lte: queryEnd },
-    }),
-  ]);
+  let formatString = "%Y-%m-%d";
+  if (groupBy === "week") {
+    // We will leave this in case it's used elsewhere, but week-sliding is preferred now
+    formatString = "%m-%d";
+  } else if (groupBy === "month") {
+    formatString = "%Y-%m";
+  } else if (groupBy === "hour") {
+    formatString = "%Y-%m-%d %H:00";
+  }
 
-  // 2. All Time Sales
-  const allTimeSalesAgg = await Order.aggregate([
-    {
-      $match: {
-        restaurantId: restaurant._id,
-        isPaid: true,
-        status: "completed",
-      },
-    },
-    { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-  ]);
-
-  // 3. Sales Trend
   const rawSalesTrend = await Order.aggregate([
     {
       $match: {
         restaurantId: restaurant._id,
         status: "completed",
+        isPaid: true,
         createdAt: { $gte: queryStart, $lte: queryEnd },
       },
     },
@@ -1025,7 +1142,7 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
       $group: {
         _id: {
           $dateToString: {
-            format: "%Y-%m-%d",
+            format: formatString,
             date: "$createdAt",
             timezone: timeZone,
           },
@@ -1039,28 +1156,165 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
 
   const salesTrendMap = new Map(rawSalesTrend.map((item) => [item._id, item]));
   const salesTrend = [];
-  let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
-  const loopEndDateInTZ = new Date(toZonedTime(queryEnd, timeZone));
 
-  while (loopDateInTZ <= loopEndDateInTZ) {
-    const year = loopDateInTZ.getFullYear();
-    const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
-    const day = String(loopDateInTZ.getDate()).padStart(2, "0");
-    const dateString = `${year}-${month}-${day}`;
+  if (groupBy === "hour") {
+    // Generate 24 hours for the queryStart date
+    let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
+    loopDateInTZ.setHours(0, 0, 0, 0);
 
-    if (salesTrendMap.has(dateString)) {
-      salesTrend.push(salesTrendMap.get(dateString));
-    } else {
-      salesTrend.push({ _id: dateString, total: 0, orders: 0 });
+    for (let i = 0; i < 24; i++) {
+      const year = loopDateInTZ.getFullYear();
+      const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+      const day = String(loopDateInTZ.getDate()).padStart(2, "0");
+      const hour = String(loopDateInTZ.getHours()).padStart(2, "0");
+
+      const dateString = `${year}-${month}-${day} ${hour}:00`;
+      salesTrend.push(
+        salesTrendMap.get(dateString) || {
+          _id: dateString,
+          total: 0,
+          orders: 0,
+        }
+      );
+      loopDateInTZ.setHours(loopDateInTZ.getHours() + 1);
     }
-    loopDateInTZ.setDate(loopDateInTZ.getDate() + 1);
+  } else if (groupBy === "week-sliding") {
+    // 1. Generate ALL days
+    const dailyData = [];
+    let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
+    const loopEndDateInTZ = new Date(toZonedTime(queryEnd, timeZone));
+
+    while (loopDateInTZ <= loopEndDateInTZ) {
+      const year = loopDateInTZ.getFullYear();
+      const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+      const day = String(loopDateInTZ.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
+
+      const existingData = salesTrendMap.get(dateString);
+      dailyData.push({
+        _id: dateString,
+        total: existingData ? existingData.total : 0,
+        orders: existingData ? existingData.orders : 0,
+        originalDate: new Date(loopDateInTZ), // keep track for exact sliding window mapping
+      });
+      loopDateInTZ.setDate(loopDateInTZ.getDate() + 1);
+    }
+
+    // 2. Bucket them into exact 7-day chunks starting from Day 0
+    for (let i = 0; i < dailyData.length; i += 7) {
+      const chunk = dailyData.slice(i, i + 7);
+
+      const chunkStartDate = chunk[0].originalDate;
+      const chunkEndDate = chunk[chunk.length - 1].originalDate;
+
+      // Format as "Feb 07 - Feb 13" etc.
+      const startStr = chunkStartDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+      });
+      const endStr = chunkEndDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+      });
+
+      const chunkId = `${startStr} - ${endStr}`;
+
+      const chunkTotal = chunk.reduce((sum, item) => sum + item.total, 0);
+      const chunkOrders = chunk.reduce((sum, item) => sum + item.orders, 0);
+
+      salesTrend.push({
+        _id: chunkId,
+        total: chunkTotal,
+        orders: chunkOrders,
+        startDateStr: `${chunkStartDate.getFullYear()}-${String(chunkStartDate.getMonth() + 1).padStart(2, "0")}-${String(chunkStartDate.getDate()).padStart(2, "0")}`, // used for sorting later if needed
+      });
+    }
+  } else {
+    // Standard Day or Month loop
+    let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
+    const loopEndDateInTZ = new Date(toZonedTime(queryEnd, timeZone));
+
+    while (loopDateInTZ <= loopEndDateInTZ) {
+      let dateString = "";
+      if (groupBy === "month") {
+        const year = loopDateInTZ.getFullYear();
+        const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+        dateString = `${year}-${month}`;
+      } else {
+        const year = loopDateInTZ.getFullYear();
+        const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+        const day = String(loopDateInTZ.getDate()).padStart(2, "0");
+        dateString = `${year}-${month}-${day}`;
+      }
+
+      salesTrend.push(
+        salesTrendMap.get(dateString) || {
+          _id: dateString,
+          total: 0,
+          orders: 0,
+        }
+      );
+      if (groupBy === "month") {
+        loopDateInTZ.setMonth(loopDateInTZ.getMonth() + 1);
+      } else {
+        loopDateInTZ.setDate(loopDateInTZ.getDate() + 1);
+      }
+    }
   }
 
-  // 4. Top Food Items
+  const finalSalesTrend = groupBy === "week" ? rawSalesTrend : salesTrend;
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        finalSalesTrend,
+        "Revenue trend retrieved successfully"
+      )
+    );
+});
+
+// Analytics endpoint 3: Trending Foods (max 30 days ideally, but bounded by start/endDate)
+export const getAnalyticsTrending = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug)
+    throw new ApiError(400, "Restaurant slug is required");
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const { startDate, endDate } = req.query;
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant || restaurant.ownerId.toString() !== req.user!.id)
+    throw new ApiError(403, "You can't access this data");
+
+  let queryStart: Date;
+  let queryEnd: Date;
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
+
+  if (startDate && endDate) {
+    queryStart = fromZonedTime(
+      startOfDay(toZonedTime(new Date(startDate as string), timeZone)),
+      timeZone
+    );
+    queryEnd = fromZonedTime(
+      endOfDay(toZonedTime(new Date(endDate as string), timeZone)),
+      timeZone
+    );
+  } else {
+    // Default last 7 days for trending to keep it fresh
+    const sevenDaysAgo = new Date(nowInTZ);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    queryStart = fromZonedTime(startOfDay(sevenDaysAgo), timeZone);
+    queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
+  }
+
   const topFoodItems = await Order.aggregate([
     {
       $match: {
         restaurantId: restaurant._id,
+        status: "completed",
+        isPaid: true,
         createdAt: { $gte: queryStart, $lte: queryEnd },
       },
     },
@@ -1094,16 +1348,144 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
     },
   ]);
 
-  // 5. Top Tables
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        topFoodItems,
+        "Trending foods retrieved successfully"
+      )
+    );
+});
+
+// Analytics endpoint 4: Revenue breakdown by categories
+export const getAnalyticsCategories = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug)
+    throw new ApiError(400, "Restaurant slug is required");
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const { startDate, endDate } = req.query;
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant || restaurant.ownerId.toString() !== req.user!.id) {
+    throw new ApiError(403, "You can't access this data");
+  }
+
+  let queryStart: Date;
+  let queryEnd: Date;
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
+
+  if (startDate && endDate) {
+    queryStart = fromZonedTime(
+      startOfDay(toZonedTime(new Date(startDate as string), timeZone)),
+      timeZone
+    );
+    queryEnd = fromZonedTime(
+      endOfDay(toZonedTime(new Date(endDate as string), timeZone)),
+      timeZone
+    );
+  } else {
+    const thirtyDaysAgo = new Date(nowInTZ);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+    queryStart = fromZonedTime(startOfDay(thirtyDaysAgo), timeZone);
+    queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
+  }
+
+  const categoryBreakdown = await Order.aggregate([
+    {
+      $match: {
+        restaurantId: restaurant._id,
+        status: "completed",
+        isPaid: true,
+        createdAt: { $gte: queryStart, $lte: queryEnd },
+      },
+    },
+    { $unwind: "$foodItems" },
+    {
+      $lookup: {
+        from: "fooditems",
+        localField: "foodItems.foodItemId",
+        foreignField: "_id",
+        as: "foodDetails",
+      },
+    },
+    { $unwind: "$foodDetails" },
+    {
+      $group: {
+        _id: { $ifNull: ["$foodDetails.category", "Uncategorized"] },
+        totalRevenue: {
+          $sum: { $multiply: ["$foodItems.finalPrice", "$foodItems.quantity"] },
+        },
+        count: { $sum: "$foodItems.quantity" },
+      },
+    },
+    { $sort: { totalRevenue: -1 } },
+  ]);
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        categoryBreakdown,
+        "Category breakdown retrieved successfully"
+      )
+    );
+});
+
+// Analytics endpoint 5: Top Tables by Order Count
+export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
+  if (!req.params || !req.params.slug)
+    throw new ApiError(400, "Restaurant slug is required");
+  const { slug } = req.params;
+  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const { startDate, endDate } = req.query;
+
+  const restaurant = await Restaurant.findOne({ slug });
+  if (!restaurant || restaurant.ownerId.toString() !== req.user!.id) {
+    throw new ApiError(403, "You can't access this data");
+  }
+
+  let queryStart: Date;
+  let queryEnd: Date;
+  const nowUtc = new Date();
+  const nowInTZ = toZonedTime(nowUtc, timeZone);
+
+  if (startDate && endDate) {
+    queryStart = fromZonedTime(
+      startOfDay(toZonedTime(new Date(startDate as string), timeZone)),
+      timeZone
+    );
+    queryEnd = fromZonedTime(
+      endOfDay(toZonedTime(new Date(endDate as string), timeZone)),
+      timeZone
+    );
+  } else {
+    // Default 7 days
+    const sevenDaysAgo = new Date(nowInTZ);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    queryStart = fromZonedTime(startOfDay(sevenDaysAgo), timeZone);
+    queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
+  }
+
   const topTables = await Order.aggregate([
     {
       $match: {
         restaurantId: restaurant._id,
+        status: "completed",
+        isPaid: true,
         tableId: { $exists: true, $ne: null },
         createdAt: { $gte: queryStart, $lte: queryEnd },
       },
     },
-    { $group: { _id: "$tableId", count: { $sum: 1 } } },
+    {
+      $group: {
+        _id: "$tableId",
+        count: { $sum: 1 },
+      },
+    },
     { $sort: { count: -1 } },
     { $limit: 5 },
     {
@@ -1111,57 +1493,20 @@ export const getDashboardAnalytics = asyncHandler(async (req, res) => {
         from: "tables",
         localField: "_id",
         foreignField: "_id",
-        as: "table",
+        as: "tableDetails",
       },
     },
-    { $unwind: "$table" },
-    { $project: { _id: 1, tableName: "$table.tableName", count: 1 } },
-  ]);
-
-  // 6. Today's Sales specifically for the KPI card
-  const todaySalesAgg = await Order.aggregate([
+    { $unwind: "$tableDetails" },
     {
-      $match: {
-        restaurantId: restaurant._id,
-        isPaid: true,
-        status: "completed",
-        createdAt: { $gte: startOfToday, $lte: endOfToday },
+      $project: {
+        _id: 1,
+        tableName: "$tableDetails.tableName",
+        count: 1,
       },
     },
-    { $group: { _id: null, total: { $sum: "$totalAmount" } } },
   ]);
-
-  const overview = {
-    kpis: {
-      allTimeSales: {
-        value: allTimeSalesAgg[0]?.total || 0,
-        description: "Total revenue to date",
-      },
-      totalCompletedOrders: {
-        value: periodOrdersAgg,
-        description: "Orders in selected period",
-      },
-      thisMonthSales: {
-        value: periodSalesAgg[0]?.total || 0,
-        description: "Sales in selected period",
-      },
-      todaySales: {
-        value: todaySalesAgg[0]?.total || 0,
-        description: "Today's sales revenue",
-      },
-    },
-    salesTrend,
-    topFoodItems,
-    topTables,
-  };
 
   res
     .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        overview,
-        "Dashboard analytics retrieved successfully"
-      )
-    );
+    .json(new ApiResponse(200, topTables, "Top tables retrieved successfully"));
 });

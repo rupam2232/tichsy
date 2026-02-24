@@ -21,7 +21,11 @@ import {
   removeStaffFromRestaurant,
   toggleRestaurantArchiveStatus,
   getDashboardOperations,
-  getDashboardAnalytics,
+  getAnalyticsKPIs,
+  getAnalyticsRevenue,
+  getAnalyticsTrending,
+  getAnalyticsCategories,
+  getAnalyticsTopTables,
 } from "../controllers/restaurant.controller.js";
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
@@ -94,7 +98,27 @@ router
 router.post("/:slug/tax", verifyAuth, setRestaurantTax);
 
 router.get("/:slug/dashboard/operations", verifyAuth, getDashboardOperations);
-router.get("/:slug/dashboard/analytics", verifyAuth, getDashboardAnalytics);
+router.get("/:slug/dashboard/analytics/kpis", verifyAuth, getAnalyticsKPIs);
+router.get(
+  "/:slug/dashboard/analytics/revenue",
+  verifyAuth,
+  getAnalyticsRevenue
+);
+router.get(
+  "/:slug/dashboard/analytics/trending",
+  verifyAuth,
+  getAnalyticsTrending
+);
+router.get(
+  "/:slug/dashboard/analytics/categories",
+  verifyAuth,
+  getAnalyticsCategories
+);
+router.get(
+  "/:slug/dashboard/analytics/top-tables",
+  verifyAuth,
+  getAnalyticsTopTables
+);
 
 router.get("/:slug/is-unique-slug", verifyAuth, checkUniqueRestaurantSlug);
 

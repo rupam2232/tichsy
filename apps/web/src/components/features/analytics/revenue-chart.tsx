@@ -1,0 +1,532 @@
+"use client";
+
+import { useEffect, useState, useMemo, useId } from "react";
+import axios from "@/utils/axiosInstance";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@repo/ui/components/chart";
+import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
+import { Button } from "@repo/ui/components/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@repo/ui/components/popover";
+import { Calendar, type DateRange } from "@repo/ui/components/calendar";
+import { BarChart3, TrendingUp, Loader2, CalendarIcon } from "lucide-react";
+import { cn } from "@repo/ui/lib/utils";
+import {
+  format,
+  startOfDay,
+  endOfDay,
+  subDays,
+  differenceInDays,
+} from "date-fns";
+import type { DashboardAnalytics, ApiResponse } from "@repo/types";
+
+const chartConfig = {
+  total: {
+    label: "Sales",
+    color: "var(--chart-1)",
+  },
+  orders: {
+    label: "Orders",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
+
+interface RevenueChartProps {
+  slug: string;
+}
+
+export function RevenueChart({ slug }: RevenueChartProps) {
+  const [chartType, setChartType] = useState<"area" | "bar">("bar");
+  const [period, setPeriod] = useState<
+    "today" | "last7d" | "last30d" | "custom"
+  >("today");
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+  const [salesTrend, setSalesTrend] = useState<
+    DashboardAnalytics["salesTrend"]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRevenue = async () => {
+      try {
+        setIsLoading(true);
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const now = new Date();
+        let start = new Date();
+        let end = new Date();
+        let groupBy = "day";
+
+        if (period === "today") {
+          start = startOfDay(now);
+          end = endOfDay(now);
+          groupBy = "hour";
+        } else if (period === "last7d") {
+          // Last 7 days, excluding today
+          end = endOfDay(subDays(now, 1));
+          start = startOfDay(subDays(now, 7));
+          groupBy = "day";
+        } else if (period === "last30d") {
+          // Last 30 days, excluding today
+          end = endOfDay(subDays(now, 1));
+          start = startOfDay(subDays(now, 30));
+          groupBy = "week-sliding";
+        } else if (period === "custom") {
+          if (!date?.from) return; // Wait for valid selection
+          start = startOfDay(date.from);
+          end = date.to ? endOfDay(date.to) : endOfDay(date.from);
+
+          const diffInDays = differenceInDays(end, start) + 1;
+          if (diffInDays >= 14) {
+            groupBy = "week-sliding";
+          } else if (diffInDays > 1) {
+            groupBy = "day";
+          } else {
+            groupBy = "hour";
+          }
+        }
+
+        const res = await axios.get<
+          ApiResponse<DashboardAnalytics["salesTrend"]>
+        >(`/restaurant/${slug}/dashboard/analytics/revenue`, {
+          params: {
+            timezone: userTimezone,
+            startDate: format(start, "yyyy-MM-dd'T'HH:mm:ss"),
+            endDate: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
+            groupBy,
+          },
+        });
+        if (isMounted) setSalesTrend(res.data.data || []);
+      } catch (error) {
+        console.error("Failed to fetch revenue trend:", error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    fetchRevenue();
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, period, date]);
+
+  useEffect(() => {
+    setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
+
+  // Calculate total revenue from the filtered trend data
+  const totalRevenue = useMemo(() => {
+    return salesTrend?.reduce((acc, curr) => acc + (curr.total || 0), 0) || 0;
+  }, [salesTrend]);
+
+  // Ensure data exists and calculate required min-width
+  // 45px per bar gives enough breathing room so bars never get too thin.
+  const chartMinWidth =
+    salesTrend && salesTrend.length > 0 ? salesTrend.length * 45 : 0;
+
+  const chartId = useId();
+  const fillTotalId = `fillTotal-${chartId}`;
+  const fillOrdersId = `fillOrders-${chartId}`;
+
+  return (
+    <Card className="flex flex-col h-full shadow-xs border-border/60 @container/chart pb-0!">
+      <CardHeader className="flex flex-col md:flex-row items-start justify-between gap-4 border-b pb-4">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            Revenue Trend
+          </CardTitle>
+          <CardDescription>
+            Selected period total:{" "}
+            <span className="font-bold text-foreground">
+              ₹{totalRevenue.toFixed(2)}
+            </span>
+          </CardDescription>
+        </div>
+
+        <div className="flex flex-col gap-2 w-full md:w-auto">
+          <div className="flex justify-between items-center gap-2">
+            {/* Period Toggle */}
+            <Select
+              value={period}
+              onValueChange={(
+                value: "today" | "last7d" | "last30d" | "custom",
+              ) => setPeriod(value)}
+            >
+              <SelectTrigger className="w-[140px] h-8 text-xs bg-muted/50 border-transparent hover:bg-muted/80 cursor-pointer">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today" className="cursor-pointer">
+                  Today
+                </SelectItem>
+                <SelectItem value="last7d" className="cursor-pointer">
+                  Last 7 Days
+                </SelectItem>
+                <SelectItem value="last30d" className="cursor-pointer">
+                  Last 30 Days
+                </SelectItem>
+                <SelectItem value="custom" className="cursor-pointer">
+                  Custom Range
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Chart Type Toggle */}
+            <div className="flex items-center bg-muted/50 p-1 rounded-lg border">
+              <Button
+                variant="ghost"
+                onClick={() => setChartType("bar")}
+                className={cn(
+                  "h-7 px-3 rounded-md transition-all gap-2",
+                  chartType === "bar"
+                    ? "bg-foreground shadow-sm text-background hover:bg-foreground/90 dark:hover:bg-foreground/90 hover:text-background"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <BarChart3 className="size-4" />
+                <span className="hidden sm:inline">Bar</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setChartType("area")}
+                className={cn(
+                  "h-7 px-3 rounded-md transition-all gap-2",
+                  chartType === "area"
+                    ? "bg-foreground shadow-sm text-background hover:bg-foreground/90 dark:hover:bg-foreground/90 hover:text-background"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <TrendingUp className="size-4" />
+                <span className="hidden sm:inline">Line</span>
+              </Button>
+            </div>
+          </div>
+          {/* Custom Date Picker (Show only if period is custom) */}
+          {period === "custom" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date-picker-range"
+                  variant="ghost"
+                  className={cn(
+                    "w-[260px] justify-start text-left font-normal h-8 text-xs bg-muted/50 hover:bg-muted/80",
+                    !date && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  {date?.from ? (
+                    date.to ? (
+                      <>
+                        {format(date.from, "LLL dd, y")} -{" "}
+                        {format(date.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(date.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={setDate}
+                  numberOfMonths={2}
+                  timeZone={timeZone}
+                  disabled={(date) =>
+                    date > new Date() ||
+                    date < startOfDay(subDays(new Date(), 365))
+                  }
+                  className="text-muted-foreground"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent
+        className={cn(
+          "flex-1 p-0 sm:p-2 pt-4 relative",
+          !isLoading && "flex items-end",
+        )}
+      >
+        {isLoading ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        ) : null}
+        <ScrollArea className="w-full h-[300px] sm:h-[350px]">
+          <div
+            style={{ minWidth: `${Math.max(chartMinWidth, 500)}px` }}
+            className="h-[270px] sm:h-[320px] w-full px-4"
+          >
+            <ChartContainer config={chartConfig} className="w-full h-full">
+              {chartType === "bar" ? (
+                <BarChart accessibilityLayer data={salesTrend}>
+                  <defs>
+                    <linearGradient
+                      id={fillTotalId}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-total)"
+                        stopOpacity={1.0}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-total)"
+                        stopOpacity={0.4}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id={fillOrdersId}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-orders)"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-orders)"
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="_id"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => {
+                      if (value.includes(":")) {
+                        const date = new Date(value);
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }
+                      if (value.includes(" - ")) return value;
+                      return new Date(value).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                    }}
+                  />
+                  <YAxis
+                    dataKey="total"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => `₹${value.toFixed(2)}`}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => {
+                          if (value.includes(":")) {
+                            return (
+                              new Date(value).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }) +
+                              " - " +
+                              format(new Date(value), "MMM dd")
+                            );
+                          }
+                          if (value.includes(" - ")) return value;
+                          return new Date(value).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          });
+                        }}
+                        indicator="dot"
+                        color="var(--chart-1)"
+                        hideIndicator
+                      />
+                    }
+                  />
+                  <Bar
+                    dataKey="total"
+                    radius={4}
+                    fill={`url(#${fillTotalId})`}
+                    stackId="a"
+                  />
+                  <Bar
+                    dataKey="orders"
+                    barSize={0}
+                    radius={4}
+                    fill={`url(#${fillOrdersId})`}
+                    stackId="a"
+                    hide
+                  />
+                </BarChart>
+              ) : (
+                <AreaChart accessibilityLayer data={salesTrend}>
+                  <defs>
+                    <linearGradient
+                      id={fillTotalId}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-total)"
+                        stopOpacity={1.0}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-total)"
+                        stopOpacity={0.4}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id={fillOrdersId}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-orders)"
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-orders)"
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="_id"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => {
+                      if (value.includes(":")) {
+                        const date = new Date(value);
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }
+                      if (value.includes(" - ")) return value;
+                      return new Date(value).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                    }}
+                  />
+                  <YAxis
+                    dataKey="total"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => `₹${value.toFixed(2)}`}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => {
+                          if (value.includes(":")) {
+                            return (
+                              new Date(value).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }) +
+                              " - " +
+                              format(new Date(value), "MMM dd")
+                            );
+                          }
+                          if (value.includes(" - ")) return value;
+                          return new Date(value).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          });
+                        }}
+                        indicator="dot"
+                        color="var(--chart-1)"
+                        hideIndicator
+                      />
+                    }
+                  />
+                  <Area
+                    dataKey="total"
+                    type="natural"
+                    fill={`url(#${fillTotalId})`}
+                    stroke="var(--color-total)"
+                    strokeWidth={2}
+                    stackId="a"
+                  />
+                  <Area
+                    dataKey="orders"
+                    type="natural"
+                    fill={`url(#${fillTotalId})`}
+                    stroke="var(--color-total)"
+                    stackId="a"
+                    className="hidden"
+                  />
+                </AreaChart>
+              )}
+            </ChartContainer>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}

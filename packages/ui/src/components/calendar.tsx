@@ -10,8 +10,9 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type DateRange,
 } from "react-day-picker"
-
+export type { DateRange };
 import { cn } from "@repo/ui/lib/utils"
 import { Button, buttonVariants } from "@repo/ui/components/button"
 
