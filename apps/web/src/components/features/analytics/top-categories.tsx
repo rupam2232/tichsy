@@ -17,7 +17,13 @@ import {
   SelectValue,
 } from "@repo/ui/components/select";
 import { Loader2 } from "lucide-react";
-import { format, startOfWeek, startOfMonth, startOfDay, endOfDay } from "date-fns";
+import {
+  format,
+  startOfWeek,
+  startOfMonth,
+  startOfDay,
+  endOfDay,
+} from "date-fns";
 import type { DashboardAnalytics, ApiResponse } from "@repo/types";
 import { PieChart, Pie, Sector, Cell } from "recharts";
 import {
@@ -29,14 +35,19 @@ import {
   ChartTooltipContent,
 } from "@repo/ui/components/chart";
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
+import { AxiosError } from "axios";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
+import { signOut } from "@/store/authSlice";
 
 interface TopCategoriesProps {
   slug: string;
 }
 
 const COLORS = [
-  "var(--chart-1)",
   "var(--chart-2)",
+  "var(--chart-1)",
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
@@ -48,9 +59,10 @@ export function TopCategories({ slug }: TopCategoriesProps) {
     DashboardAnalytics["categoryBreakdown"]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
     const fetchCategories = async () => {
       try {
         setIsLoading(true);
@@ -78,22 +90,26 @@ export function TopCategories({ slug }: TopCategoriesProps) {
           },
         });
 
-        if (isMounted) {
-          setCategories(res.data.data || []);
-        }
+        setCategories(res.data.data || []);
       } catch (error) {
         console.error("Failed to fetch category breakdown:", error);
+        const axiosError = error as AxiosError<ApiResponse>;
+        toast.error(
+          axiosError.response?.data?.message ||
+            "Failed to fetch top categories",
+        );
+        if (axiosError.response?.status === 401) {
+          dispatch(signOut());
+          router.push(`/signin?redirect=/restaurant/${slug}/analytics`);
+        }
       } finally {
-        if (isMounted) setIsLoading(false);
+        setIsLoading(false);
       }
     };
     fetchCategories();
-    return () => {
-      isMounted = false;
-    };
-  }, [slug, period]);
+  }, [slug, period, dispatch, router]);
 
-  // Dynamically create the ChartConfig and inject 'fill' properties into the data
+  // Dynamically creating the ChartConfig and inject 'fill' properties into the data
   // so the Recharts Pie can map it to Shadcn's theme variables.
   const { chartData, dynamicConfig } = useMemo(() => {
     const config: ChartConfig = {};
@@ -106,6 +122,7 @@ export function TopCategories({ slug }: TopCategoriesProps) {
         config[key] = {
           label: safeId,
           color: COLORS[index],
+          prefix: "₹",
         };
       } else {
         // Using golden angle approximation to generate highly distinct colors infinitely
@@ -114,6 +131,7 @@ export function TopCategories({ slug }: TopCategoriesProps) {
         config[key] = {
           label: safeId,
           color: color,
+          prefix: "₹",
         };
       }
 
@@ -129,38 +147,41 @@ export function TopCategories({ slug }: TopCategoriesProps) {
   }, [categories]);
 
   return (
-    <Card className="h-full flex flex-col shadow-xs border-border/60">
-      <CardHeader className="border-b pb-4! flex flex-row items-start justify-between">
-        <div>
+    <Card className="h-full flex flex-col shadow-xs border-border/70 hover:shadow-md transition-shadow">
+      <CardHeader className="border-b pb-4!">
+        <div className="flex justify-between items-center">
           <CardTitle className="text-lg">
             <h3>Top Categories</h3>
           </CardTitle>
-          <CardDescription>
-            <p className="text-sm text-muted-foreground">
-              View the top categories based on revenue.
-            </p>
-          </CardDescription>
-        </div>
 
-        <Select
-          value={period}
-          onValueChange={(value: "today" | "7d" | "30d") => setPeriod(value)}
-        >
-          <SelectTrigger className="w-[120px] h-8 text-xs bg-muted/50 border-transparent hover:bg-muted/80 cursor-pointer">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today" className="cursor-pointer">
-              Today
-            </SelectItem>
-            <SelectItem value="7d" className="cursor-pointer">
-              This Week
-            </SelectItem>
-            <SelectItem value="30d" className="cursor-pointer">
-              This Month
-            </SelectItem>
-          </SelectContent>
-        </Select>
+          <Select
+            value={period}
+            onValueChange={(value: "today" | "7d" | "30d") => setPeriod(value)}
+          >
+            <SelectTrigger
+              className="w-[120px] h-8 text-xs border-border bg-muted/70 hover:bg-muted/80 cursor-pointer"
+              size="sm"
+            >
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today" className="cursor-pointer">
+                Today
+              </SelectItem>
+              <SelectItem value="7d" className="cursor-pointer">
+                This Week
+              </SelectItem>
+              <SelectItem value="30d" className="cursor-pointer">
+                This Month
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <CardDescription>
+          <p className="text-sm text-muted-foreground">
+            View the top categories based on revenue.
+          </p>
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 p-0 relative min-h-[300px]">
@@ -175,11 +196,12 @@ export function TopCategories({ slug }: TopCategoriesProps) {
             <ChartContainer
               config={dynamicConfig}
               className="mx-auto aspect-square h-full w-full max-w-[300px] lg:max-w-[400px]"
+              title="Interactive category pie chart"
             >
               <PieChart>
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent valueIcon="₹" />}
+                  content={<ChartTooltipContent />}
                 />
                 <Pie
                   data={chartData}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import axios from "@/utils/axiosInstance";
 import {
   Card,
@@ -40,6 +40,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AxiosError } from "axios";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { useRouter } from "next/navigation";
+import { signOut } from "@/store/authSlice";
 
 interface TopTablesProps {
   slug: string;
@@ -59,9 +64,32 @@ export function TopTables({ slug }: TopTablesProps) {
     [],
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setHasEnteredViewport(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!hasEnteredViewport) return;
+
     const fetchTopTables = async () => {
       try {
         setIsLoading(true);
@@ -79,22 +107,32 @@ export function TopTables({ slug }: TopTablesProps) {
           start = startOfMonth(end);
         }
 
-        const url = `/restaurant/${slug}/dashboard/analytics/top-tables?timezone=${userTimezone}&startDate=${format(start, "yyyy-MM-dd")}&endDate=${format(end, "yyyy-MM-dd")}`;
-
-        const res =
-          await axios.get<ApiResponse<DashboardAnalytics["topTables"]>>(url);
-        if (isMounted) setTopTables(res.data.data || []);
+        const res = await axios.get<
+          ApiResponse<DashboardAnalytics["topTables"]>
+        >(`/restaurant/${slug}/dashboard/analytics/top-tables`, {
+          params: {
+            timezone: userTimezone,
+            startDate: format(start, "yyyy-MM-dd"),
+            endDate: format(end, "yyyy-MM-dd"),
+          },
+        });
+        setTopTables(res.data.data || []);
       } catch (error) {
         console.error("Failed to fetch top tables:", error);
+        const axiosError = error as AxiosError<ApiResponse>;
+        toast.error(
+          axiosError.response?.data?.message || "Failed to fetch top tables",
+        );
+        if (axiosError.response?.status === 401) {
+          dispatch(signOut());
+          router.push(`/signin?redirect=/restaurant/${slug}/analytics`);
+        }
       } finally {
-        if (isMounted) setIsLoading(false);
+        setIsLoading(false);
       }
     };
     fetchTopTables();
-    return () => {
-      isMounted = false;
-    };
-  }, [slug, period]);
+  }, [slug, period, hasEnteredViewport, dispatch, router]);
 
   const { chartData, dynamicConfig } = useMemo(() => {
     const config: ChartConfig = {};
@@ -129,37 +167,43 @@ export function TopTables({ slug }: TopTablesProps) {
   }, [topTables]);
 
   return (
-    <Card className="h-full flex flex-col shadow-xs border-border/60">
-      <CardHeader className="border-b pb-4 flex flex-row items-start justify-between">
-        <div>
+    <Card
+      ref={containerRef}
+      className="h-full flex flex-col shadow-xs border-border/70 hover:shadow-md transition-shadow"
+    >
+      <CardHeader className="border-b pb-4">
+        <div className="flex justify-between items-center w-full gap-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <div className="p-1.5 bg-blue-500/10 rounded-full text-blue-500">
-              <IconTable className="w-5 h-5" />
+            <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400">
+              <IconTable className="size-3.5" />
             </div>
             Top Tables
           </CardTitle>
-          <CardDescription>Most active tables by order count</CardDescription>
-        </div>
 
-        <Select
-          value={period}
-          onValueChange={(value: "today" | "7d" | "30d") => setPeriod(value)}
-        >
-          <SelectTrigger className="w-[120px] h-8 text-xs bg-muted/50 border-transparent hover:bg-muted/80 cursor-pointer">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today" className="cursor-pointer">
-              Today
-            </SelectItem>
-            <SelectItem value="7d" className="cursor-pointer">
-              This Week
-            </SelectItem>
-            <SelectItem value="30d" className="cursor-pointer">
-              This Month
-            </SelectItem>
-          </SelectContent>
-        </Select>
+          <Select
+            value={period}
+            onValueChange={(value: "today" | "7d" | "30d") => setPeriod(value)}
+          >
+            <SelectTrigger
+              className="w-[120px] h-8 text-xs border-border bg-muted/70 hover:bg-muted/80 cursor-pointer"
+              size="sm"
+            >
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today" className="cursor-pointer">
+                Today
+              </SelectItem>
+              <SelectItem value="7d" className="cursor-pointer">
+                This Week
+              </SelectItem>
+              <SelectItem value="30d" className="cursor-pointer">
+                This Month
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <CardDescription>Most active tables by order count</CardDescription>
       </CardHeader>
 
       <CardContent className="flex-1 p-4 relative">
@@ -169,55 +213,65 @@ export function TopTables({ slug }: TopTablesProps) {
           </div>
         ) : null}
 
-        <ChartContainer config={dynamicConfig} className="mx-auto h-full w-full max-h-[250px]">
-          <BarChart
-            accessibilityLayer
-            data={chartData}
-            layout="vertical"
-            margin={{
-              right: 16,
-            }}
+        {topTables && topTables.length > 0 ? (
+          <ChartContainer
+            config={dynamicConfig}
+            className="mx-auto h-full w-full max-h-[250px]"
+            title="Interactive table bar chart"
           >
-            <CartesianGrid horizontal={false} />
-            <YAxis
-              dataKey="tableName"
-              type="category"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
-              hide
-            />
-            <XAxis
-              dataKey="count"
-              type="number"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              hide
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="line" />}
-            />
-            <Bar dataKey="count" fill="var(--color-tableId)" radius={4}>
-              <LabelList
+            <BarChart
+              accessibilityLayer
+              data={chartData}
+              layout="vertical"
+              margin={{
+                right: 16,
+              }}
+            >
+              <CartesianGrid horizontal={false} />
+              <YAxis
                 dataKey="tableName"
-                position="insideLeft"
-                offset={8}
-                className="fill-background font-medium"
-                fontSize={12}
+                type="category"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.slice(0, 3)}
+                hide
               />
-              <LabelList
+              <XAxis
                 dataKey="count"
-                position="right"
-                offset={8}
-                className="fill-foreground font-medium"
-                fontSize={12}
+                type="number"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                hide
               />
-            </Bar>
-          </BarChart>
-        </ChartContainer>
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <Bar dataKey="count" fill="var(--color-tableId)" radius={4}>
+                <LabelList
+                  dataKey="tableName"
+                  position="insideLeft"
+                  offset={8}
+                  className="fill-background font-medium"
+                  fontSize={12}
+                />
+                <LabelList
+                  dataKey="count"
+                  position="right"
+                  offset={8}
+                  className="fill-foreground font-medium"
+                  fontSize={12}
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+            <p className="text-sm">No table data found for this period</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

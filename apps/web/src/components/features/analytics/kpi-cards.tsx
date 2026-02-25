@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
+import { AnimatedNumber } from "@/components/shared/animated-odometer";
 
 export function KpiCards({ slug }: { slug: string }) {
   const [kpis, setKpis] = useState<DashboardAnalytics["kpis"] | null>(null);
@@ -74,7 +75,11 @@ export function KpiCards({ slug }: { slug: string }) {
         <CardContent className="h-full">
           <div className="flex flex-col justify-between gap-1 h-full">
             <h3 className="text-3xl font-bold tracking-tight break-all">
-              ₹{isLoading || !kpis ? 0 : kpis.allTimeSales.value.toFixed(2)}
+              <AnimatedNumber
+                value={isLoading || !kpis ? 0 : kpis.allTimeSales.value}
+                decimals={2}
+                prefix="₹"
+              />
             </h3>
             <p className="text-xs flex items-center gap-1 text-muted-foreground">
               {isLoading ||
@@ -104,7 +109,9 @@ export function KpiCards({ slug }: { slug: string }) {
         <CardContent className="h-full">
           <div className="flex flex-col justify-between gap-1 h-full">
             <h3 className="text-3xl font-bold tracking-tight break-all">
-              {isLoading || !kpis ? 0 : kpis.allTimeOrders.value}
+              <AnimatedNumber
+                value={isLoading || !kpis ? 0 : kpis.allTimeOrders.value}
+              />
             </h3>
             <p className="text-xs flex items-center gap-1 text-muted-foreground">
               {isLoading ||
@@ -134,8 +141,11 @@ export function KpiCards({ slug }: { slug: string }) {
         <CardContent className="h-full">
           <div className="flex flex-col justify-between gap-1 h-full">
             <h3 className="text-3xl font-bold tracking-tight break-all">
-              ₹
-              {isLoading || !kpis ? 0 : kpis.averageOrderValue.value.toFixed(2)}
+              <AnimatedNumber
+                value={isLoading || !kpis ? 0 : kpis.averageOrderValue.value}
+                decimals={2}
+                prefix="₹"
+              />
             </h3>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               {isLoading || !kpis
@@ -159,7 +169,9 @@ export function KpiCards({ slug }: { slug: string }) {
         <CardContent className="h-full">
           <div className="flex flex-col justify-between gap-1 h-full">
             <h3 className="text-3xl font-bold tracking-tight break-all">
-              {isLoading || !kpis ? 0 : kpis.activeMenuItems.value}
+              <AnimatedNumber
+                value={isLoading || !kpis ? 0 : kpis.activeMenuItems.value}
+              />
             </h3>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               {isLoading || !kpis

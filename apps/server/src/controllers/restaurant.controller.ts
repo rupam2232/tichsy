@@ -1207,15 +1207,54 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
       const chunkStartDate = chunk[0].originalDate;
       const chunkEndDate = chunk[chunk.length - 1].originalDate;
 
-      // Format as "Feb 07 - Feb 13" etc.
-      const startStr = chunkStartDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
+      // Format as "2026-02-07 - 2026-02-13" etc. to preserve exact bounds
+      const startStr = `${chunkStartDate.getFullYear()}-${String(chunkStartDate.getMonth() + 1).padStart(2, "0")}-${String(chunkStartDate.getDate()).padStart(2, "0")}`;
+      const endStr = `${chunkEndDate.getFullYear()}-${String(chunkEndDate.getMonth() + 1).padStart(2, "0")}-${String(chunkEndDate.getDate()).padStart(2, "0")}`;
+
+      const chunkId = `${startStr} - ${endStr}`;
+
+      const chunkTotal = chunk.reduce((sum, item) => sum + item.total, 0);
+      const chunkOrders = chunk.reduce((sum, item) => sum + item.orders, 0);
+
+      salesTrend.push({
+        _id: chunkId,
+        total: chunkTotal,
+        orders: chunkOrders,
+        startDateStr: `${chunkStartDate.getFullYear()}-${String(chunkStartDate.getMonth() + 1).padStart(2, "0")}-${String(chunkStartDate.getDate()).padStart(2, "0")}`, // used for sorting later if needed
       });
-      const endStr = chunkEndDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
+    }
+  } else if (groupBy === "month-sliding") {
+    // 1. Generate ALL days
+    const dailyData = [];
+    let loopDateInTZ = new Date(toZonedTime(queryStart, timeZone));
+    const loopEndDateInTZ = new Date(toZonedTime(queryEnd, timeZone));
+
+    while (loopDateInTZ <= loopEndDateInTZ) {
+      const year = loopDateInTZ.getFullYear();
+      const month = String(loopDateInTZ.getMonth() + 1).padStart(2, "0");
+      const day = String(loopDateInTZ.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
+
+      const existingData = salesTrendMap.get(dateString);
+      dailyData.push({
+        _id: dateString,
+        total: existingData ? existingData.total : 0,
+        orders: existingData ? existingData.orders : 0,
+        originalDate: new Date(loopDateInTZ), // keep track for exact sliding window mapping
       });
+      loopDateInTZ.setDate(loopDateInTZ.getDate() + 1);
+    }
+
+    // 2. Bucket them into exact 30-day chunks starting from Day 0
+    for (let i = 0; i < dailyData.length; i += 30) {
+      const chunk = dailyData.slice(i, i + 30);
+
+      const chunkStartDate = chunk[0].originalDate;
+      const chunkEndDate = chunk[chunk.length - 1].originalDate;
+
+      // Format as "2026-02-07 - 2026-02-13" etc. to preserve exact bounds
+      const startStr = `${chunkStartDate.getFullYear()}-${String(chunkStartDate.getMonth() + 1).padStart(2, "0")}-${String(chunkStartDate.getDate()).padStart(2, "0")}`;
+      const endStr = `${chunkEndDate.getFullYear()}-${String(chunkEndDate.getMonth() + 1).padStart(2, "0")}-${String(chunkEndDate.getDate()).padStart(2, "0")}`;
 
       const chunkId = `${startStr} - ${endStr}`;
 
