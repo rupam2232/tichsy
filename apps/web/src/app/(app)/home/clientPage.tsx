@@ -10,7 +10,6 @@ import {
   Card,
   CardAction,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
@@ -30,6 +29,15 @@ import CreateRestaurantDialog from "@/components/features/restaurant/create-rest
 import "@/utils/orderSound";
 import { Plus } from "lucide-react";
 import { Badge } from "@repo/ui/components/badge";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
+import { IconChefHat } from "@tabler/icons-react";
 
 export default function ClientPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -168,7 +176,7 @@ export default function ClientPage() {
           </div>
         ) : user?.role === "owner" ? (
           ownersRestaurant.length > 0 ? (
-            <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
               {ownersRestaurant.map((restaurant) => (
                 <Card key={restaurant._id} className="@container/card">
                   <CardHeader>
@@ -224,22 +232,29 @@ export default function ClientPage() {
               ))}
             </div>
           ) : (
-            <Card className="@container/card">
-              <CardFooter className="flex-col gap-4 text-sm flex justify-center">
-                <div className="line-clamp-1 flex gap-2 font-medium text-center text-balance">
-                  You have not created any restaurants yet.
-                </div>
+            <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-9">
+                  <IconChefHat className="size-4" />
+                </EmptyMedia>
+                <EmptyTitle>No restaurants found</EmptyTitle>
+                <EmptyDescription>
+                  You have not created any restaurants yet. Get started by
+                  creating a new restaurant
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
                 <CreateRestaurantDialog
                   setOwnersRestaurant={setOwnersRestaurant}
                   isLoading={isLoading}
                 >
                   Create Restaurant
                 </CreateRestaurantDialog>
-              </CardFooter>
-            </Card>
+              </EmptyContent>
+            </Empty>
           )
         ) : user?.role === "staff" && staffsrestaurant ? (
-          <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
             <Card className="@container/card">
               {staffsrestaurant.isArchived && (
                 <Badge variant="destructive" className="ml-auto">
@@ -295,12 +310,18 @@ export default function ClientPage() {
             </Card>
           </div>
         ) : (
-          <Card className="@container/card">
-            <CardFooter className="text-center block">
-              You are not assigned to any restaurant yet. Please contact your
-              manager or owner to get assigned to a restaurant.
-            </CardFooter>
-          </Card>
+          <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
+            <EmptyHeader>
+              <EmptyMedia variant="icon" className="size-9">
+                <IconChefHat className="size-4" />
+              </EmptyMedia>
+              <EmptyTitle>No restaurants found</EmptyTitle>
+              <EmptyDescription>
+                You are not assigned to any restaurant yet. Please contact your
+                manager or owner to get assigned to a restaurant
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )}
       </div>
     </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "@/utils/axiosInstance";
 import { InvoiceHistory, type InvoiceItem } from "./invoice-history";
 import { Loader2 } from "lucide-react";
@@ -84,7 +84,7 @@ export function SubscriptionHistoryList() {
     fetchHistory();
   }, [dispatch, router]);
 
-  const handleDownload = async (invoiceId: string) => {
+  const handleDownload = useCallback(async (invoiceId: string) => {
     try {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const response = await axios.get(
@@ -121,7 +121,7 @@ export function SubscriptionHistoryList() {
       console.error("Failed to download receipt:", error);
       toast.error("Failed to download receipt. Please try again.");
     }
-  };
+  }, [])
 
   if (loading) {
     return (
@@ -148,7 +148,7 @@ export function SubscriptionHistoryList() {
   }
 
   return (
-    <div className="mt-20">
+    <div className="mt-20 animate-in fade-in slide-in-from-top-4 duration-500">
       <InvoiceHistory
         invoices={history}
         title="Subscription History"

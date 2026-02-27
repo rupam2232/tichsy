@@ -20,7 +20,6 @@ import { Table } from "../models/table.model.js";
 import {
   startOfDay,
   endOfDay,
-  subDays,
   startOfMonth,
   subMonths,
 } from "date-fns";
@@ -135,6 +134,12 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   const { slug } = req.params;
   if (!slug) {
     throw new ApiError(400, "Restaurant slug is required.");
+  }
+
+  const slugSchema = createRestaurantSchema.shape.slug;
+  const result = slugSchema.safeParse(slug);
+  if (!result.success) {
+    throw result.error
   }
 
   const { forMetaData = "false" } = req.query;
@@ -533,15 +538,10 @@ export const checkUniqueRestaurantSlug = asyncHandler(async (req, res) => {
   }
   const { slug } = req.params;
 
-  if (slug.length < 3 || slug.length > 20) {
-    throw new ApiError(400, "Slug must be between 3 to 20 characters long");
-  }
-
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new ApiError(
-      400,
-      "Slug can only contain lowercase letters, numbers, and hyphens"
-    );
+  const slugSchema = createRestaurantSchema.shape.slug;
+  const result = slugSchema.safeParse(slug);
+  if (!result.success) {
+    throw result.error
   }
 
   const restaurant = await Restaurant.findOne({ slug });

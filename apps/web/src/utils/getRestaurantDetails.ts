@@ -1,10 +1,15 @@
 import axios from "@/utils/axiosInstance";
-import { RestaurantFullInfo, ApiResponse } from "@repo/types";
+import { RestaurantFullInfo, ApiResponse, createRestaurantSchema } from "@repo/types";
 import { AxiosError } from "axios";
 
 export async function getRestaurantDetails(
   slug: string,
 ): Promise<RestaurantFullInfo | null> {
+  const slugSchema = createRestaurantSchema.shape.slug;
+  const result = slugSchema.safeParse(slug);
+  if (!result.success) {
+    return null;
+  }
   try {
     const response = await axios.get(`/restaurant/${slug}`);
     return response.data.data;

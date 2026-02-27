@@ -242,9 +242,9 @@ const FoodOrderStepsForStaffs = ({
         {step === 1 && (
           <>
             {isTablePageLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 px-2">
+              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 pt-2 px-2">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton key={index} className="h-20 w-full" />
+                  <Skeleton key={index} className="min-h-25 w-full" />
                 ))}
               </div>
             ) : allTables && allTables.tables.length > 0 ? (

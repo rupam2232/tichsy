@@ -105,6 +105,7 @@ const ClientPage = () => {
               ? "Upgrade Plan"
               : "Purchase Plan",
         }}
+        className="animate-in fade-in slide-in-from-top-4 duration-500"
       />
       <SubscriptionHistoryList />
     </section>

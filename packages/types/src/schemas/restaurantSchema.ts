@@ -9,7 +9,7 @@ export const createRestaurantSchema = z.object({
     .string("Slug must be a string")
     .trim()
     .min(3, "Slug must be at least 3 characters long")
-    .max(20, "Slug must not exceed 20 characters long")
+    .max(20, "Slug must not exceed 20 characters length")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Slug must be lowercase and can only contain letters, numbers, and hyphens",
@@ -36,7 +36,7 @@ export const updateRestaurantSchema = z.object({
     .string("Slug must be a string")
     .trim()
     .min(3, "Slug must be at least 3 characters long")
-    .max(20, "Slug must not exceed 20 characters long")
+    .max(20, "Slug must not exceed 20 characters length")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Slug must be lowercase and can only contain letters, numbers, and hyphens",

@@ -21,8 +21,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!restaurant) {
     return {
-      title: "Restaurant not found",
-      description: "The requested restaurant could not be found.",
+      title: "Page not found",
+      description:
+        "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
     };
   }
 

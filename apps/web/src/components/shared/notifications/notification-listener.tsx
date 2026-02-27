@@ -40,12 +40,12 @@ export function NotificationListener() {
         });
       }
 
+      // Play sound notification
+      orderSound.play();
+
       toast(notification.title, {
         description: notification.message,
       });
-
-      // Play sound notification
-      orderSound.play();
     };
 
     socket.on("new_notification", handleNewNotification);
