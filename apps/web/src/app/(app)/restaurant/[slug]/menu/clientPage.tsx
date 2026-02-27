@@ -101,17 +101,30 @@ const MenuPage = ({
       if (currentPage === 1) {
         setIsPageLoading(true);
         const response = await axios.get(
-          `/food-item/${slug}?${tabName !== "search" ? `tab=${tabName}` : ""}${
-            searchInput.trim() ? `&search=${searchInput.trim()}` : ""
-          }&includeArchived=true`,
+          `/food-item/${slug}`,
+          {
+            params: {
+              limit: 20,
+              tab: tabName !== "search" ? tabName : "",
+              search: searchInput.trim(),
+              includeArchived: "true",
+            }
+          }
         );
         setAllFoodItems({ ...response.data.data });
       } else {
         setIsPageChanging(true);
         const response = await axios.get(
-          `/food-item/${slug}?page=${currentPage}&tab=${tabName}${
-            searchInput.trim() ? `&search=${searchInput.trim()}` : ""
-          }&includeArchived=true`,
+          `/food-item/${slug}`,
+          {
+            params: {
+              page: currentPage,
+              limit: 20,
+              tab: tabName !== "search" ? tabName : "",
+              search: searchInput.trim(),
+              includeArchived: "true",
+            }
+          }
         );
         setAllFoodItems((prev) => ({
           ...response.data.data,

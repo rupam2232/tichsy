@@ -12,6 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
 
 interface LiveTableStatusProps {
   slug: string;
@@ -161,51 +168,55 @@ export function LiveTableStatus({ slug }: LiveTableStatusProps) {
 
       <CardContent className="pr-0! pb-0! relative">
         <ScrollArea className="lg:h-[400px] w-full pr-5">
-          <div
-            className={cn(
-              "grid grid-cols-2 @md/live-table-status:grid-cols-3 @xl/live-table-status:grid-cols-4 @3xl/live-table-status:grid-cols-5 gap-3 pb-4",
-              (!tablesData?.tables || tablesData.tables.length === 0) &&
-                "flex flex-col justify-center",
-            )}
-          >
-            {!tablesData?.tables || tablesData.tables.length === 0 ? (
-              <div className="w-full py-12 text-center flex flex-col items-center gap-3">
-                <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                  <Table2 className="size-8" />
-                </div>
-                <p className="text-lg font-bold">No active table</p>
-                <p className="text-sm text-muted-foreground">
+          {!tablesData?.tables || tablesData.tables.length === 0 ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-9">
+                  <Table2 className="size-4" />
+                </EmptyMedia>
+                <EmptyTitle>No active tables</EmptyTitle>
+                <EmptyDescription>
                   create a new table to see it&apos;s live status here
-                </p>
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <>
+              <div
+                className={cn(
+                  "grid grid-cols-2 @md/live-table-status:grid-cols-3 @xl/live-table-status:grid-cols-4 @3xl/live-table-status:grid-cols-5 gap-3 pb-4",
+                  (!tablesData?.tables || tablesData.tables.length === 0) &&
+                    "flex flex-col justify-center",
+                )}
+              >
+                {tablesData.tables.map((t, index) => (
+                  <div
+                    key={t._id}
+                    ref={
+                      index === tablesData.tables.length - 1
+                        ? lastTableElementRef
+                        : null
+                    }
+                    className={cn(
+                      "rounded-lg p-3 flex flex-col items-center justify-center text-center border transition-all cursor-default min-h-[100px] gap-1",
+                      t.isOccupied
+                        ? "bg-red-100 text-red-700 border-red-200"
+                        : "bg-green-100 text-green-700 border-green-200",
+                    )}
+                  >
+                    <span className="font-medium text-balance text-center text-xs">
+                      {t.tableName}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ) : (
-              tablesData.tables.map((t, index) => (
-                <div
-                  key={t._id}
-                  ref={
-                    index === tablesData.tables.length - 1
-                      ? lastTableElementRef
-                      : null
-                  }
-                  className={cn(
-                    "rounded-lg p-3 flex flex-col items-center justify-center text-center border transition-all cursor-default min-h-[100px] gap-1",
-                    t.isOccupied
-                      ? "bg-red-100 text-red-700 border-red-200"
-                      : "bg-green-100 text-green-700 border-green-200",
-                  )}
-                >
-                  <span className="font-medium text-balance text-center text-xs">
-                    {t.tableName}
-                  </span>
+              {isPageChanging && (
+                <div className="w-full flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-              ))
-            )}
-            {isPageChanging && (
-              <div className="w-full flex justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-          </div>
+              )}
+            </>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>

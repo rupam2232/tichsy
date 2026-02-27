@@ -169,7 +169,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  if (restaurant.isArchived || !restaurant.isCurrentlyOpen) {
+  if (includeArchivedBoolean || restaurant.isArchived || !restaurant.isCurrentlyOpen) {
     if (!user) {
       throw new ApiError(403, "This restaurant is closed");
     }

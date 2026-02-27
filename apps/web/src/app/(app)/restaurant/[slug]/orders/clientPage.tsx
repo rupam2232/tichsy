@@ -102,10 +102,10 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
           query = "status=ready";
           break;
         case "unPaid":
-          query = "isPaid=false";
+          query = "isPaid=false&status=pending,preparing,ready,served";
           break;
         case "completed":
-          query = "status=completed&status=cancelled";
+          query = "status=completed";
           break;
         case "search":
           query = `search=${searchInput}`;
@@ -390,7 +390,7 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
 
         <TabsContent value={tabName}>
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
+            <div className="grid grid-cols-1 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3 gap-4 my-4">
               {Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={index}

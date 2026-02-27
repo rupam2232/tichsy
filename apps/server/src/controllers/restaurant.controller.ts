@@ -17,12 +17,7 @@ import { restaurantCreatedTemplate } from "../templates/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";
-import {
-  startOfDay,
-  endOfDay,
-  startOfMonth,
-  subMonths,
-} from "date-fns";
+import { startOfDay, endOfDay, startOfMonth, subMonths } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { User } from "../models/user.model.js";
 import {
@@ -139,12 +134,12 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   const slugSchema = createRestaurantSchema.shape.slug;
   const result = slugSchema.safeParse(slug);
   if (!result.success) {
-    throw result.error
+    throw result.error;
   }
 
   const { forMetaData = "false" } = req.query;
   const isForMetaData = forMetaData === "true";
-  let selectFields = "-staffIds -ownerId -__v -updatedAt";
+  let selectFields = "-staffIds -__v -updatedAt";
   if (isForMetaData) {
     selectFields =
       "-staffIds -ownerId -__v -updatedAt -createdAt -archivedAt -archivedReason -taxRate -taxLabel -isTaxIncludedInPrice";
@@ -153,6 +148,24 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findOne({ slug }).select(selectFields);
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found.");
+  }
+  if (!isForMetaData) {
+    if (!req.user) {
+      throw new ApiError(401, "Unauthorized request");
+    }
+
+    if (
+      req.user!.role === "owner" &&
+      restaurant.ownerId.toString() !== req.user!.id
+    ) {
+      throw new ApiError(403, "You are not the owner of this restaurant");
+    }
+    if (
+      req.user!.role === "staff" &&
+      !restaurant.staffIds?.includes(req.user!._id!)
+    ) {
+      throw new ApiError(403, "You are not a staff member of this restaurant");
+    }
   }
   res
     .status(200)
@@ -541,7 +554,7 @@ export const checkUniqueRestaurantSlug = asyncHandler(async (req, res) => {
   const slugSchema = createRestaurantSchema.shape.slug;
   const result = slugSchema.safeParse(slug);
   if (!result.success) {
-    throw result.error
+    throw result.error;
   }
 
   const restaurant = await Restaurant.findOne({ slug });
@@ -754,7 +767,6 @@ export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, restaurant, "Staff removed successfully"));
 });
 
-// Operations endpoint - Fast, live data for Staff & Owners
 export const getDashboardOperations = asyncHandler(async (req, res) => {
   if (!req.params || !req.params.slug) {
     throw new ApiError(400, "Restaurant slug is required");
@@ -1314,7 +1326,6 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
     );
 });
 
-// Analytics endpoint 3: Trending Foods (max 30 days ideally, but bounded by start/endDate)
 export const getAnalyticsTrending = asyncHandler(async (req, res) => {
   if (!req.params || !req.params.slug)
     throw new ApiError(400, "Restaurant slug is required");
@@ -1360,8 +1371,10 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
     { $unwind: "$foodItems" },
     {
       $group: {
-        _id: "$foodItems.foodItemId",
-        variantName: { $first: "$foodItems.variantName" },
+        _id: {
+          foodItemId: "$foodItems.foodItemId",
+          variantName: "$foodItems.variantName",
+        },
         count: { $sum: "$foodItems.quantity" },
       },
     },
@@ -1370,7 +1383,7 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "fooditems",
-        localField: "_id",
+        localField: "_id.foodItemId",
         foreignField: "_id",
         as: "foodItem",
       },
@@ -1378,10 +1391,10 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
     { $unwind: "$foodItem" },
     {
       $project: {
-        _id: 1,
+        _id: "$_id.foodItemId",
         foodName: "$foodItem.foodName",
         firstImageUrl: { $arrayElemAt: ["$foodItem.imageUrls", 0] },
-        variantName: 1,
+        variantName: "$_id.variantName",
         count: 1,
       },
     },
@@ -1398,7 +1411,6 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
     );
 });
 
-// Analytics endpoint 4: Revenue breakdown by categories
 export const getAnalyticsCategories = asyncHandler(async (req, res) => {
   if (!req.params || !req.params.slug)
     throw new ApiError(400, "Restaurant slug is required");
@@ -1474,7 +1486,6 @@ export const getAnalyticsCategories = asyncHandler(async (req, res) => {
     );
 });
 
-// Analytics endpoint 5: Top Tables by Order Count
 export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
   if (!req.params || !req.params.slug)
     throw new ApiError(400, "Restaurant slug is required");

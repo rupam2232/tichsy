@@ -116,7 +116,7 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
               <AnimatedNumber value={operationsData?.newOrders ?? 0} />
             </h3>
             <p className="text-xs text-muted-foreground">
-              Awaiting acceptance
+              Orders with pending status
             </p>
           </div>
         </CardContent>
@@ -137,7 +137,7 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
               <AnimatedNumber value={operationsData?.preparingOrders ?? 0} />
             </h3>
             <p className="text-xs text-muted-foreground">
-              Actively being prepared
+              Orders with preparing status
             </p>
           </div>
         </CardContent>
@@ -158,7 +158,7 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
               <AnimatedNumber value={operationsData?.readyOrders ?? 0} />
             </h3>
             <p className="text-xs text-muted-foreground">
-              Awaiting staff delivery
+              Orders with ready status
             </p>
           </div>
         </CardContent>
@@ -179,7 +179,7 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
               <AnimatedNumber value={operationsData?.unpaidOrders ?? 0} />
             </h3>
             <p className="text-xs text-muted-foreground">
-              Checks to be cleared
+              Unpaid active orders
             </p>
           </div>
         </CardContent>

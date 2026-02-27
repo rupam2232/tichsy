@@ -27,7 +27,7 @@ import {
 } from "@repo/ui/components/avatar";
 import CreateRestaurantDialog from "@/components/features/restaurant/create-restaurant-dialog";
 import "@/utils/orderSound";
-import { Plus } from "lucide-react";
+import { Plus, Store } from "lucide-react";
 import { Badge } from "@repo/ui/components/badge";
 import {
   Empty,
@@ -37,7 +37,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@repo/ui/components/empty";
-import { IconChefHat } from "@tabler/icons-react";
 
 export default function ClientPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -235,7 +234,7 @@ export default function ClientPage() {
             <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
               <EmptyHeader>
                 <EmptyMedia variant="icon" className="size-9">
-                  <IconChefHat className="size-4" />
+                  <Store className="size-4" />
                 </EmptyMedia>
                 <EmptyTitle>No restaurants found</EmptyTitle>
                 <EmptyDescription>
@@ -313,7 +312,7 @@ export default function ClientPage() {
           <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
             <EmptyHeader>
               <EmptyMedia variant="icon" className="size-9">
-                <IconChefHat className="size-4" />
+                <Store className="size-4" />
               </EmptyMedia>
               <EmptyTitle>No restaurants found</EmptyTitle>
               <EmptyDescription>

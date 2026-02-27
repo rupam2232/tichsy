@@ -75,7 +75,7 @@ const ClientPage = () => {
     },
   });
 
-  const isReallyDirty = () => {
+  const isReallyDirty = useCallback(() => {
     const current = form.getValues();
     // Compare trimmed strings, and arrays as needed
     return (
@@ -97,7 +97,7 @@ const ClientPage = () => {
         JSON.stringify(current.categories) ||
       form.formState.defaultValues?.logoUrl !== current.logoUrl
     );
-  };
+  }, [form]);
 
   const logoUrl = useWatch({
     control: form.control,
@@ -143,7 +143,7 @@ const ClientPage = () => {
     checkUsernameUnique();
   }, [checkUsernameUnique]);
 
-  const handleImageRemove = async () => {
+  const handleImageRemove = useCallback(async () => {
     const uploadPromise = new Promise<void>((resolve, reject) => {
       (async () => {
         setImageErrorMessage("");
@@ -152,7 +152,11 @@ const ClientPage = () => {
         if (logoUrl) {
           const mediaUrl = logoUrl;
           try {
-            form.setValue("logoUrl", undefined);
+            form.setValue("logoUrl", undefined, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
             setImageFile(null);
             const response = await axios.delete("/media/restaurant-logo", {
               data: {
@@ -181,7 +185,11 @@ const ClientPage = () => {
             resolve();
           } catch (error) {
             console.error("Error removing image:", error);
-            form.setValue("logoUrl", mediaUrl);
+            form.setValue("logoUrl", mediaUrl, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
             const axiosError = error as AxiosError<ApiResponse>;
             toast.error(
               axiosError.response?.data.message || "Failed to remove logo",
@@ -196,81 +204,96 @@ const ClientPage = () => {
       })();
     });
     setPendingImageOperations((prev) => [...prev, uploadPromise]);
-  };
+  }, [
+    pendingImageOperations,
+    router,
+    dispatch,
+    slug,
+    form,
+    logoUrl,
+    restaurantData,
+  ]);
 
-  const handleImageUpload = async (file: File) => {
-    const uploadPromise = new Promise<void>((resolve, reject) => {
-      (async () => {
-        try {
-          await Promise.all(pendingImageOperations);
-          const response = await axios.post(
-            "/media/restaurant-logo",
-            { restaurantLogo: file },
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
+  const handleImageUpload = useCallback(
+    async (file: File) => {
+      const uploadPromise = new Promise<void>((resolve, reject) => {
+        (async () => {
+          try {
+            await Promise.all(pendingImageOperations);
+            const response = await axios.post(
+              "/media/restaurant-logo",
+              { restaurantLogo: file },
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
               },
-            },
-          );
-          form.setValue("logoUrl", response.data.data);
-          resolve();
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          const axiosError = error as AxiosError<ApiResponse>;
-          toast.error(
-            axiosError.response?.data.message || "Failed to upload image",
-          );
-          if (axiosError.response?.status === 401) {
-            dispatch(signOut());
-            router.push("/signin?redirect=/restaurant/" + slug + "/settings");
+            );
+            form.setValue("logoUrl", response.data.data, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
+            resolve();
+          } catch (error) {
+            console.error("Error uploading image:", error);
+            const axiosError = error as AxiosError<ApiResponse>;
+            toast.error(
+              axiosError.response?.data.message || "Failed to upload image",
+            );
+            if (axiosError.response?.status === 401) {
+              dispatch(signOut());
+              router.push("/signin?redirect=/restaurant/" + slug + "/settings");
+            }
+            reject(error);
           }
-          reject(error);
+        })();
+      });
+      setPendingImageOperations((prev) => [...prev, uploadPromise]);
+    },
+    [pendingImageOperations, router, dispatch, slug, form],
+  );
+
+  const onImageDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+      const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg"];
+
+      if (rejectedFiles.length > 0) {
+        if (rejectedFiles[0]?.errors[0]?.code === "file-too-large") {
+          setImageErrorMessage("Logo file size exceeds 1MB.");
+          return;
+        } else if (rejectedFiles[0]?.errors[0]?.code === "file-invalid-type") {
+          setImageErrorMessage("Only .jpeg, .jpg, .png files are allowed.");
+          return;
+        } else {
+          setImageErrorMessage(
+            rejectedFiles[0]?.errors[0]?.message ||
+              "Failed to upload logo. Please try again.",
+          );
+          return;
         }
-      })();
-    });
-    setPendingImageOperations((prev) => [...prev, uploadPromise]);
-  };
-
-  const onImageDrop = (
-    acceptedFiles: File[],
-    rejectedFiles: FileRejection[],
-  ) => {
-    const allowedImageTypes = ["image/jpeg", "image/png", "image/jpg"];
-
-    if (rejectedFiles.length > 0) {
-      if (rejectedFiles[0]?.errors[0]?.code === "file-too-large") {
-        setImageErrorMessage("Logo file size exceeds 1MB.");
-        return;
-      } else if (rejectedFiles[0]?.errors[0]?.code === "file-invalid-type") {
+      }
+      if (
+        acceptedFiles.length > 0 &&
+        (!acceptedFiles[0]?.type ||
+          !allowedImageTypes.includes(acceptedFiles[0].type))
+      ) {
         setImageErrorMessage("Only .jpeg, .jpg, .png files are allowed.");
         return;
-      } else {
-        setImageErrorMessage(
-          rejectedFiles[0]?.errors[0]?.message ||
-            "Failed to upload logo. Please try again.",
-        );
-        return;
       }
-    }
-    if (
-      acceptedFiles.length > 0 &&
-      (!acceptedFiles[0]?.type ||
-        !allowedImageTypes.includes(acceptedFiles[0].type))
-    ) {
-      setImageErrorMessage("Only .jpeg, .jpg, .png files are allowed.");
-      return;
-    }
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0] as File;
-      if (file.size > MAX_IMAGE_SIZE) {
-        setImageErrorMessage("Logo file size exceeds 1MB.");
-        return;
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0] as File;
+        if (file.size > MAX_IMAGE_SIZE) {
+          setImageErrorMessage("Logo file size exceeds 1MB.");
+          return;
+        }
+        handleImageUpload(file);
+        setImageFile(file);
+        setImageErrorMessage("");
       }
-      handleImageUpload(file);
-      setImageFile(file);
-      setImageErrorMessage("");
-    }
-  };
+    },
+    [handleImageUpload, MAX_IMAGE_SIZE],
+  );
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } =
     useDropzone({
@@ -313,7 +336,7 @@ const ClientPage = () => {
     }
   }, [slug, router, dispatch]);
 
-  const toggleArchiveStatus = async () => {
+  const toggleArchiveStatus = useCallback(async () => {
     if (!restaurantData) return;
     const isArchived = restaurantData.isArchived;
 
@@ -375,56 +398,70 @@ const ClientPage = () => {
         router.push("/signin?redirect=/restaurant/" + slug + "/settings");
       }
     }
-  };
+  }, [slug, router, dispatch, restaurantData]);
 
-  const onSubmit = async (data: z.infer<typeof updateRestaurantSchema>) => {
-    await Promise.all(pendingImageOperations);
-    const toastId = toast.loading("Updating restaurant...");
-    if (isReallyDirty() === false) {
-      toast.info("No changes made", { id: toastId });
-      return;
-    }
-    try {
-      const response = await axios.patch(`/restaurant/${slug}`, data);
+  const onSubmit = useCallback(
+    async (data: z.infer<typeof updateRestaurantSchema>) => {
+      await Promise.all(pendingImageOperations);
+      const toastId = toast.loading("Updating restaurant...");
+      if (isReallyDirty() === false) {
+        toast.info("No changes made", { id: toastId });
+        return;
+      }
+      try {
+        const response = await axios.patch(`/restaurant/${slug}`, data);
 
-      if (response.data.success) {
-        toast.success(
-          response.data.message || "Restaurant updated successfully",
+        if (response.data.success) {
+          toast.success(
+            response.data.message || "Restaurant updated successfully",
+            {
+              id: toastId,
+            },
+          );
+
+          setRestaurantData(response.data.data);
+          dispatch(updateRestaurant(response.data.data));
+          dispatch(setActiveRestaurant(response.data.data));
+
+          if (response.data.data.slug !== slug) {
+            localStorage.setItem(
+              `slug_redirect_${slug}`,
+              response.data.data.slug,
+            );
+            localStorage.removeItem(`slug_redirect_${response.data.data.slug}`);
+            router.replace(`/restaurant/${response.data.data.slug}/settings`);
+            return;
+          }
+        } else {
+          toast.error(response.data.message, {
+            id: toastId,
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to update restaurant data. Please try again later:",
+          error,
+        );
+        const axiosError = error as AxiosError<ApiResponse>;
+        toast.error(
+          axiosError.response?.data.message ||
+            "Failed to update restaurant data. Please try again later",
           {
             id: toastId,
           },
         );
-        setRestaurantData(response.data.data);
-        dispatch(updateRestaurant(response.data.data));
-        dispatch(setActiveRestaurant(response.data.data));
-      } else {
-        toast.error(response.data.message, {
-          id: toastId,
-        });
+        if (axiosError.response?.status === 401) {
+          dispatch(signOut());
+          router.push("/signin?redirect=/restaurant/" + slug + "/settings");
+        }
       }
-    } catch (error) {
-      console.error(
-        "Failed to update restaurant data. Please try again later:",
-        error,
-      );
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to update restaurant data. Please try again later",
-        {
-          id: toastId,
-        },
-      );
-      if (axiosError.response?.status === 401) {
-        dispatch(signOut());
-        router.push("/signin?redirect=/restaurant/" + slug + "/settings");
-      }
-    }
-  };
+    },
+    [slug, router, dispatch, isReallyDirty, pendingImageOperations],
+  );
 
   useEffect(() => {
     fetchRestaurantData();
-  }, [slug, fetchRestaurantData]);
+  }, [fetchRestaurantData]);
 
   useEffect(() => {
     if (restaurantData) {

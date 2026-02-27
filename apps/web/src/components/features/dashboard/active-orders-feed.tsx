@@ -14,6 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
 
 interface ActiveOrdersFeedProps {
   slug: string;
@@ -172,15 +179,17 @@ export function ActiveOrdersFeed({ slug }: ActiveOrdersFeedProps) {
             )}
           >
             {!ordersData?.orders || ordersData.orders.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center gap-3">
-                <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                  <BellRing className="size-8" />
-                </div>
-                <p className="text-lg font-bold">No active order</p>
-                <p className="text-sm text-muted-foreground">
-                  When new orders arrive, they will appear here
-                </p>
-              </div>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon" className="size-9">
+                    <BellRing className="size-4" />
+                  </EmptyMedia>
+                  <EmptyTitle>No active orders</EmptyTitle>
+                  <EmptyDescription>
+                    When new orders arrive, they will appear here
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               ordersData.orders.map((order, index) => (
                 <OrderCard
