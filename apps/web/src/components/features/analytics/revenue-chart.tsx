@@ -222,7 +222,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
     <Card className=" h-full flex flex-col shadow-xs border-border/70 hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-col md:flex-row items-start justify-between gap-4 border-b pb-4">
         <div>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="text-lg">
             Revenue Trend
           </CardTitle>
           <CardDescription>

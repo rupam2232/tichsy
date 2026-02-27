@@ -7,7 +7,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@repo/ui/components/drawer";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import axios from "@/utils/axiosInstance";
@@ -117,7 +117,7 @@ const CustomerFoodDetails = ({
     });
   }, [carouselApi]);
 
-  const handleAddItem = () => {
+  const handleAddItem = useCallback(() => {
     if (!foodItemDetails) return;
 
     if (
@@ -162,27 +162,40 @@ const CustomerFoodDetails = ({
       }
     }
     setDrawerOpen(false);
-  };
+  }, [
+    foodItemDetails,
+    variantName,
+    itemCount,
+    addItem,
+    editItem,
+    setDrawerOpen,
+    cartItems,
+    restaurantSlug,
+  ]);
 
-  const itemPrice = foodItemDetails
-    ? variantName !== "default" &&
-      foodItemDetails.variants &&
-      foodItemDetails.variants.length > 0
-      ? foodItemDetails.variants.find(
-          (variant) => variant.variantName === variantName,
-        )?.price
-      : foodItemDetails.price
-    : foodItem.price;
+  const itemPrice = useMemo(() => {
+    return foodItemDetails
+      ? variantName !== "default" &&
+        foodItemDetails.variants &&
+        foodItemDetails.variants.length > 0
+        ? foodItemDetails.variants.find(
+            (variant) => variant.variantName === variantName,
+          )?.price
+        : foodItemDetails.price
+      : foodItem.price;
+  }, [foodItem.price, foodItemDetails, variantName]);
 
-  const itemDiscountedPrice = foodItemDetails
-    ? variantName !== "default" &&
-      foodItemDetails.variants &&
-      foodItemDetails.variants.length > 0
-      ? foodItemDetails.variants.find(
-          (variant) => variant.variantName === variantName,
-        )?.discountedPrice
-      : foodItemDetails.discountedPrice
-    : foodItem.discountedPrice;
+  const itemDiscountedPrice = useMemo(() => {
+    return foodItemDetails
+      ? variantName !== "default" &&
+        foodItemDetails.variants &&
+        foodItemDetails.variants.length > 0
+        ? foodItemDetails.variants.find(
+            (variant) => variant.variantName === variantName,
+          )?.discountedPrice
+        : foodItemDetails.discountedPrice
+      : foodItem.discountedPrice;
+  }, [foodItem.discountedPrice, foodItemDetails, variantName]);
 
   useEffect(() => {
     if (drawerOpen && !showEditDrawer) {
@@ -202,11 +215,11 @@ const CustomerFoodDetails = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showEditDrawer]);
 
-  if (showEditDrawer) {
-    const cartItemsFiltered = cartItems.filter(
-      (item) => item.foodId === foodItem._id,
-    );
+  const cartItemsFiltered = useMemo(() => {
+    return cartItems.filter((item) => item.foodId === foodItem._id);
+  }, [cartItems, foodItem._id]);
 
+  if (showEditDrawer) {
     return (
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerTrigger className="hidden">Open</DrawerTrigger>
@@ -246,7 +259,7 @@ const CustomerFoodDetails = ({
                                 `₹${item.price.toFixed(2)}`
                               )}
                             </p>
-                            <p className="text-sm text-muted-foreground line-clamp-1">
+                            <p className="text-sm text-muted-foreground line-clamp-2">
                               {item.description}
                             </p>
                           </div>

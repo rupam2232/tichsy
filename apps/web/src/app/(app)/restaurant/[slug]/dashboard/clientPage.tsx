@@ -9,19 +9,24 @@ const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6">
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-1 flex-col px-4 lg:px-6 @container/main">
+      <div className="flex items-center justify-between py-3">
+        <div className="flex flex-col gap-1">
           <h3 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            Dashboard Overview
+            Dashboard
           </h3>
-          <StaffOrderDialog />
+          <p className="text-sm text-muted-foreground">
+            Live overview of order metrics, table statuses, and active orders
+          </p>
         </div>
+        <StaffOrderDialog />
+      </div>
 
+      <div className="pt-3 pb-5 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
         {/* Aggregate Metrics Cards */}
         <MetricsOverview slug={slug} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+        <div className="grid grid-cols-1 @4xl/main:grid-cols-2 gap-8">
           {/* Left Column: Live Table Status */}
           <LiveTableStatus slug={slug} />
 

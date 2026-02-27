@@ -5,17 +5,24 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import {
-  Timer,
   Wallet,
-  CheckCheck,
   TrendingDown,
   TrendingUp,
+  ChefHat,
+  Utensils,
 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import type { DashboardOperations, ApiResponse } from "@repo/types";
 import { useSocket } from "@/context/SocketContext";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/card";
+import { AnimatedNumber } from "@/components/shared/animated-odometer";
 
 interface MetricsOverviewProps {
   slug: string;
@@ -81,13 +88,16 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
   }, [operationsData?.todayTotalOrders, operationsData?.yesterdayTotalOrders]);
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      <div className="bg-card p-6 md:p-8 rounded-3xl shadow-sm border border-border flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <span className="text-muted-foreground font-medium">New Orders</span>
+    <section className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs *:data-[slot=card]:hover:shadow-md *:data-[slot=card]:border-border/70 *:data-[slot=card]:transition-shadow @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      {/* New Orders */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
+            New Orders
+          </CardTitle>
           <div
             className={cn(
-              "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1",
+              "p-2 rounded-full",
               ordersTrend.isUp
                 ? "bg-green-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted dark:bg-slate-800 text-foreground/60 dark:text-slate-400",
@@ -98,53 +108,82 @@ export function MetricsOverview({ slug }: MetricsOverviewProps) {
             ) : (
               <TrendingDown className="size-3.5" />
             )}
-            {ordersTrend.change}
           </div>
-        </div>
-        <div className="text-5xl font-900 text-foreground">
-          {operationsData?.newOrders ?? 0}
-        </div>
-      </div>
-
-      <div className="bg-card p-6 md:p-8 rounded-3xl shadow-sm border border-border flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <span className="text-muted-foreground font-medium">Preparing</span>
-          <div className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <Timer className="size-3.5" />
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col justify-between gap-1">
+            <h3 className="text-4xl font-bold tracking-tight break-all">
+              <AnimatedNumber value={operationsData?.newOrders ?? 0} />
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Awaiting acceptance
+            </p>
           </div>
-        </div>
-        <div className="text-5xl font-900 text-foreground">
-          {operationsData?.preparingOrders ?? 0}
-        </div>
-      </div>
-
-      <div className="bg-card p-6 md:p-8 rounded-3xl shadow-sm border border-border flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <span className="text-muted-foreground font-medium">
+        </CardContent>
+      </Card>
+      {/* Preparing */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
+            Preparing
+          </CardTitle>
+          <div className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 p-2 rounded-full">
+            <ChefHat className="size-3.5" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col justify-between gap-1">
+            <h3 className="text-4xl font-bold tracking-tight break-all">
+              <AnimatedNumber value={operationsData?.preparingOrders ?? 0} />
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Actively being prepared
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Ready to Serve */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
             Ready to Serve
-          </span>
-          <div className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            <CheckCheck className="size-3.5" />
+          </CardTitle>
+          <div className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 p-2 rounded-full">
+            <Utensils className="size-3.5" />
           </div>
-        </div>
-        <div className="text-5xl font-900 text-foreground">
-          {operationsData?.readyOrders ?? 0}
-        </div>
-      </div>
-
-      <div className="bg-card p-6 md:p-8 rounded-3xl shadow-sm border border-border flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <span className="text-muted-foreground font-medium">
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col justify-between gap-1">
+            <h3 className="text-4xl font-bold tracking-tight break-all">
+              <AnimatedNumber value={operationsData?.readyOrders ?? 0} />
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Awaiting staff delivery
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Pending Payment */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-semibold text-muted-foreground">
             Pending Payment
-          </span>
-          <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+          </CardTitle>
+          <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-2 rounded-full">
             <Wallet className="size-3.5" />
           </div>
-        </div>
-        <div className="text-5xl font-900 text-foreground">
-          {operationsData?.unpaidOrders ?? 0}
-        </div>
-      </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col justify-between gap-1">
+            <h3 className="text-4xl font-bold tracking-tight break-all">
+              <AnimatedNumber value={operationsData?.unpaidOrders ?? 0} />
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Checks to be cleared
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   );
 }

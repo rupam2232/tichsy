@@ -2,11 +2,18 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import axios from "@/utils/axiosInstance";
 import { BellRing, Loader2 } from "lucide-react";
-import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import OrderCard from "@/components/features/orders/order-card";
 import type { OrderDetails, Order, ApiResponse } from "@repo/types";
 import { useSocket } from "@/context/SocketContext";
 import Link from "next/link";
+import { cn } from "@repo/ui/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/card";
 
 interface ActiveOrdersFeedProps {
   slug: string;
@@ -32,7 +39,7 @@ export function ActiveOrdersFeed({ slug }: ActiveOrdersFeedProps) {
               limit: 10,
               status: "pending,preparing,ready,served",
             },
-          }
+          },
         );
 
         if (res.data?.data) {
@@ -145,58 +152,63 @@ export function ActiveOrdersFeed({ slug }: ActiveOrdersFeedProps) {
   );
 
   return (
-    <section className="col-span-1 lg:col-span-7 flex flex-col gap-4 md:gap-6 relative bg-card p-6 md:p-8 pr-0! rounded-[2rem] shadow-sm border border-border">
-      <div className="flex items-center justify-between px-1 pr-4">
-        <h2 className="text-xl font-800 text-foreground">
-          Active Orders
-        </h2>
+    <Card className="@container/active-orders shadow-xs hover:shadow-md transition-shadow pb-2 gap-0">
+      <CardHeader className="flex flex-row items-center justify-between pb-0">
+        <CardTitle className="text-lg">Active Orders</CardTitle>
         <Link
           href={`/restaurant/${slug}/orders`}
           className="font-medium text-sm hover:underline"
         >
           View All Orders
         </Link>
-      </div>
-
-      <ScrollArea className="lg:h-[450px] w-full pr-8">
-        <div className="flex flex-col gap-4 pb-1">
-          {!ordersData?.orders || ordersData.orders.length === 0 ? (
-            <div className="p-12 text-center flex flex-col items-center gap-3">
-              <div className="size-16 rounded-full bg-muted flex items-center justify-center">
-                <BellRing className="size-8" />
+      </CardHeader>
+      <CardContent className="px-0! pb-0! relative">
+        <ScrollArea className="lg:h-[450px] w-full pl-5 pr-8">
+          <div
+            className={cn(
+              "grid grid-cols-1 @2xl/active-orders:grid-cols-2 gap-4 py-6",
+              (!ordersData?.orders || ordersData.orders.length === 0) &&
+                "flex flex-col justify-center",
+            )}
+          >
+            {!ordersData?.orders || ordersData.orders.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center gap-3">
+                <div className="size-16 rounded-full bg-muted flex items-center justify-center">
+                  <BellRing className="size-8" />
+                </div>
+                <p className="text-lg font-bold">No active order</p>
+                <p className="text-sm text-muted-foreground">
+                  When new orders arrive, they will appear here
+                </p>
               </div>
-              <p className="text-lg font-bold">
-                No active order
-              </p>
-              <p className="text-sm text-muted-foreground">
-                When new orders arrive, they will appear here
-              </p>
-            </div>
-          ) : (
-            ordersData.orders.map((order, index) => (
-              <OrderCard
-                key={order._id}
-                order={order}
-                ref={
-                  index === ordersData.orders.length - 1
-                    ? lastOrderElementRef
-                    : null
-                }
-                restaurantSlug={slug}
-                setOrders={setOrdersProxy}
-                className="rounded-[2rem] border-border shadow-sm hover:shadow-md transition-shadow hover:scale-none bg-card/80"
-                cardContentClassName="p-5 md:p-6"
-              />
-            ))
-          )}
-          {isPageChanging && (
-            <div className="w-full flex justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-      <div className="bg-gradient-to-b from-background/50 to-background absolute bottom-0 h-10"></div>
-    </section>
+            ) : (
+              ordersData.orders.map((order, index) => (
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  ref={
+                    index === ordersData.orders.length - 1
+                      ? lastOrderElementRef
+                      : null
+                  }
+                  restaurantSlug={slug}
+                  setOrders={setOrdersProxy}
+                  className="border-border hover:scale-none bg-card/80 shadow-none hover:shadow-none"
+                  cardContentClassName="p-5 md:p-6"
+                />
+              ))
+            )}
+            {isPageChanging && (
+              <div className="w-full flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <ScrollBar className="z-6" />
+        </ScrollArea>
+      <div className="bg-gradient-to-b from-transparent via-card/80 to-card absolute bottom-0 rounded-b-xl h-8 z-5 w-full"></div>
+      <div className="bg-gradient-to-t from-transparent via-card/80 to-card absolute top-0 rounded-t-xl h-8 z-5 w-full"></div>
+      </CardContent>
+    </Card>
   );
 }

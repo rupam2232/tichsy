@@ -27,38 +27,36 @@ const ClientPage = () => {
     return (
       <div className="flex flex-1 items-center justify-center p-4 h-[calc(100vh-5rem)]">
         <p className="text-muted-foreground text-center">
-          You do not have permission to view analytics.
+          You do not have permission to view analytics
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6 @container/main">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-1 flex-col px-4 lg:px-6 @container/main">
+      <div className="flex flex-col gap-1 py-3">
         <h2 className="text-2xl font-bold tracking-tight">Analytics</h2>
         <p className="text-sm text-muted-foreground">
-          Monitor your restaurant&apos;s performance and track key metrics.
+          Monitor your restaurant&apos;s performance and track key metrics
         </p>
       </div>
 
-      <div className="space-y-4 pt-4">
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-          <KpiCards slug={slug} />
+      <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 pb-10 pt-3">
+        <KpiCards slug={slug} />
 
-          <div className="grid grid-cols-1 @4xl/main:grid-cols-12 gap-6">
-            <div className="col-span-1 @4xl/main:col-span-8 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
-              <RevenueChart slug={slug} />
-            </div>
-            <div className="col-span-1 @4xl/main:col-span-4 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
-              <TopCategories slug={slug} />
-            </div>
+        <div className="grid grid-cols-1 @4xl/main:grid-cols-12 gap-6">
+          <div className="col-span-1 @4xl/main:col-span-8 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
+            <RevenueChart slug={slug} />
           </div>
+          <div className="col-span-1 @4xl/main:col-span-4 relative w-full min-h-[400px] @3xl/main:min-h-[450px]">
+            <TopCategories slug={slug} />
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 gap-6 @2xl/main:grid-cols-2">
-            <TrendingItems slug={slug} />
-            <TopTables slug={slug} />
-          </div>
+        <div className="grid grid-cols-1 gap-6 @2xl/main:grid-cols-2">
+          <TrendingItems slug={slug} />
+          <TopTables slug={slug} />
         </div>
       </div>
     </div>

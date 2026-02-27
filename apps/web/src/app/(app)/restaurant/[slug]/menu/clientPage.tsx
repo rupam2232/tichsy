@@ -9,7 +9,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { AxiosError } from "axios";
 import axios from "@/utils/axiosInstance";
 import type { AppDispatch, RootState } from "@/store/store";
-import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
+import { Card, CardContent } from "@repo/ui/components/card";
 import Image from "next/image";
 import { cn } from "@repo/ui/lib/utils";
 import {
@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
-import { IconSalad } from "@tabler/icons-react";
+import { IconSalad, IconToolsKitchen } from "@tabler/icons-react";
 import FoodDetails from "@/components/features/menu/food-details";
 import CreateUpdateFoodItem from "@/components/features/menu/create-update-food-item";
 import {
@@ -36,6 +36,14 @@ import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
 
 interface MenuPageProps {
   initialFoodItems: AllFoodItems | null;
@@ -250,7 +258,7 @@ const MenuPage = ({
   }, [tabName, searchInput, pathname, searchParams]);
 
   return (
-    <div className="p-4">
+    <section className="p-4 @container/main">
       <Tabs
         defaultValue="all"
         value={tabName}
@@ -372,8 +380,8 @@ const MenuPage = ({
         </div>
         <TabsContent value={tabName} className="mt-2">
           {isPageLoading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
-              {Array.from({ length: 4 }).map((_, index) => (
+            <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @3xl/main:grid-cols-4 @5xl/main:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, index) => (
                 <Card
                   key={index}
                   className={`animate-pulse py-0 gap-0 ${index > 0 ? `delay-${(index + 1) * 100}` : ""}`}
@@ -391,7 +399,7 @@ const MenuPage = ({
           ) : allFoodItems &&
             Array.isArray(allFoodItems.foodItems) &&
             allFoodItems.foodItems.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 @xl/main:grid-cols-3 @3xl/main:grid-cols-4 @5xl/main:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-4 duration-500 pb-8">
               {allFoodItems.foodItems.map((foodItem, index) => (
                 <FoodDetails
                   key={foodItem._id}
@@ -506,11 +514,21 @@ const MenuPage = ({
                 ))}
             </div>
           ) : (
-            <Card className="@container/card">
-              <CardFooter className="flex-col gap-4 text-sm flex justify-center">
-                <div className="line-clamp-1 flex gap-2 font-medium text-center text-balance">
-                  No food items found
-                </div>
+            <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 flex items-center justify-center mt-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-9">
+                  <IconToolsKitchen className="size-4" />
+                </EmptyMedia>
+                <EmptyTitle>No food items found</EmptyTitle>
+                <EmptyDescription>
+                  {tabName === "all"
+                    ? "This restaurant has no food items in menu. Get started by adding first food item in menu"
+                    : tabName === "search"
+                      ? "No food items found with this search"
+                      : "No food items found with this filter"}
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
                 {user?.role === "owner" && tabName === "all" && (
                   <CreateUpdateFoodItem
                     setAllFoodItems={setAllFoodItems}
@@ -519,12 +537,12 @@ const MenuPage = ({
                     restaurantSlug={slug}
                   />
                 )}
-              </CardFooter>
-            </Card>
+              </EmptyContent>
+            </Empty>
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </section>
   );
 };
 

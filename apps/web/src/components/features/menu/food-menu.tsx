@@ -254,7 +254,13 @@ const ClinetFoodMenu = ({
   }
 
   return (
-    <div className={cn("relative", { "p-4": !isStaffCreatingOrder }, className)}>
+    <div
+      className={cn(
+        "relative @container/food-menu",
+        { "p-4": !isStaffCreatingOrder },
+        className,
+      )}
+    >
       <Tabs
         className="mb-24"
         defaultValue="all"
@@ -369,11 +375,7 @@ const ClinetFoodMenu = ({
           ) : allFoodItems &&
             Array.isArray(allFoodItems.foodItems) &&
             allFoodItems.foodItems.length > 0 ? (
-            <div
-              className={cn("grid grid-cols-2 gap-4 sm:grid-cols-3", {
-                "md:grid-cols-4 xl:grid-cols-5": !isStaffCreatingOrder,
-              })}
-            >
+            <div className="grid grid-cols-2 gap-4 @lg/food-menu:grid-cols-3 @3xl/food-menu:grid-cols-4 @5xl/food-menu:grid-cols-5">
               {allFoodItems.foodItems.map((foodItem, index) => (
                 <Card
                   key={foodItem._id}

@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@repo/ui/components/button";
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import type { AxiosError } from "axios";
@@ -143,26 +143,31 @@ const FoodOrderStepsForStaffs = ({
     }
   }, [step]);
 
-  const restaurantCartItemSubtotal = cartItems.reduce((total, item) => {
-    if (typeof item.discountedPrice === "number") {
-      return total + item.discountedPrice * item.quantity;
-    }
-    return total + item.price * item.quantity;
-  }, 0);
+  const restaurantCartItemSubtotal = useMemo(() => {
+    return cartItems.reduce((total, item) => {
+      if (typeof item.discountedPrice === "number") {
+        return total + item.discountedPrice * item.quantity;
+      }
+      return total + item.price * item.quantity;
+    }, 0);
+  }, [cartItems]);
 
-  const preDiscountedPrice = cartItems.some(
-    (item) => typeof item.discountedPrice === "number",
-  )
-    ? cartItems.reduce((total, item) => {
-        return total + item.price * item.quantity;
-      }, 0)
-    : null;
+  const preDiscountedPrice = useMemo(() => {
+    return cartItems.some((item) => typeof item.discountedPrice === "number")
+      ? cartItems.reduce((total, item) => {
+          return total + item.price * item.quantity;
+        }, 0)
+      : null;
+  }, [cartItems]);
 
-  const toPay =
-    restaurantCartItemSubtotal +
-    (taxDetails && !taxDetails.isTaxIncludedInPrice
-      ? restaurantCartItemSubtotal * taxDetails.taxRate
-      : 0);
+  const toPay = useMemo(() => {
+    return (
+      restaurantCartItemSubtotal +
+      (taxDetails && !taxDetails.isTaxIncludedInPrice
+        ? restaurantCartItemSubtotal * taxDetails.taxRate
+        : 0)
+    );
+  }, [restaurantCartItemSubtotal, taxDetails]);
 
   const confirmOrder = async () => {
     const toastId = toast.loading("Placing order...");
@@ -224,7 +229,12 @@ const FoodOrderStepsForStaffs = ({
   }
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div
+      className={cn(
+        "flex flex-col h-full @container/food-order-steps-for-staffs",
+        className,
+      )}
+    >
       <div
         ref={scrollContainerRef}
         className="flex-1 px-6 custom-scrollbar overflow-y-auto"
@@ -238,7 +248,7 @@ const FoodOrderStepsForStaffs = ({
                 ))}
               </div>
             ) : allTables && allTables.tables.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-2 mb-20">
+              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 p-2 mb-20">
                 {allTables.tables.map((t, index) => (
                   <div
                     ref={
@@ -269,13 +279,15 @@ const FoodOrderStepsForStaffs = ({
                     )}
                     <div
                       className={cn(
-                        "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate",
+                        "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate min-h-25 border",
                         t.isOccupied
-                          ? "dark:bg-red-100 bg-red-200/70 text-red-700 border border-red-200"
-                          : "dark:bg-green-100 bg-green-200/70 text-green-700 border border-green-200",
+                          ? "bg-red-100 text-red-700 border-red-200"
+                          : "bg-green-100 text-green-700 border-green-200",
                       )}
                     >
-                      <h3 className="font-medium">{t.tableName}</h3>
+                      <span className="font-medium text-xs text-center text-balance">
+                        {t.tableName}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -553,7 +565,7 @@ const FoodOrderStepsForStaffs = ({
 
       <div
         className={cn(
-          "bg-background border-t p-4 flex items-center justify-between sm:justify-between flex-col-reverse gap-2 sm:flex-row fixed bottom-0 left-0 right-0 z-15",
+          "bg-background rounded-b-lg border-t p-4 flex items-center justify-between sm:justify-between flex-col-reverse gap-2 sm:flex-row fixed bottom-0 left-0 right-0 z-15",
           footerClassName,
         )}
       >

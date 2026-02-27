@@ -34,7 +34,9 @@ export function NotificationListener() {
         new Notification(notification.title, {
           tag: "newOrder",
           body: notification.message,
-          icon: notification.data?.imageUrl || "/favicon.ico",
+          icon:
+            notification.data?.imageUrl.replace("/upload/", "/upload/r_max/") ||
+            "/favicon.ico",
         });
       }
 

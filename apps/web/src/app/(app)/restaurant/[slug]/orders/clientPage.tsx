@@ -26,12 +26,19 @@ import {
 } from "@repo/types";
 import OrderCard from "@/components/features/orders/order-card";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
-import { Card, CardFooter } from "@repo/ui/components/card";
 import { Search, X } from "lucide-react";
 import { useDebounceCallback } from "usehooks-ts";
 import { cn } from "@repo/ui/lib/utils";
 import { useSocket } from "@/context/SocketContext";
 import { AppDispatch } from "@/store/store";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
+import { IconReceipt } from "@tabler/icons-react";
 
 interface OrdersPageProps {
   initialOrders: OrderDetailsType;
@@ -287,7 +294,7 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
   }, [tabName, searchInput, pathname, searchParams]);
 
   return (
-    <div className="flex flex-1 flex-col p-4 md:gap-6 lg:p-6">
+    <section className="flex flex-1 flex-col p-4 md:gap-6 lg:p-6 @container/main">
       <Tabs defaultValue="all" value={tabName} onValueChange={setTabName}>
         <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
           <ScrollArea className="w-full sm:w-0 flex-1 pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
@@ -401,7 +408,7 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
           ) : allOrders &&
             Array.isArray(allOrders.orders) &&
             allOrders.orders.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
+            <div className="grid grid-cols-1 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3 gap-4 my-4 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
               {allOrders.orders.map((order, index) => (
                 <OrderCard
                   key={order._id}
@@ -432,17 +439,25 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
                   )))}
             </div>
           ) : (
-            <Card className="@container/card mt-4">
-              <CardFooter className="flex-col gap-4 text-sm flex justify-center">
-                <div className="line-clamp-1 flex gap-2 font-medium text-center text-balance">
-                  No orders found
-                </div>
-              </CardFooter>
-            </Card>
+            <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 mt-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-9">
+                  <IconReceipt className="size-4" />
+                </EmptyMedia>
+                <EmptyTitle>No orders found</EmptyTitle>
+                <EmptyDescription>
+                  {tabName === "all"
+                    ? "No orders received yet. Get started by taking or creating first order"
+                    : tabName === "search"
+                      ? "No orders found with this search"
+                      : "No orders found with this filter"}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </section>
   );
 };
 

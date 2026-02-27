@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Card, CardFooter } from "@repo/ui/components/card";
+import { Card } from "@repo/ui/components/card";
 import { cn } from "@repo/ui/lib/utils";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,6 +15,15 @@ import TableDetails from "@/components/features/restaurant/table-details";
 import CreateTableDialog from "@/components/features/restaurant/create-table";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Plus } from "lucide-react";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
+import { IconTable } from "@tabler/icons-react";
 
 export default function SelectTable() {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
@@ -98,24 +107,24 @@ export default function SelectTable() {
   }, []);
 
   return (
-    <div>
+    <section className="@container/main">
       {/* Header */}
       <div className="flex flex-col-reverse sm:flex-row gap-y-2 items-center justify-between px-4 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-300"></span>
+            <span className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-500/20"></span>
             <span className="text-muted-foreground">
               Available: {allTables ? allTables.availableTables : 0}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-300"></span>
+            <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20"></span>
             <span className="text-muted-foreground">
               Occupied: {allTables ? allTables.occupiedTables : 0}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-muted border border-muted-foreground"></span>
+            <span className="w-2 h-2 rounded-full bg-muted ring-2 ring-secondary-foreground/20"></span>
             <span className="text-muted-foreground">
               Archived: {allTables ? allTables.archivedTables : 0}
             </span>
@@ -139,17 +148,17 @@ export default function SelectTable() {
 
       {/* Main Content Area */}
       {isPageLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
+        <div className="grid grid-cols-2 @md/main:grid-cols-3 @2xl/main:grid-cols-4 @4xl/main:grid-cols-5 @5xl/main:grid-cols-6 gap-4 p-4">
           {Array.from({ length: 12 }).map((_, index) => (
             <div key={index} className="flex items-center justify-center">
-              <Card className="flex items-center justify-center h-[4rem] w-full bg-muted text-muted-foreground animate-pulse"></Card>
+              <Card className="flex items-center justify-center h-[100px] w-full bg-muted text-muted-foreground animate-pulse"></Card>
             </div>
           ))}
         </div>
       ) : allTables &&
         Array.isArray(allTables.tables) &&
         allTables.tables.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
+        <div className="grid grid-cols-2 @md/main:grid-cols-3 @2xl/main:grid-cols-4 @4xl/main:grid-cols-5 @5xl/main:grid-cols-6 gap-4 p-4 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
           {allTables.tables.map((table, index) => {
             const isSelected = selectedTable?._id === table._id;
 
@@ -169,7 +178,7 @@ export default function SelectTable() {
                 >
                   <div
                     className={cn(
-                      "rounded-md ring-3 ring-transparent cursor-pointer transition-all duration-200 relative  p-0.5",
+                      "rounded-lg ring-3 ring-transparent cursor-pointer transition-all duration-200 relative  p-0.5 z-20",
                       isSelected && table.isArchived
                         ? "ring-secondary-foreground/50"
                         : isSelected && table.isOccupied
@@ -185,12 +194,12 @@ export default function SelectTable() {
                   >
                     <Card
                       className={cn(
-                        "flex items-center justify-center cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md rounded-lg truncate whitespace-pre-wrap",
+                        "flex items-center justify-center cursor-pointer transition-all duration-200 rounded-lg truncate whitespace-pre-wrap min-h-[100px]",
                         table.isArchived
                           ? "bg-muted text-muted-foreground/80 border"
                           : table.isOccupied
-                            ? "bg-red-500/20 border border-red-500/50"
-                            : "bg-green-500/20 border border-green-500/50",
+                            ? "bg-red-100 text-red-700 border-red-200"
+                            : "bg-green-100 text-green-700 border-green-200",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">
@@ -210,23 +219,30 @@ export default function SelectTable() {
             ))}
         </div>
       ) : (
-        <Card className="@container/card">
-          <CardFooter className="flex-col gap-4 text-sm flex justify-center">
-            <div className="line-clamp-1 flex gap-2 font-medium text-center text-balance">
-              This restaurant has no tables yet.
-            </div>
+        <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 mt-12">
+          <EmptyHeader>
+            <EmptyMedia variant="icon" className="size-9">
+              <IconTable className="size-4" />
+            </EmptyMedia>
+            <EmptyTitle>No tables found</EmptyTitle>
+            <EmptyDescription>
+              This restaurant has no tables yet. Get started by creating a new
+              table
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
             {user?.role === "owner" && (
               <CreateTableDialog
                 isLoading={isPageLoading}
                 restaurantSlug={slug}
                 setAllTables={setAllTables}
               >
-                Create a New Table
+                Create New Table
               </CreateTableDialog>
             )}
-          </CardFooter>
-        </Card>
+          </EmptyContent>
+        </Empty>
       )}
-    </div>
+    </section>
   );
 }
