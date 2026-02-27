@@ -11,7 +11,7 @@ import {
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
-import { isSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
+import { isSubscriptionActive, optionalSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 import { env } from "../env.js";
 
 const isProduction = env.NODE_ENV === "production";
@@ -20,7 +20,7 @@ const router = Router();
 
 const createLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minutes
-  limit: 3, // Limit each IP to 3 requests per `window` (here, per 1 minutes).
+  limit: 20, // Limit each IP to 20 requests per `window` (here, per 1 minutes).
   standardHeaders: "draft-8", //draft-8: `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   handler: () => {
@@ -30,7 +30,7 @@ const createLimit = rateLimit({
 
 const occupiedStatusUpdateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minutes
-  limit: 5, // Limit each IP to 5 requests per `window` (here, per 1 minutes).
+  limit: 30, // Limit each IP to 30 requests per `window` (here, per 1 minutes).
   standardHeaders: "draft-8", //draft-8: `RateLimit` header
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
   handler: () => {
@@ -44,7 +44,7 @@ router
   .post(
     isProduction ? createLimit : (req, res, next) => next(),
     verifyAuth,
-    isProduction ? isSubscriptionActive : (req, res, next) => next(),
+    isSubscriptionActive,
     createTable
   );
 
@@ -58,7 +58,7 @@ router.patch(
 router.patch(
   "/:restaurantSlug/:qrSlug/toggle-archive-status",
   verifyAuth,
-  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  optionalSubscriptionActive,
   toggleTableArchiveStatus
 );
 

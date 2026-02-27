@@ -37,6 +37,7 @@ import { cn } from "@repo/ui/lib/utils";
 import { NonVegIcon, VegIcon } from "@/components/shared/veg-nonveg-tooltip";
 import CreateRestaurantCategory from "../create-restaurant-category";
 import { UseFormReturn, useWatch } from "react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
 import { FoodItemDetails, foodItemSchema } from "@repo/types";
 
@@ -67,6 +68,8 @@ export default function FoodItemBasicInfo({
     control: form.control,
     name: "discountedPrice",
   });
+
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
 
   return (
     <>
@@ -200,7 +203,10 @@ export default function FoodItemBasicInfo({
           <FormItem>
             <FormLabel htmlFor="category">Category</FormLabel>
             <FormControl>
-              <Popover>
+              <Popover
+                open={isCategoryPopoverOpen}
+                onOpenChange={setIsCategoryPopoverOpen}
+              >
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -244,14 +250,19 @@ export default function FoodItemBasicInfo({
                           variant="ghost"
                           className="w-full text-sm font-normal h-min py-1.5 px-2! hover:bg-accent!"
                           onClick={() => {
-                            form.setValue("category", undefined);
+                            form.setValue("category", "", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                              shouldTouch: true,
+                            });
+                            setIsCategoryPopoverOpen(false);
                           }}
                         >
                           No category
                           <Check
                             className={cn(
                               "ml-auto",
-                              undefined === field.value
+                              "" === field.value || undefined === field.value
                                 ? "opacity-100"
                                 : "opacity-0",
                             )}
@@ -265,9 +276,14 @@ export default function FoodItemBasicInfo({
                               key={category}
                               value={category}
                               className="cursor-pointer"
-                              onSelect={() =>
-                                form.setValue("category", category)
-                              }
+                              onSelect={() => {
+                                form.setValue("category", category, {
+                                  shouldDirty: true,
+                                  shouldValidate: true,
+                                  shouldTouch: true,
+                                });
+                                setIsCategoryPopoverOpen(false);
+                              }}
                             >
                               {category}
                               <Check

@@ -148,6 +148,7 @@ const CreateUpdateFoodItem = ({
             form.setValue(
               "imageUrls",
               imageUrls.filter((u) => u !== url),
+              { shouldDirty: true, shouldValidate: true, shouldTouch: true },
             );
             setImageFiles((prev) =>
               prev ? prev.filter((file) => file.name !== url) : null,
@@ -365,6 +366,10 @@ const CreateUpdateFoodItem = ({
           if (!("discountedPrice" in response.data.data)) {
             updated.discountedPrice = undefined;
           }
+          // Explicitly set category to undefined if not present in response
+          if (!("category" in response.data.data)) {
+            updated.category = undefined;
+          }
           // For variants
           if (
             Array.isArray(prev.variants) &&
@@ -531,7 +536,11 @@ const CreateUpdateFoodItem = ({
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={formLoading}
+                    disabled={
+                      formLoading ||
+                      (!form.formState.isDirty &&
+                        Object.keys(form.formState.dirtyFields).length === 0)
+                    }
                   >
                     {formLoading ? (
                       <>

@@ -604,12 +604,16 @@ const TableDetails = ({
                   toggleOccupiedStatus();
                 }}
               >
-                <SelectTrigger className="text-sm font-medium w-[180px] border-muted-foreground/70">
+                <SelectTrigger className="text-sm font-medium w-[180px] border-muted-foreground/70 cursor-pointer">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="occupied">Occupied</SelectItem>
+                  <SelectItem value="available" className="cursor-pointer">
+                    Available
+                  </SelectItem>
+                  <SelectItem value="occupied" className="cursor-pointer">
+                    Occupied
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </p>

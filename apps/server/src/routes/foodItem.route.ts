@@ -9,7 +9,7 @@ import {
   toggleFoodItemArchiveStatus,
 } from "../controllers/foodItem.controller.js";
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
-import { isSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
+import { isSubscriptionActive, optionalSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { env } from "../env.js";
@@ -33,7 +33,7 @@ router
   .post(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
-    isProduction ? isSubscriptionActive : (req, res, next) => next(),
+    isSubscriptionActive,
     createFoodItem
   )
   .get(verifyOptionalAuth, getFoodItemsOfRestaurant);
@@ -44,13 +44,13 @@ router
   .patch(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
-    isProduction ? isSubscriptionActive : (req, res, next) => next(),
+    isSubscriptionActive,
     updateFoodItem
   )
   .delete(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
-    isProduction ? isSubscriptionActive : (req, res, next) => next(),
+    isSubscriptionActive,
     deleteFoodItem
   );
 
@@ -64,7 +64,7 @@ router.patch(
 router.patch(
   "/:restaurantSlug/:foodItemId/toggle-archive-status",
   verifyAuth,
-  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  optionalSubscriptionActive,
   toggleFoodItemArchiveStatus
 );
 

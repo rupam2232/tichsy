@@ -57,7 +57,11 @@ export default function FoodItemVariants({
     const errors = form.formState.errors;
 
     if (fields.length === 0 && hasVariants) {
-      form.setValue("hasVariants", false);
+      form.setValue("hasVariants", false, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true,
+      });
     }
 
     if (errors.variants) {
@@ -95,7 +99,11 @@ export default function FoodItemVariants({
           variant="outline"
           className=""
           onClick={() => {
-            form.setValue("hasVariants", true);
+            form.setValue("hasVariants", true, {
+              shouldDirty: true,
+              shouldValidate: true,
+              shouldTouch: true,
+            });
             append({
               variantName: "",
               price: undefined,
@@ -129,7 +137,7 @@ export default function FoodItemVariants({
         onValueChange={(value) => setOpenParentAccordion(value)}
       >
         <AccordionItem value="variants">
-          <AccordionTrigger className="cursor-pointer">
+          <AccordionTrigger className="cursor-pointer transition-all">
             See Variants
           </AccordionTrigger>
           <AccordionContent>
@@ -148,7 +156,7 @@ export default function FoodItemVariants({
                     key={field.id}
                   >
                     <AccordionItem key={field.id} value={`item-${index}`}>
-                      <AccordionTrigger className="cursor-pointer">
+                      <AccordionTrigger className="cursor-pointer transition-all">
                         {field.variantName || "New Variant"}
                       </AccordionTrigger>
                       <AccordionContent>
@@ -325,7 +333,11 @@ export default function FoodItemVariants({
           variant="outline"
           className=""
           onClick={() => {
-            form.setValue("hasVariants", true);
+            form.setValue("hasVariants", true, {
+              shouldDirty: true,
+              shouldValidate: true,
+              shouldTouch: true,
+            });
             append({
               variantName: "",
               price: undefined,

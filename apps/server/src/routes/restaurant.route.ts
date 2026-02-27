@@ -61,7 +61,7 @@ router.post(
   "/create",
   isProduction ? createLimit : (req, res, next) => next(),
   verifyAuth,
-  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  isSubscriptionActive,
   createRestaurant
 );
 
@@ -81,7 +81,7 @@ router.patch(
 router.patch(
   "/:slug/toggle-archive-status",
   verifyAuth,
-  isProduction ? isSubscriptionActive : (req, res, next) => next(),
+  isSubscriptionActive,
   toggleRestaurantArchiveStatus
 );
 
@@ -90,7 +90,7 @@ router
   .get(getRestaurantCategories)
   .post(
     verifyAuth,
-    isProduction ? isSubscriptionActive : (req, res, next) => next(),
+    isSubscriptionActive,
     addRestaurantCategory
   )
   .patch(verifyAuth, removeRestaurantCategories);

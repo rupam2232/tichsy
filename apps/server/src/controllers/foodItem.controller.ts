@@ -602,7 +602,7 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   foodItem.hasVariants = hasVariants;
   foodItem.variants = variants as FoodVariantType[];
   foodItem.imageUrls = imageUrls;
-  foodItem.category = category;
+  foodItem.category = validatedData.category === "" ? undefined : category;
   foodItem.foodType = foodType;
   foodItem.description = description;
   foodItem.tags = tags;
@@ -721,7 +721,7 @@ export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
 
   // If unarchiving, check subscription limits
   if (foodItem.isArchived) {
-    await canUnarchiveFoodItem(req.subscription!, restaurant.id);
+    await canUnarchiveFoodItem(restaurant.id, req.subscription);
     foodItem.isArchived = false;
     foodItem.archivedAt = undefined;
     foodItem.archivedReason = undefined;

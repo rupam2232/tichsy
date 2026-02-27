@@ -1,6 +1,8 @@
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { env } from "../env.js";
+const isProduction = env.NODE_ENV === "production";
 
 /**
  * Middleware to check if the user has an active subscription.
@@ -8,6 +10,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
  */
 
 export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
+  if (!isProduction) return next();
   const subscription = await Subscription.findOne({ userId: req.user!._id });
   if (!subscription || subscription.isSubscriptionActive === false)
     throw new ApiError(
@@ -30,8 +33,11 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
       "Your subscription has expired. Please renew to continue using the service"
     );
   }
-  if(subscription.isTrial && !subscription.trialExpiresAt){
-    if (subscription.subscriptionEndDate && subscription.subscriptionEndDate > new Date()) {
+  if (subscription.isTrial && !subscription.trialExpiresAt) {
+    if (
+      subscription.subscriptionEndDate &&
+      subscription.subscriptionEndDate > new Date()
+    ) {
       subscription.isTrial = false;
       subscription.save({ validateBeforeSave: false });
     } else {
@@ -64,10 +70,7 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
       "Your trial period has expired. Please subscribe to continue using the service"
     );
   }
-  if (
-    !subscription.trialExpiresAt &&
-    !subscription.subscriptionEndDate
-  ) {
+  if (!subscription.trialExpiresAt && !subscription.subscriptionEndDate) {
     subscription.isSubscriptionActive = false;
     subscription.plan = undefined;
     subscription.subscriptionStartDate = undefined;
@@ -80,4 +83,15 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   }
   req.subscription = subscription;
   next();
+});
+
+/**
+ * Middleware to check if the user has an active subscription.
+ * If not, it throws an error with a message indicating the need to subscribe.
+ */
+export const optionalSubscriptionActive = asyncHandler(async (req, _, next) => {
+  if (!isProduction) return next();
+  const subscription = await Subscription.findOne({ userId: req.user!._id });
+  req.subscription = subscription;
+  return next();
 });

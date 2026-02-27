@@ -24,16 +24,22 @@ export async function canCreateTable(
   if (totalTableCount >= maxTables) {
     throw new ApiError(
       403,
-      `Your plan allows to create max ${maxTables} tables per restaurant. Upgrade to create more.`
+      `Your plan allows to create max ${maxTables} tables per restaurant. Upgrade to create more`
     );
   }
 }
 
 export async function canUnarchiveTable(
-  subscription: SubscriptionType,
-  restaurantId: string
+  restaurantId: string,
+  subscription?: SubscriptionType | null,
 ) {
   if (!isProduction) return;
+  if (!subscription || !subscription.isSubscriptionActive) {
+    throw new ApiError(
+      403,
+      "No active subscription found. Please subscribe to a plan to unarchive this table"
+    );
+  }
   const activeTableCount = await Table.countDocuments({
     restaurantId,
     isArchived: false,

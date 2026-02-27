@@ -4,8 +4,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import ClientFoodMenu from "@/components/features/menu/food-menu";
 import { useEffect, useState } from "react";
 import { RestaurantMinimalInfo } from "@repo/types";
-import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import { Loader2 } from "lucide-react";
+import { getRestaurantDetails } from "@/utils/getRestaurantDetails";
 
 const MenuClientPage = () => {
   const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ const MenuClientPage = () => {
 
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
-      const restaurant = await fetchRestaurantMetadata(slug);
+      const restaurant = await getRestaurantDetails(slug);
       setRestaurantDetails(restaurant);
       setIsPageLoading(false);
     };

@@ -50,10 +50,16 @@ export async function checkVariantLimit(
 }
 
 export async function canUnarchiveFoodItem(
-  subscription: SubscriptionType,
-  restaurantId: string
+  restaurantId: string,
+  subscription?: SubscriptionType | null,
 ) {
   if (!isProduction) return;
+  if (!subscription || !subscription.isSubscriptionActive) {
+    throw new ApiError(
+      403,
+      "No active subscription found. Please subscribe to a plan to unarchive this food item"
+    );
+  }
   const activeFoodItemCount = await FoodItem.countDocuments({
     restaurantId,
     isArchived: false,

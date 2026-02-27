@@ -6,6 +6,6 @@ import type { Subscription as SubscriptionType } from "../models/subscription.mo
 declare module "express-serve-static-core" {
   interface Request {
     user?: UserType;
-    subscription?: SubscriptionType;
+    subscription?: SubscriptionType | null;
   }
 }

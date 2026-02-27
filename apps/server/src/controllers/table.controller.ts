@@ -404,7 +404,7 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
   }
 
   if (table[0].isArchived && !isUserPartofRestaurant) {
-    throw new ApiError(403, "You do not have permission to view this table");
+    throw new ApiError(404, "Table not found");
   }
 
   res
@@ -609,7 +609,7 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
   if (restaurant.isArchived) {
     throw new ApiError(
       403,
-      "Restaurant is archived. Please unarchive restaurant to toggle table archive status."
+      "Restaurant is archived. Please unarchive restaurant to toggle table archive status"
     );
   }
 
@@ -624,7 +624,7 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
 
   // If unarchiving, check subscription limits
   if (table.isArchived) {
-    await canUnarchiveTable(req.subscription!, restaurant.id);
+    await canUnarchiveTable(restaurant.id, req.subscription);
     table.isArchived = false;
     table.archivedAt = undefined;
     table.archivedReason = undefined;

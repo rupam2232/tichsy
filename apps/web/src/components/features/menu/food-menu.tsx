@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { AllFoodItems, FoodItem, Table, ApiResponse } from "@repo/types";
+import { AllFoodItems, FoodItem, Table } from "@repo/types";
 import { toast } from "sonner";
-import type { AxiosError } from "axios";
 import axios from "@/utils/axiosInstance";
 import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
 import Image from "next/image";
@@ -106,11 +105,6 @@ const ClinetFoodMenu = ({
         "Failed to fetch all foodItems. Please try again later:",
         error,
       );
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to fetch all food items. Please try again later",
-      );
       setAllFoodItems(null);
     } finally {
       setIsPageChanging(false);
@@ -131,11 +125,6 @@ const ClinetFoodMenu = ({
         "Failed to fetch all categories. Please try again later:",
         error,
       );
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to fetch all categories. Please try again later",
-      );
       setRestaurantCategories([]);
     }
   }, [slug]);
@@ -155,15 +144,9 @@ const ClinetFoodMenu = ({
       const response = await axios.get(`/table/${slug}/${tableId}`);
       setTableDetails(response.data.data);
     } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      console.error(axiosError.response?.data.message || axiosError.message);
       console.error(
         "Failed to fetch table details. Please try again later:",
-        axiosError.response?.data.message || axiosError.message,
-      );
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to fetch table details. Please try again later",
+        error,
       );
     } finally {
       setIsTableDataLoading(false);
