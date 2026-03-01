@@ -9,7 +9,7 @@ import {
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { verifyAuth } from "../middlewares/auth.middleware.js";
-import { verifyOtp } from "../middlewares/verifyOtp.middleare.js";
+import { verifyOtp } from "../middlewares/verifyOtp.middleware.js";
 import { env } from "../env.js";
 
 const isProduction = env.NODE_ENV === "production";

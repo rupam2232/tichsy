@@ -44,7 +44,8 @@ import type { ApiResponse } from "@repo/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
-  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   Loader2,
@@ -213,7 +214,7 @@ export function SignupForm({
         if (passwordScore < 3) {
           form.setError("password", {
             type: "manual",
-            message: "Password is too weak. Please use a stronger password.",
+            message: "Password is too weak. Please use a stronger password",
           });
           return;
         }
@@ -444,14 +445,16 @@ export function SignupForm({
                       )}
                     />
                     <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSignupStep(1)}
                       className={cn(
-                        "w-min mr-auto bg-transparent hover:bg-primary/10 text-primary",
+                        "w-min mr-auto",
                         signupStep === 2 ? "" : "hidden",
                       )}
                       type="button"
                     >
-                      <ArrowLeft />
+                      <ChevronLeft />
                       Back
                     </Button>
                     <FormField
@@ -459,7 +462,7 @@ export function SignupForm({
                       name="otp"
                       render={({ field }) => (
                         <FormItem
-                          className={cn("", signupStep === 2 ? "" : "hidden")}
+                          className={cn(signupStep === 2 ? "" : "hidden")}
                         >
                           <FormLabel htmlFor="otp">
                             Enter OTP sent to {form.getValues("email")}
@@ -472,21 +475,24 @@ export function SignupForm({
                               {...field}
                             >
                               <InputOTPGroup className="gap-3">
-                                <InputOTPSlot index={0} className="w-10 h-10" />
-                                <InputOTPSlot index={1} className="w-10 h-10" />
-                                <InputOTPSlot index={2} className="w-10 h-10" />
-                                <InputOTPSlot index={3} className="w-10 h-10" />
-                                <InputOTPSlot index={4} className="w-10 h-10" />
-                                <InputOTPSlot index={5} className="w-10 h-10" />
+                                {Array.from({ length: 6 }).map((_, index) => (
+                                  <InputOTPSlot
+                                    key={index}
+                                    index={index}
+                                    className="w-10 h-10 border rounded-md"
+                                  />
+                                ))}
                               </InputOTPGroup>
                             </InputOTP>
                           </FormControl>
                           <FormMessage />
                           <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => sendOtp()}
                             disabled={isSendingOtp || resendTimer !== null}
-                            className={`w-min ml-auto bg-transparent hover:bg-primary/10 text-primary`}
+                            className="w-min ml-auto"
                           >
                             <RotateCcw
                               className={cn(
@@ -501,7 +507,7 @@ export function SignupForm({
                                   ? "Resend OTP"
                                   : "Send OTP"}
                           </Button>
-                          <FormDescription>
+                          <FormDescription className="text-xs">
                             Please enter the 6-digit OTP sent to your email. If
                             not found in your inbox, check your spam folder.
                           </FormDescription>
@@ -511,11 +517,15 @@ export function SignupForm({
                   </div>
                   <Button
                     type="button"
-                    className={cn("w-full", signupStep === 2 ? "hidden" : "")}
+                    className={cn(
+                      "w-full group",
+                      signupStep === 2 ? "hidden" : "",
+                    )}
                     onClick={handleContinue}
                     disabled={isSendingOtp}
                   >
                     Continue to OTP
+                    <ChevronRight className="group-hover:translate-x-1 transition-all" />
                   </Button>
 
                   <Button

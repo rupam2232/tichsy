@@ -12,7 +12,7 @@ const ClientPage = () => {
     <div className="flex flex-1 flex-col px-4 lg:px-6 @container/main">
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-1">
-          <h3 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h3 className="text-2xl font-bold tracking-tight">
             Dashboard
           </h3>
           <p className="text-sm text-muted-foreground">

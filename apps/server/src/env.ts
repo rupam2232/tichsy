@@ -26,6 +26,7 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string("Invalid Razorpay key secret").min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string("Invalid Razorpay webhook secret").min(1),
   RAZORPAY_WEBHOOK_URL: z.url("Invalid Razorpay webhook URL"),
+  JWT_SECRET_KEY: z.string("Invalid JWT secret key").min(1),
 });
 
 export const env = envSchema.parse(process.env);

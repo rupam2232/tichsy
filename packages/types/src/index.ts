@@ -27,6 +27,12 @@ export {
   foodItemImageUploadSchema,
   foodItemImageDeleteSchema,
 } from "./schemas/mediaSchema.js";
+export {
+  updateProfileSchema,
+  verifyCurrentEmailSchema,
+  changeEmailSchema,
+  changePasswordSchema,
+} from "./schemas/userSettingsSchema.js";
 
 // Interfaces
 export * from "./interfaces/ApiResponse.js";
@@ -66,3 +72,4 @@ export {
 } from "./interfaces/Table.js";
 
 export { type Notification } from "./interfaces/Notification.js";
+export * from "./interfaces/SecurityEvent.js";

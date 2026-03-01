@@ -5,7 +5,12 @@ import bcrypt from "bcrypt";
 // TypeScript interface for a Otp document.
 export interface Otp extends Document {
   email: string;
-  context: "signup" | "change-password" | "forgot-password";
+  context:
+    | "signup"
+    | "change-password"
+    | "forgot-password"
+    | "change-email"
+    | "verify-current-email";
   otp: string;
   expiresAt: Date;
   createdAt: Date;
@@ -31,7 +36,13 @@ const otpSchema: Schema<Otp> = new Schema(
     },
     context: {
       type: String,
-      enum: ["signup", "change-password", "forgot-password"],
+      enum: [
+        "signup",
+        "change-password",
+        "forgot-password",
+        "change-email",
+        "verify-current-email",
+      ],
       required: [true, "Context is required"],
     },
     otp: {

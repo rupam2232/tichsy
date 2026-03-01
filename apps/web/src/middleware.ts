@@ -10,6 +10,7 @@ export async function middleware(request: NextRequest) {
     "/billing",
     "/restaurant",
     "/notifications",
+    "/settings",
   ];
 
   const authRoutes = [
@@ -49,5 +50,6 @@ export const config = {
     "/billing/:path*",
     "/notifications/:path*",
     "/restaurant/:path*",
+    "/settings/:path*",
   ]
 };

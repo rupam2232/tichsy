@@ -7,10 +7,11 @@ import { Schema, model, Document, Types } from "mongoose";
  */
 export interface SecurityEvent extends Document {
   userId: Types.ObjectId; // Reference to the User
-  eventType: "new_login" | "password_change" | "signup"; // Type of security event
+  eventType: "new_login" | "password_change" | "signup" | "email_change"; // Type of security event
   ipAddress: string; // IP address where the event occurred
   userAgent: string; // User agent string of the device/browser
   isEmailSent: boolean; // True if email sent for the event
+  metadata?: Record<string, any>; // Flexible context (e.g. oldEmail/newEmail)
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
@@ -28,7 +29,7 @@ const securityEventSchema: Schema<SecurityEvent> = new Schema(
     },
     eventType: {
       type: String,
-      enum: ["new_login", "password_change", "signup"],
+      enum: ["new_login", "password_change", "signup", "email_change"],
       required: [true, "Event type is required"],
       immutable: true,
     },
@@ -49,6 +50,10 @@ const securityEventSchema: Schema<SecurityEvent> = new Schema(
       required: [true, "User agent is required"],
       immutable: true,
     },
+    metadata: {
+      type: Schema.Types.Mixed,
+      immutable: true,
+    },
     createdAt: {
       type: Date,
       immutable: true,
@@ -60,7 +65,10 @@ const securityEventSchema: Schema<SecurityEvent> = new Schema(
 );
 
 // Add a TTL index to automatically delete security events older than 1 year (365 days)
-securityEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 }); // 1 year
+securityEventSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 365 * 24 * 60 * 60 }
+); // 1 year
 
 /**
  * Mongoose model for the SecurityEvent schema.

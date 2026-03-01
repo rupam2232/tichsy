@@ -65,7 +65,10 @@ export function PasswordInput({
             onChange={handleChange}
           />
           <InputGroupAddon align="inline-end">
-            <InputGroupButton onClick={() => setShowPassword((p) => !p)}>
+            <InputGroupButton
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+            >
               <Icon />
               <span className="sr-only">
                 {showPassword ? "Hide password" : "Show password"}
@@ -219,19 +222,19 @@ export function PasswordInputRequirements() {
       met: password.length >= 8,
     },
     {
-      label: "At least one uppercase letter",
+      label: "At least 1 uppercase letter",
       met: /[A-Z]/.test(password),
     },
     {
-      label: "At least one lowercase letter",
+      label: "At least 1 lowercase letter",
       met: /[a-z]/.test(password),
     },
     {
-      label: "At least one number",
+      label: "At least 1 number",
       met: /\d/.test(password),
     },
     {
-      label: "At least one special character",
+      label: "At least 1 special character",
       met: /[@$!%*?&.,:;'"<>?() [\] {}|\\/~`_^+#=-]/.test(password),
     },
   ];

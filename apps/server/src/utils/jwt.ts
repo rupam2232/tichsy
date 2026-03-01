@@ -26,3 +26,9 @@ export const generateRefreshToken = (userId: accessTokenUser["_id"]) => {
     expiresIn: `${Number(expiresIn)}d`,
   });
 };
+
+export const generateActionToken = (data: Record<string, any>) => {
+  return jwt.sign(data, env.JWT_SECRET_KEY!, {
+    expiresIn: "15m",
+  });
+};

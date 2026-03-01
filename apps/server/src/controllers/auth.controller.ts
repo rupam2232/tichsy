@@ -207,14 +207,8 @@ export const signin = async (
     }).session(session);
 
     if (deviceSession) {
-      // If session is revoked, deny access
-      if (deviceSession.revoked) {
-        throw new ApiError(
-          401,
-          "You don't have permission to access this account"
-        );
-      }
-      // Update session with new refresh token and last active time
+      // Update session with new refresh token, revoked status and last active time
+      deviceSession.revoked = false;
       deviceSession.refreshToken = refreshToken;
       deviceSession.lastActiveAt = new Date();
       await deviceSession.save();
@@ -340,25 +334,14 @@ export const google = async (
     const user = await User.findOne({ email }).session(session);
 
     if (user) {
-      if (
-        !user.firstName ||
-        user.firstName === "" ||
-        !user.lastName ||
-        user.lastName === "" ||
-        !user.avatar
-      ) {
-        // Update user details if they are missing
-        if (!user.firstName || user.firstName === "") {
-          user.firstName = given_name || name?.split(" ")[0] || "";
-        }
-        if (!user.lastName || user.lastName === "") {
-          user.lastName = family_name || name?.split(" ")[1] || "";
-        }
-        if (!user.avatar || user.avatar === "") {
-          user.avatar = picture || undefined;
-        }
-        await user.save({ session });
-      }
+      // Update user details if they are missing
+      user.firstName = user.firstName ?? (given_name || name?.split(" ")[0] || "");
+      user.lastName = user.lastName ?? (family_name || name?.split(" ")[1] || "");
+      user.avatar = user.avatar ?? (picture || undefined);
+      user.oauthId = googleId;
+      user.oauthProvider = "google";
+      await user.save({ session });
+
       // Existing user: generate tokens and manage device session
       const refreshToken = generateRefreshToken(user._id.toString());
       const accessToken = generateAccessToken({
@@ -376,15 +359,9 @@ export const google = async (
       }).session(session);
 
       if (deviceSession) {
-        // If session is revoked, deny access
-        if (deviceSession.revoked) {
-          throw new ApiError(
-            401,
-            "You don't have permission to access this account"
-          );
-        }
-        // Update session with new refresh token and last active time
+        // Update session with new refresh token, revoked status and last active time
         deviceSession.refreshToken = refreshToken;
+        deviceSession.revoked = false;
         deviceSession.lastActiveAt = new Date();
         await deviceSession.save();
       } else {

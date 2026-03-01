@@ -195,7 +195,7 @@ const ForgotPasswordForm = () => {
 
   return (
     <div className="flex h-auto items-center justify-center py-10 sm:px-6 lg:px-8">
-      <Card className="w-full border-none shadow-md sm:max-w-md max-h-[84vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
+      <Card className="w-full border-none shadow-md sm:max-w-lg max-h-[84vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
         <CardHeader>
           <CardTitle className="mb-1.5 text-2xl">Forgot Password?</CardTitle>
           <CardDescription>
@@ -247,8 +247,8 @@ const ForgotPasswordForm = () => {
                   control={form.control}
                   name="otp"
                   render={({ field, fieldState }) => (
-                    <FormItem className={cn("", step === 2 ? "" : "hidden")}>
-                      <FormLabel htmlFor="otp">
+                    <FormItem className={cn(step === 2 ? "" : "hidden")}>
+                      <FormLabel htmlFor="otp" className="mx-auto">
                         Enter OTP sent to {form.getValues("email")}
                       </FormLabel>
                       <FormControl>
@@ -260,13 +260,14 @@ const ForgotPasswordForm = () => {
                           aria-invalid={fieldState.invalid}
                           {...field}
                         >
-                          <InputOTPGroup className="gap-2 sm:gap-3 md:gap-4">
-                            <InputOTPSlot index={0} className="w-10 h-10" />
-                            <InputOTPSlot index={1} className="w-10 h-10" />
-                            <InputOTPSlot index={2} className="w-10 h-10" />
-                            <InputOTPSlot index={3} className="w-10 h-10" />
-                            <InputOTPSlot index={4} className="w-10 h-10" />
-                            <InputOTPSlot index={5} className="w-10 h-10" />
+                          <InputOTPGroup className="gap-2">
+                            {Array.from({ length: 6 }).map((_, index) => (
+                              <InputOTPSlot
+                                key={index}
+                                index={index}
+                                className="w-10 h-10 border rounded-md"
+                              />
+                            ))}
                           </InputOTPGroup>
                         </InputOTP>
                       </FormControl>
@@ -362,7 +363,15 @@ const ForgotPasswordForm = () => {
                     onClick={handleContinue}
                     disabled={isSendingOtp}
                   >
-                    Send OTP <Send />
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 className="animate-spin" /> Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        Send OTP <Send />
+                      </>
+                    )}
                   </Button>
                   <Button
                     type="submit"

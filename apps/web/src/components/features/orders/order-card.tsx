@@ -32,7 +32,7 @@ import { useDispatch } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@repo/ui/lib/utils";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import OrderStatusDropdown from "./order-status-dropdown";
@@ -56,7 +56,7 @@ const OrderCard = ({
   const router = useRouter();
   const [isBtnLoading, setIsBtnLoading] = useState(false);
 
-  const handleUpdatePaidStatus = async (data?: { markCompleted?: boolean }) => {
+  const handleUpdatePaidStatus = useCallback(async (data?: { markCompleted?: boolean }) => {
     setIsBtnLoading(true);
     try {
       const response = await axios.patch(
@@ -95,7 +95,7 @@ const OrderCard = ({
     } finally {
       setIsBtnLoading(false);
     }
-  };
+  }, [setOrders, order, restaurantSlug, dispatch, router]);
 
   return (
     <Card

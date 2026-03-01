@@ -59,6 +59,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       showInSidebar: true,
       icon: IconCreditCard,
     },
+    {
+      title: "Settings",
+      url: "/settings",
+      showInSidebar: true,
+      icon: IconSettings,
+    },
   ];
 
   const restaurantNavItems = [

@@ -23,6 +23,16 @@ const optionsArray = [
     subject: "Password change request",
   },
   {
+    context: "change-email",
+    emailCategory: "Email Change",
+    subject: "Email change request",
+  },
+  {
+    context: "verify-current-email",
+    emailCategory: "Email Change Verification",
+    subject: "Verify your email change request",
+  },
+  {
     context: "forgot-password",
     emailCategory: "Forgot password",
     subject: "Forgot password request",
@@ -42,6 +52,11 @@ const optionsArray = [
     emailCategory: "Password Reset",
     subject: "Password reset successful",
   },
+  {
+    context: "email-change-success",
+    emailCategory: "Email Change",
+    subject: "Your email has been changed",
+  },
 ];
 
 async function sendEmail(
@@ -50,10 +65,13 @@ async function sendEmail(
     | "signup"
     | "signup-success"
     | "change-password"
+    | "change-email"
+    | "verify-current-email"
     | "new-login"
     | "restaurant-created"
     | "password-reset-success"
-    | "forgot-password",
+    | "forgot-password"
+    | "email-change-success",
   template: string
 ): Promise<T> {
   try {

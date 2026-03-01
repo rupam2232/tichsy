@@ -76,7 +76,7 @@ export default function NotificationsPage() {
             No notifications found
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y animate-in fade-in slide-in-from-top-4 duration-500">
             {notifications.map((notification) => (
               <NotificationItem
                 key={notification._id}

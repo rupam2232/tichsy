@@ -408,7 +408,7 @@ const Page = ({ initialOrders, slug }: OrdersPageProps) => {
           ) : allOrders &&
             Array.isArray(allOrders.orders) &&
             allOrders.orders.length > 0 ? (
-            <div className="grid grid-cols-1 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3 gap-4 my-4 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="grid grid-cols-1 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
               {allOrders.orders.map((order, index) => (
                 <OrderCard
                   key={order._id}

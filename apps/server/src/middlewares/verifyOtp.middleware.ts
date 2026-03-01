@@ -3,10 +3,11 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 
 export const verifyOtp = asyncHandler(async (req, _, next) => {
-    if (!req.body || !req.body.email || !req.body.otp) {
+    if (!req.body || (!req.body.email && !req.user?.email) || !req.body.otp) {
         throw new ApiError(400, "Email and otp is required");
     }
-    const { email, otp } = req.body;
+    const { otp } = req.body;
+    const email = req.body.email || req.user?.email;
 
     const otpData = await Otp.findOne({ email });
 
