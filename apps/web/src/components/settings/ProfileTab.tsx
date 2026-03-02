@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -35,12 +35,17 @@ import { updateProfileSchema } from "@repo/types";
 import { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/types";
 import { updateProfile } from "@/store/authSlice";
+import { getOptimizedUrl } from "@/utils/cloudinary";
 
 type ProfileFormValues = z.infer<typeof updateProfileSchema>;
 
 export default function ProfileTab() {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
+
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(updateProfileSchema),
@@ -59,14 +64,37 @@ export default function ProfileTab() {
     }
   }, [user, form]);
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error("Image must be smaller than 3MB");
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   async function onSubmit(data: ProfileFormValues) {
-    if (!form.formState.isDirty) return;
+    if (!form.formState.isDirty && !avatarFile) return;
     const toastId = toast.loading("Updating profile...");
+
+    const formData = new FormData();
+    if (data.firstName) formData.append("firstName", data.firstName);
+    if (data.lastName) formData.append("lastName", data.lastName);
+    if (avatarFile) formData.append("avatar", avatarFile);
+
     try {
-      const response = await axios.patch("/user/profile", data);
+      const response = await axios.patch("/user/profile", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       toast.success(response.data.message || "Profile updated successfully", {
         id: toastId,
       });
+      setAvatarFile(null);
       dispatch(updateProfile(response.data.data));
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>;
@@ -92,13 +120,30 @@ export default function ProfileTab() {
       <CardContent>
         <div className="flex flex-col @lg/card:flex-row gap-8 items-center mb-8">
           <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={user?.avatar} alt={user?.firstName} />
+            <Avatar className="h-24 w-24 rounded-xl">
+              <AvatarImage
+                src={getOptimizedUrl(avatarPreview || user?.avatar, 150, 150)}
+                alt={user?.firstName}
+                className="object-cover"
+                draggable="false"
+              />
               <AvatarFallback className="text-2xl">
                 {userInitials}
               </AvatarFallback>
             </Avatar>
-            <Button variant="outline" size="sm">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/png, image/jpeg, image/jpg"
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
               Change Avatar
             </Button>
           </div>
@@ -140,7 +185,8 @@ export default function ProfileTab() {
                   <Button
                     type="submit"
                     disabled={
-                      form.formState.isSubmitting || !form.formState.isDirty
+                      form.formState.isSubmitting ||
+                      (!form.formState.isDirty && !avatarFile)
                     }
                   >
                     {form.formState.isSubmitting ? (

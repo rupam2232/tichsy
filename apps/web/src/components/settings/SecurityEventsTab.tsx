@@ -192,7 +192,7 @@ export default function SecurityEventsTab() {
                             Device / Agent
                           </p>
                           <p
-                            className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border break-all"
+                            className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border whitespace-pre-wrap"
                             title={event.userAgent}
                           >
                             {event.userAgent}

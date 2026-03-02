@@ -174,7 +174,7 @@ export function EmailChangeDialog() {
   const submitNewEmail = async (data: z.infer<typeof changeEmailSchema>) => {
     setIsLoading(true);
     try {
-      const response = await axios.post("/user/email/verify", {
+      const response = await axios.post("/user/change-email", {
         newEmail: data.newEmail,
         otp: data.otp,
         actionToken,

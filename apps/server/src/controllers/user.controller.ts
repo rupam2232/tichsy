@@ -19,6 +19,7 @@ import {
   passwordResetSuccessTemplate,
 } from "../templates/emailTemplates.js";
 import { generateActionToken } from "../utils/jwt.js";
+import cloudinary from "../utils/cloudinary.js";
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
   res
@@ -28,11 +29,23 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
 
 export const updateProfile = asyncHandler(async (req, res) => {
   const validatedData = updateProfileSchema.parse(req.body);
+  const updatePayload = { ...validatedData };
+
+  if (req.file) {
+    if (req.user!.avatar && req.user!.avatar.includes("cloudinary.com")) {
+      await cloudinary.delete(req.user!.avatar);
+    }
+    const uploadResponse = await cloudinary.upload(req.file.path, "avatars");
+    if (!uploadResponse) {
+      throw new ApiError(500, "Failed to upload avatar to Cloudinary");
+    }
+    updatePayload.avatar = uploadResponse.secure_url;
+  }
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user!._id,
     {
-      $set: validatedData,
+      $set: updatePayload,
     },
     { new: true }
   ).select("-password -__v");
@@ -172,7 +185,7 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedUser, "Email updated successfully"));
 });
 
-export const changePasswordChange = asyncHandler(async (req, res) => {
+export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword, otp } = changePasswordSchema.parse(
     req.body
   );

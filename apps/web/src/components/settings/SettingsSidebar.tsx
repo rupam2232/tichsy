@@ -9,7 +9,7 @@ const navItems = [
   { name: "Profile", href: "/settings/profile", icon: User },
   { name: "Security", href: "/settings/security", icon: Shield },
   {
-    name: "Active Sessions",
+    name: "Sessions",
     href: "/settings/sessions",
     icon: MonitorSmartphone,
   },
@@ -33,7 +33,7 @@ export default function SettingsSidebar() {
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center w-full justify-start px-4 py-3 rounded-md transition-all text-sm font-medium border-b md:border-none",
+              "flex items-center w-full justify-start px-4 py-3 rounded-md transition-all text-sm font-medium border-b lg:border-none",
               isActive
                 ? "bg-muted shadow-sm text-foreground"
                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground",

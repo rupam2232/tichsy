@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
+import { Skeleton } from "@repo/ui/components/skeleton";
 
 type Session = {
   _id: string;
@@ -114,7 +115,7 @@ export default function SessionsTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Sessions</CardTitle>
+        <CardTitle>Sessions</CardTitle>
         <CardDescription>
           These are devices that have logged into your account. Revoke any
           sessions that you do not recognize
@@ -122,8 +123,9 @@ export default function SessionsTab() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="p-4 space-y-4">
+            <Skeleton className="h-15 w-full" />
+            <Skeleton className="h-15 w-full" />
           </div>
         ) : sessions.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -134,7 +136,7 @@ export default function SessionsTab() {
             {sessions.map((session) => (
               <div
                 key={session._id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-4"
+                className="flex items-start sm:items-center justify-between p-4 border rounded-lg gap-4"
               >
                 <div className="flex items-start gap-4">
                   <div className="p-2 bg-primary/10 rounded-full mt-1">
@@ -149,12 +151,12 @@ export default function SessionsTab() {
                         </span>
                       )}
                     </p>
-                    <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 space-x-3">
-                      <span className="flex items-center">
+                    <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-3">
+                      <span className="flex items-start">
                         <MapPin className="h-3 w-3 mr-1" />
                         {session.ipAddress}
                       </span>
-                      <span className="flex items-center">
+                      <span className="flex items-start">
                         <Clock className="h-3 w-3 mr-1" />
                         Active{" "}
                         {formatDistanceToNow(
@@ -176,7 +178,10 @@ export default function SessionsTab() {
                         {revokingId === session._id ? (
                           <Loader2 className="animate-spin" />
                         ) : (
-                          <Unlink />
+                          <>
+                            <Unlink />
+                            <span className="hidden sm:block">Revoke</span>
+                          </>
                         )}
                       </Button>
                     </AlertDialogTrigger>

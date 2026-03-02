@@ -51,6 +51,7 @@ import { ApiResponse } from "@repo/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
+import { getOptimizedUrl } from "@/utils/cloudinary";
 
 export function NavUser({ user }: { user: UserState["user"] }) {
   const { isMobile } = useSidebar();
@@ -87,6 +88,10 @@ export function NavUser({ user }: { user: UserState["user"] }) {
     }
   };
 
+  const userInitials = user
+    ? `${user.firstName?.charAt(0).toUpperCase() || ""}${user.lastName?.charAt(0).toUpperCase() || ""}`
+    : "U";
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -98,11 +103,12 @@ export function NavUser({ user }: { user: UserState["user"] }) {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
-                  src={user?.avatar}
+                  src={getOptimizedUrl(user?.avatar, 150, 150)}
                   alt={user?.firstName}
+                  className="object-cover"
                   draggable={false}
                 />
-                <AvatarFallback className="rounded-lg">{`${user?.firstName ? user?.firstName[0]?.toUpperCase() : ""}${user?.lastName ? user.lastName[0]?.toUpperCase() : ""}`}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium text-accent-foreground">
@@ -125,11 +131,12 @@ export function NavUser({ user }: { user: UserState["user"] }) {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage
-                    src={user?.avatar}
+                    src={getOptimizedUrl(user?.avatar, 150, 150)}
                     alt={user?.firstName}
+                    className="object-cover"
                     draggable={false}
                   />
-                  <AvatarFallback className="rounded-lg">{`${user?.firstName ? user?.firstName[0]?.toUpperCase() : ""}${user?.lastName ? user?.lastName[0]?.toUpperCase() : ""}`}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium text-accent-foreground">

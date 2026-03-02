@@ -11,7 +11,7 @@ export default function SettingsMobileNav() {
   if (pathname === "/settings") return null;
 
   return (
-    <div className="md:hidden mb-4">
+    <div className="lg:hidden mb-4">
       <Button
         variant="ghost"
         size="sm"

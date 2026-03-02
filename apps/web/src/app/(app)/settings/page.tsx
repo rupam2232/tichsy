@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "usehooks-ts";
 import SettingsSidebar from "@/components/settings/SettingsSidebar";
 import { Loader2 } from "lucide-react";
 
 export default function SettingsPage() {
-  const isMobile = useIsMobile();
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -16,13 +16,13 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    // Only redirect if we know for sure it's a desktop device
-    if (mounted && isMobile === false) {
+    // Only redirect if we know for sure it's a desktop device with plenty of width
+    if (mounted && isLargeScreen) {
       router.replace("/settings/profile");
     }
-  }, [mounted, isMobile, router]);
+  }, [mounted, isLargeScreen, router]);
 
-  if (!mounted || isMobile === undefined || isMobile === false) {
+  if (!mounted || isLargeScreen === undefined) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="animate-spin" />
@@ -30,9 +30,14 @@ export default function SettingsPage() {
     );
   }
 
-  // If it's mobile, show the tap list
+  // If it's desktop, it's redirecting so don't render anything
+  if (isLargeScreen) {
+    return null;
+  }
+
+  // If it's mobile or tablet, show the tap list
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <SettingsSidebar />
     </div>
   );
