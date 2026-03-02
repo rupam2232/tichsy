@@ -4,6 +4,7 @@ import http from "http";
 import jwt from "jsonwebtoken";
 import { accessTokenUser } from "../utils/jwt.js";
 import { Restaurant } from "../models/restaurant.models.js";
+import { DeviceSession } from "../models/deviceSession.model.js";
 import { isValidObjectId } from "mongoose";
 import { env } from "../env.js";
 
@@ -22,10 +23,18 @@ export function setupSocketIO(server: http.Server) {
     const cookies = socket.handshake.headers.cookie
       ?.split(";")
       .map((cookie) => cookie.trim());
+
     const accessToken = cookies
       ?.find((cookie) => cookie.startsWith("accessToken="))
       ?.split("=")[1];
+
+    const refreshToken = cookies
+      ?.find((cookie) => cookie.startsWith("refreshToken="))
+      ?.split("=")[1];
+
     socket.data.accessToken = accessToken;
+    socket.data.refreshToken = refreshToken;
+
     if (!accessToken) {
       return socket.disconnect();
     }
@@ -33,9 +42,18 @@ export function setupSocketIO(server: http.Server) {
       accessToken,
       env.ACCESS_TOKEN_SECRET
     ) as accessTokenUser;
+
     // Join user-specific room
     socket.join(`user_${decoded._id}`);
     console.log(`User ${decoded._id} joined their personal room`);
+
+    // Mark as Online if a refresh token exists
+    if (refreshToken) {
+      DeviceSession.findOneAndUpdate(
+        { userId: decoded._id, refreshToken },
+        { $set: { isOnline: true, lastActiveAt: new Date() } }
+      ).catch((err) => console.error("Error setting device online:", err));
+    }
 
     socket.on("joinRestaurantRoom", async (activeRestaurantId) => {
       try {
@@ -87,6 +105,12 @@ export function setupSocketIO(server: http.Server) {
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
+      if (refreshToken) {
+        DeviceSession.findOneAndUpdate(
+          { userId: decoded._id, refreshToken },
+          { $set: { isOnline: false, lastActiveAt: new Date() } }
+        ).catch((err) => console.error("Error setting device offline:", err));
+      }
     });
   });
 

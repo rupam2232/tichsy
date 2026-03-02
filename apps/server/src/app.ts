@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -72,7 +72,8 @@ app.use("/api/v1/subscription", subscriptionRoute);
 app.use("/api/v1/notification", notificationRoute);
 
 // Global error handler middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack); // Log the error stack trace for debugging
 
   if (err instanceof ApiError) {

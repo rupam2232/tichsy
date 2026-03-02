@@ -133,7 +133,7 @@ export default function SecurityEventsTab() {
   };
 
   return (
-    <Card>
+    <Card className="animate-in fade-in slide-in-from-top-4 duration-500">
       <CardHeader>
         <CardTitle>Security Logs</CardTitle>
         <CardDescription>
@@ -154,14 +154,14 @@ export default function SecurityEventsTab() {
               <p className="text-sm">No security events found</p>
             </div>
           ) : (
-            <div className="relative border-l border-muted pl-3 sm:pl-6 ml-2 space-y-8 py-2 animate-in fade-in slide-in-from-top-2 duration-500">
+            <div className="relative border-l border-muted pl-3 sm:pl-6 ml-2 space-y-8 py-2">
               {events.map((event, index) => {
                 const isLastElement = index === events.length - 1;
                 return (
                   <div
                     key={event._id}
                     ref={isLastElement ? lastElementRef : null}
-                    className="relative @container/event"
+                    className="relative @container/event animate-in fade-in slide-in-from-top-2 duration-500"
                   >
                     <span className="absolute -left-[16px] sm:-left-[29px] top-2 flex size-2 items-center justify-center rounded-full bg-primary" />
                     <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2">

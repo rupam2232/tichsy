@@ -429,7 +429,7 @@ const MenuPage = ({
                     className={cn(
                       "overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative",
                       foodItem.isArchived &&
-                        "bg-muted text-muted-foreground grayscale",
+                        "text-muted-foreground grayscale-100 brightness-80",
                     )}
                   >
                     <div className={"absolute top-2 right-2 z-10"}>

@@ -7,9 +7,11 @@ import { Schema, model, Document, Types } from "mongoose";
  */
 export interface DeviceSession extends Document {
   userId: Types.ObjectId; // Reference to the User
+  deviceId: string; // Unique cookie identifier for the physical device
   ipAddress: string; // IP address of the device
   userAgent: string; // User agent string of the device/browser
   refreshToken?: string; // Refresh token for the session (optional)
+  isOnline: boolean; // Indicates if the device currently maintains an active WebSocket connection
   lastActiveAt: Date; // Last activity timestamp
   revoked: boolean; // Whether the session is revoked
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
@@ -26,6 +28,12 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       ref: "User",
       required: [true, "Id of the user is required"],
       immutable: true,
+      index: true,
+    },
+    deviceId: {
+      type: String,
+      required: [true, "Device id is required"],
+      index: true,
     },
     ipAddress: {
       type: String,
@@ -39,7 +47,15 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       required: [true, "User agent is required"],
       immutable: true,
     },
-    refreshToken: String,
+    refreshToken: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
     lastActiveAt: {
       type: Date,
       default: Date.now,
@@ -61,7 +77,10 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
 );
 
 // Add a TTL index to automatically delete sessions inactive for 60 days (2 months)
-deviceSessionSchema.index({ lastActiveAt: 1 }, { expireAfterSeconds: 60 * 24 * 60 * 60 }); // 60 days
+deviceSessionSchema.index(
+  { lastActiveAt: 1 },
+  { expireAfterSeconds: 60 * 24 * 60 * 60 }
+);
 
 /**
  * Mongoose model for the DeviceSession schema.

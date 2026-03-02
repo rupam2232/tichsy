@@ -36,13 +36,15 @@ import { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/types";
 import { updateProfile } from "@/store/authSlice";
 import { getOptimizedUrl } from "@/utils/cloudinary";
+import { signOut } from "@/store/authSlice";
+import { useRouter } from "next/navigation";
 
 type ProfileFormValues = z.infer<typeof updateProfileSchema>;
 
 export default function ProfileTab() {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
-
+  const router = useRouter();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,6 +104,10 @@ export default function ProfileTab() {
         axiosError.response?.data?.message || "Failed to update profile",
         { id: toastId },
       );
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push("/signin" + "?redirect=" + window.location.href);
+      }
     }
   }
 
@@ -110,98 +116,91 @@ export default function ProfileTab() {
     : "U";
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card animate-in fade-in slide-in-from-top-4 duration-500">
       <CardHeader>
         <CardTitle>Profile Details</CardTitle>
         <CardDescription>
           Update your personal information and profile picture
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col @lg/card:flex-row gap-8 items-center mb-8">
-          <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24 rounded-xl">
-              <AvatarImage
-                src={getOptimizedUrl(avatarPreview || user?.avatar, 150, 150)}
-                alt={user?.firstName}
-                className="object-cover"
-                draggable="false"
-              />
-              <AvatarFallback className="text-2xl">
-                {userInitials}
-              </AvatarFallback>
-            </Avatar>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleAvatarChange}
-              accept="image/png, image/jpeg, image/jpg"
-              className="hidden"
+      <CardContent className="flex flex-col @lg/card:flex-row gap-8 items-center mb-8">
+        <div className="flex flex-col items-center gap-4">
+          <Avatar className="h-24 w-24 rounded-xl">
+            <AvatarImage
+              src={getOptimizedUrl(avatarPreview || user?.avatar, 150, 150)}
+              alt={user?.firstName}
+              className="object-cover"
+              draggable="false"
             />
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Change Avatar
-            </Button>
-          </div>
-          <div className="flex-1 w-full">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
-                <div className="grid grid-cols-1 @xl/card:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    type="submit"
-                    disabled={
-                      form.formState.isSubmitting ||
-                      (!form.formState.isDirty && !avatarFile)
-                    }
-                  >
-                    {form.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+            <AvatarFallback className="text-2xl">{userInitials}</AvatarFallback>
+          </Avatar>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleAvatarChange}
+            accept="image/png, image/jpeg, image/jpg"
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Change Avatar
+          </Button>
+        </div>
+        <div className="flex-1 w-full">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 @xl/card:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={
+                    form.formState.isSubmitting ||
+                    (!form.formState.isDirty && !avatarFile)
+                  }
+                >
+                  {form.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
       </CardContent>
     </Card>

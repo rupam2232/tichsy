@@ -4,12 +4,14 @@
  * @param url The original image URL.
  * @param width The target width mapping.
  * @param height The target height mapping.
+ * @param params Additional transformation parameters.
  * @returns The optimized Cloudinary URL for bandwidth savings, or the original URL if not Cloudinary/is a local blob UI preview.
  */
 export function getOptimizedUrl(
   url: string | null | undefined,
   width: number,
   height: number,
+  params?: string,
 ): string | undefined {
   if (!url) return undefined;
 
@@ -24,7 +26,7 @@ export function getOptimizedUrl(
   // c_fill: Crop the image to perfectly fill the bounding box while maintaining aspect ratio
   // q_auto: Automatically adjust quality to reduce file size without visible degradation
   // f_auto: Automatically send WebP/AVIF format based on the requesting browser's capabilities
-  const transformations = `c_fill,w_${width},h_${height},q_auto,f_auto`;
+  const transformations = `c_fill,w_${width},h_${height},q_auto,f_auto${params ? `,${params}` : ""}`;
 
   return `${parts[0]}/upload/${transformations}/${parts[1]}`;
 }

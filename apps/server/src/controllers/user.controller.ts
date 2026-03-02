@@ -20,6 +20,7 @@ import {
 } from "../templates/emailTemplates.js";
 import { generateActionToken } from "../utils/jwt.js";
 import cloudinary from "../utils/cloudinary.js";
+import { env } from "../env.js";
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
   res
@@ -106,7 +107,7 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
 
   // Verify the action token
   try {
-    const decoded = jwt.verify(actionToken, process.env.JWT_SECRET_KEY!) as {
+    const decoded = jwt.verify(actionToken, env.JWT_SECRET_KEY) as {
       userId: string;
       action: string;
       currentEmail: string;
@@ -118,7 +119,7 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
     ) {
       throw new ApiError(403, "Invalid or unauthorized action token");
     }
-  } catch (err) {
+  } catch {
     throw new ApiError(
       403,
       "Action token has expired or is invalid. Please restart the process"

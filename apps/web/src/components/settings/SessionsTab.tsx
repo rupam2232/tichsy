@@ -37,6 +37,7 @@ type Session = {
   userAgent: string;
   lastActiveAt: string;
   createdAt: string;
+  isOnline: boolean;
 };
 
 export default function SessionsTab() {
@@ -113,7 +114,7 @@ export default function SessionsTab() {
   };
 
   return (
-    <Card>
+    <Card className="animate-in fade-in slide-in-from-top-4 duration-500">
       <CardHeader>
         <CardTitle>Sessions</CardTitle>
         <CardDescription>
@@ -136,10 +137,10 @@ export default function SessionsTab() {
             {sessions.map((session) => (
               <div
                 key={session._id}
-                className="flex items-start sm:items-center justify-between p-4 border rounded-lg gap-4"
+                className="flex items-start sm:items-center justify-between p-4 border rounded-lg gap-4 animate-in fade-in slide-in-from-top-4 duration-500"
               >
-                <div className="flex items-start gap-4">
-                  <div className="p-2 bg-primary/10 rounded-full mt-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-full">
                     <Monitor className="h-5 w-5 text-primary" />
                   </div>
                   <div className="space-y-1">
@@ -152,18 +153,30 @@ export default function SessionsTab() {
                       )}
                     </p>
                     <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-3">
-                      <span className="flex items-start">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {session.ipAddress}
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span className="flex-1">{session.ipAddress}</span>
                       </span>
-                      <span className="flex items-start">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Active{" "}
-                        {formatDistanceToNow(
-                          new Date(session.lastActiveAt),
-                        )}{" "}
-                        ago
-                      </span>
+                      {session.isOnline ? (
+                        <span className="flex items-center gap-1 text-green-600 font-medium">
+                          <span className="relative flex h-2 w-2 mr-1">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
+                          Active Now
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span className="flex-1">
+                            Active{" "}
+                            {formatDistanceToNow(
+                              new Date(session.lastActiveAt),
+                            )}{" "}
+                            ago
+                          </span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

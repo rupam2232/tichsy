@@ -8,7 +8,9 @@
     "dev": "concurrently \"tsc --watch --preserveWatchOutput\" \"nodemon --delay 3 --watch dist --ignore dist/**/*.map --ignore public -r dotenv/config dist/index.js\"",
     "start": "node -r dotenv/config dist/index.js",
     "build": "tsc",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -31,7 +33,6 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
     "multer": "^2.0.1",
-    "nanoid": "^5.1.5",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.3",
     "razorpay": "^2.9.6",
@@ -40,6 +41,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.18",

@@ -39,8 +39,8 @@ router.patch(
   updateProfile
 );
 router.post("/email/verify-current", verifyCurrentEmail);
-router.post("/change-email", verifyEmailChange);
-router.post("/change-password", changePassword);
+router.patch("/change-email", verifyEmailChange);
+router.patch("/change-password", changePassword);
 router.get("/sessions", getSessions);
 router.delete("/sessions/:sessionId", revokeSession);
 router.get("/security-events", getSecurityEvents);

@@ -33,9 +33,9 @@ export default function SettingsSidebar() {
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center w-full justify-start px-4 py-3 rounded-md transition-all text-sm font-medium border-b lg:border-none",
+              "flex items-center w-full justify-start px-4 py-3 lg:rounded-md transition-all text-sm font-medium border-b lg:border-none",
               isActive
-                ? "bg-muted shadow-sm text-foreground"
+                ? "bg-muted text-foreground"
                 : "hover:bg-muted/50 text-muted-foreground hover:text-foreground",
               index === 0 && "border-t",
             )}

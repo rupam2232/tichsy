@@ -4,6 +4,7 @@ import {
   IconCreditCard,
   IconDotsVertical,
   IconLogout,
+  IconSettings,
 } from "@tabler/icons-react";
 import {
   Avatar,
@@ -52,6 +53,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { getOptimizedUrl } from "@/utils/cloudinary";
+import { useMediaQuery } from "usehooks-ts";
 
 export function NavUser({ user }: { user: UserState["user"] }) {
   const { isMobile } = useSidebar();
@@ -59,6 +61,8 @@ export function NavUser({ user }: { user: UserState["user"] }) {
   const userState = useSelector((state: RootState) => state.auth.status);
   const router = useRouter();
   const [isLogoutBtnLoading, setisLogoutBtnLoading] = useState(false);
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     if (!userState) {
@@ -92,10 +96,19 @@ export function NavUser({ user }: { user: UserState["user"] }) {
     ? `${user.firstName?.charAt(0).toUpperCase() || ""}${user.lastName?.charAt(0).toUpperCase() || ""}`
     : "U";
 
+  const NavUserItems = [
+    { name: "Billing", href: "/billing", icon: IconCreditCard },
+    {
+      name: "Settings",
+      href: isLargeScreen ? "/settings/profile" : "/settings",
+      icon: IconSettings,
+    },
+  ];
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -108,7 +121,9 @@ export function NavUser({ user }: { user: UserState["user"] }) {
                   className="object-cover"
                   draggable={false}
                 />
-                <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {userInitials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium text-accent-foreground">
@@ -136,7 +151,9 @@ export function NavUser({ user }: { user: UserState["user"] }) {
                     className="object-cover"
                     draggable={false}
                   />
-                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {userInitials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium text-accent-foreground">
@@ -157,11 +174,16 @@ export function NavUser({ user }: { user: UserState["user"] }) {
             </div>
             <DropdownMenuSeparator className="bg-accent" />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Link href="/billing" className="absolute inset-0" />
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
+              {NavUserItems.map((item) => (
+                <DropdownMenuItem
+                  key={item.name}
+                  onClick={() => setIsDropdownOpen(false)}
+                >
+                  <Link href={item.href} className="absolute inset-0" />
+                  <item.icon />
+                  {item.name}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-accent" />
 

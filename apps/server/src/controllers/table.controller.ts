@@ -1,4 +1,4 @@
-import { nanoid } from "nanoid";
+import crypto from "crypto";
 import { Restaurant } from "../models/restaurant.models.js";
 import { Table } from "../models/table.model.js";
 import { canCreateTable, canUnarchiveTable } from "../service/table.service.js";
@@ -65,7 +65,7 @@ export const createTable = asyncHandler(async (req, res) => {
   const maxAttempts = 5;
   while (attempts < maxAttempts) {
     try {
-      const qrSlug = `${restaurantId.slice(-4)}-${nanoid(4)}`;
+      const qrSlug = `${restaurantId.slice(-4)}-${crypto.randomBytes(2).toString("hex")}`;
       table = await Table.create({
         restaurantId,
         tableName,

@@ -16,7 +16,7 @@ export default function SecurityTab() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
       <Card>
         <CardHeader>
           <CardTitle>Email Address</CardTitle>

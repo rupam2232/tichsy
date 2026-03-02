@@ -62,13 +62,10 @@ export function PasswordChangeDialog() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // 1: Passwords, 2: OTP
-
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [passwordScore, setPasswordScore] = useState(0);
-
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -124,7 +121,10 @@ export function PasswordChangeDialog() {
       return;
     }
 
-    if (resendTimer !== null && resendTimer > 0) return;
+    if (resendTimer !== null && resendTimer > 0) {
+      setStep(2);
+      return;
+    }
 
     setIsSendingOtp(true);
     const toastId = toast.loading("Sending OTP...");
@@ -149,9 +149,8 @@ export function PasswordChangeDialog() {
   const submitPasswordChange = async (
     data: z.infer<typeof changePasswordSchema>,
   ) => {
-    setIsLoading(true);
     try {
-      await axios.post("/user/change-password", data);
+      await axios.patch("/user/change-password", data);
       toast.success("Password changed successfully");
       setIsOpen(false);
       resetFlow();
@@ -160,8 +159,6 @@ export function PasswordChangeDialog() {
       toast.error(
         axiosError.response?.data?.message || "Failed to update password",
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -331,7 +328,7 @@ export function PasswordChangeDialog() {
                           <InputOTPSlot
                             key={index}
                             index={index}
-                            className="w-10 h-10 border rounded-md"
+                            className="w-10 h-10 border rounded-md boder-border"
                           />
                         ))}
                       </InputOTPGroup>
@@ -378,7 +375,7 @@ export function PasswordChangeDialog() {
                     disabled={isSendingOtp}
                   >
                     {isSendingOtp && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     )}
                     Continue
                     <ChevronRight className="group-hover:translate-x-1 transition-all" />
@@ -395,8 +392,8 @@ export function PasswordChangeDialog() {
                     <ChevronLeft className="group-hover:-translate-x-1 transition-all" />
                     Back
                   </Button>
-                  <Button type="submit" disabled={isLoading || isSendingOtp}>
-                    {(isLoading || isSendingOtp) && (
+                  <Button type="submit" disabled={form.formState.isSubmitting || isSendingOtp}>
+                    {(form.formState.isSubmitting || isSendingOtp) && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Confirm Password Change

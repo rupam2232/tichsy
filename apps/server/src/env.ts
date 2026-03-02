@@ -10,6 +10,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string("Invalid Google client ID").min(1),
   GOOGLE_CLIENT_SECRET: z.string("Invalid Google client secret").min(1),
   SERVER_NAME: z.string("Invalid server name").min(1),
+  APP_NAME: z.string("Invalid app name").min(1),
   EMAIL: z.email("Invalid email"),
   EMAIL_PASSWORD: z.string("Invalid email password").min(1),
   EMAIL_SERVICE: z.string("Invalid email service").min(1),

@@ -21,6 +21,9 @@ import { getCookieOptions } from "../utils/cookieOptions.js";
 import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { signUpSchema, signInSchema, forgotPasswordSchema } from "@repo/types";
 import { env } from "../env.js";
+import crypto from "crypto";
+import { createNotification } from "../service/notification.service.js";
+
 const options = getCookieOptions();
 
 // Handles user registration with email/password, device/session logging, security event, and trial subscription creation. Sends welcome email and sets auth cookies.
@@ -39,6 +42,7 @@ export const signup = async (
     session.startTransaction();
     const validatedData = signUpSchema.parse(req.body);
     const { email, password, fullName } = validatedData;
+    const deviceId = req.cookies.deviceId || crypto.randomUUID();
 
     // Prevent duplicate users
     const isUserExists = await User.findOne({ email }).session(session);
@@ -69,6 +73,7 @@ export const signup = async (
       [
         {
           userId: user[0]._id,
+          deviceId,
           ipAddress: requestIp.getClientIp(req) || "Unknown IP",
           userAgent: req.header("user-agent") || "Unknown User Agent",
           refreshToken,
@@ -136,6 +141,15 @@ export const signup = async (
       signupEmailTemplate(user[0].firstName ?? "User")
     );
 
+    // Send Welcome Notification to UI
+    await createNotification({
+      recipient: user[0]._id,
+      type: "system",
+      title: `Welcome to ${env.APP_NAME}`,
+      message:
+        "Your account has been successfully created. We're glad to have you. Explore the features and enjoy the platform",
+    });
+
     res
       .status(201)
       .cookie("accessToken", accessToken, {
@@ -145,6 +159,10 @@ export const signup = async (
       .cookie("refreshToken", refreshToken, {
         ...options,
         maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+      })
+      .cookie("deviceId", deviceId, {
+        ...options,
+        maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
       })
       .json(
         new ApiResponse(
@@ -182,6 +200,7 @@ export const signin = async (
     session.startTransaction();
     const validatedData = signInSchema.parse(req.body);
     const { email, password } = validatedData;
+    const deviceId = req.cookies.deviceId || crypto.randomUUID();
 
     // Find user by email and check password
     const user = await User.findOne({ email }).session(session);
@@ -202,8 +221,7 @@ export const signin = async (
     // Check for existing device session for this user/device
     const deviceSession = await DeviceSession.findOne({
       userId: user._id,
-      ipAddress: requestIp.getClientIp(req),
-      userAgent: req.header("user-agent"),
+      deviceId,
     }).session(session);
 
     if (deviceSession) {
@@ -218,6 +236,7 @@ export const signin = async (
         [
           {
             userId: user._id,
+            deviceId,
             ipAddress: requestIp.getClientIp(req) || "Unknown IP",
             userAgent: req.header("user-agent") || "Unknown User Agent",
             refreshToken,
@@ -249,6 +268,14 @@ export const signin = async (
         ],
         { session }
       );
+
+      // Send New Login Warning Notification to UI
+      await createNotification({
+        recipient: user._id,
+        type: "security",
+        title: "New Login Detected",
+        message: `We noticed a new login please verify it was you`,
+      });
     }
 
     // Commit transaction and end session
@@ -264,6 +291,10 @@ export const signin = async (
       .cookie("refreshToken", refreshToken, {
         ...options,
         maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+      })
+      .cookie("deviceId", deviceId, {
+        ...options,
+        maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
       })
       .json(
         new ApiResponse(
@@ -299,6 +330,7 @@ export const google = async (
   const session = await startSession();
   try {
     session.startTransaction();
+    const deviceId = req.cookies.deviceId || crypto.randomUUID();
     // Verify Google ID token from request
     const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
     // Check if ID token is provided
@@ -335,8 +367,10 @@ export const google = async (
 
     if (user) {
       // Update user details if they are missing
-      user.firstName = user.firstName ?? (given_name || name?.split(" ")[0] || "");
-      user.lastName = user.lastName ?? (family_name || name?.split(" ")[1] || "");
+      user.firstName =
+        user.firstName ?? (given_name || name?.split(" ")[0] || "");
+      user.lastName =
+        user.lastName ?? (family_name || name?.split(" ")[1] || "");
       user.avatar = user.avatar ?? (picture || undefined);
       user.oauthId = googleId;
       user.oauthProvider = "google";
@@ -354,8 +388,7 @@ export const google = async (
       // Check for existing device session for this user/device
       const deviceSession = await DeviceSession.findOne({
         userId: user._id,
-        ipAddress: requestIp.getClientIp(req),
-        userAgent: req.header("user-agent"),
+        deviceId,
       }).session(session);
 
       if (deviceSession) {
@@ -370,6 +403,7 @@ export const google = async (
           [
             {
               userId: user._id,
+              deviceId,
               ipAddress: requestIp.getClientIp(req) || "Unknown IP",
               userAgent: req.header("user-agent") || "Unknown User Agent",
               refreshToken,
@@ -402,6 +436,14 @@ export const google = async (
           ],
           { session }
         );
+
+        // Send New Login Warning Notification to UI
+        await createNotification({
+          recipient: user._id,
+          type: "security",
+          title: "New Login Detected",
+          message: `We noticed a new login please verify it was you`,
+        });
       }
 
       // Commit transaction and end session
@@ -417,6 +459,10 @@ export const google = async (
         .cookie("refreshToken", refreshToken, {
           ...options,
           maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+        })
+        .cookie("deviceId", deviceId, {
+          ...options,
+          maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
         })
         .json(
           new ApiResponse(
@@ -462,6 +508,7 @@ export const google = async (
         [
           {
             userId: user[0]._id,
+            deviceId,
             ipAddress: requestIp.getClientIp(req) || "Unknown IP",
             userAgent: req.header("user-agent") || "Unknown User Agent",
             refreshToken,
@@ -528,6 +575,15 @@ export const google = async (
         signupEmailTemplate(user[0].firstName ?? "User")
       );
 
+      // Send Welcome Notification to UI
+      await createNotification({
+        recipient: user[0]._id,
+        type: "system",
+        title: `Welcome to ${env.APP_NAME}`,
+        message:
+          "Your account has been successfully created. We're glad to have you. Explore the features and enjoy the platform",
+      });
+
       res
         .status(201)
         .cookie("accessToken", accessToken, {
@@ -537,6 +593,10 @@ export const google = async (
         .cookie("refreshToken", refreshToken, {
           ...options,
           maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+        })
+        .cookie("deviceId", deviceId, {
+          ...options,
+          maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
         })
         .json(
           new ApiResponse(
@@ -572,8 +632,7 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
   await DeviceSession.findOneAndUpdate(
     {
       userId,
-      ipAddress: requestIp.getClientIp(req),
-      userAgent: req.header("user-agent"),
+      deviceId: req.cookies.deviceId,
     },
     { $unset: { refreshToken: 1 }, $set: { lastActiveAt: new Date() } },
     { new: true }

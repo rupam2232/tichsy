@@ -14,7 +14,7 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mx-auto px-4">
+    <section className="px-4 lg:px-6">
       <div className="py-3">
         <h1 className="text-2xl font-bold tracking-tight">Account Settings</h1>
         <p className="text-muted-foreground text-sm">
