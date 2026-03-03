@@ -23,6 +23,7 @@ import { signUpSchema, signInSchema, forgotPasswordSchema } from "@repo/types";
 import { env } from "../env.js";
 import crypto from "crypto";
 import { createNotification } from "../service/notification.service.js";
+import { parseDeviceInfo } from "../utils/deviceParser.js";
 
 const options = getCookieOptions();
 
@@ -68,14 +69,19 @@ export const signup = async (
       email: user[0].email,
     });
 
+    const userAgentRaw = req.header("user-agent") || "";
+    const ipAddressRaw = requestIp.getClientIp(req) || "";
+    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
+
     // Create device session document for security and session management
     await DeviceSession.create(
       [
         {
           userId: user[0]._id,
           deviceId,
-          ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-          userAgent: req.header("user-agent") || "Unknown User Agent",
+          ipAddress: ipAddressRaw || "Unknown IP",
+          userAgent: userAgentRaw || "Unknown User Agent",
+          deviceInfo,
           refreshToken,
         },
       ],
@@ -88,8 +94,9 @@ export const signup = async (
         {
           userId: user[0]._id,
           eventType: "signup",
-          ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-          userAgent: req.header("user-agent") || "Unknown User Agent",
+          ipAddress: ipAddressRaw || "Unknown IP",
+          userAgent: userAgentRaw || "Unknown User Agent",
+          metadata: { deviceInfo },
           isEmailSent: true,
         },
       ],
@@ -202,6 +209,10 @@ export const signin = async (
     const { email, password } = validatedData;
     const deviceId = req.cookies.deviceId || crypto.randomUUID();
 
+    const userAgentRaw = req.header("user-agent") || "";
+    const ipAddressRaw = requestIp.getClientIp(req) || "";
+    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
+
     // Find user by email and check password
     const user = await User.findOne({ email }).session(session);
 
@@ -237,8 +248,9 @@ export const signin = async (
           {
             userId: user._id,
             deviceId,
-            ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-            userAgent: req.header("user-agent") || "Unknown User Agent",
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            deviceInfo,
             refreshToken,
           },
         ],
@@ -250,8 +262,8 @@ export const signin = async (
         "new-login",
         newLoginDeviceTemplate(
           user.firstName ?? "User",
-          req.header("user-agent") || "Unknown Device",
-          requestIp.getClientIp(req) || "Unknown IP"
+          `${deviceInfo.os} - ${deviceInfo.browser}`,
+          deviceInfo.location
         )
       );
 
@@ -261,8 +273,9 @@ export const signin = async (
           {
             userId: user._id,
             eventType: "new_login",
-            ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-            userAgent: req.header("user-agent") || "Unknown User Agent",
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            metadata: { deviceInfo },
             isEmailSent: success,
           },
         ],
@@ -274,7 +287,7 @@ export const signin = async (
         recipient: user._id,
         type: "security",
         title: "New Login Detected",
-        message: `We noticed a new login please verify it was you`,
+        message: `We noticed a new login from ${deviceInfo.os} - ${deviceInfo.browser} (${deviceInfo.location}). Please verify it was you.`,
       });
     }
 
@@ -357,6 +370,10 @@ export const google = async (
       email_verified,
     } = payload;
 
+    const userAgentRaw = req.header("user-agent") || "";
+    const ipAddressRaw = requestIp.getClientIp(req) || "";
+    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
+
     // Check if email is verified by Google
     if (!email_verified) {
       throw new ApiError(400, "Email not verified by Google");
@@ -404,8 +421,9 @@ export const google = async (
             {
               userId: user._id,
               deviceId,
-              ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-              userAgent: req.header("user-agent") || "Unknown User Agent",
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              deviceInfo,
               refreshToken,
             },
           ],
@@ -418,8 +436,8 @@ export const google = async (
           "new-login",
           newLoginDeviceTemplate(
             user.firstName ?? "User",
-            req.header("user-agent") || "Unknown Device",
-            requestIp.getClientIp(req) || "Unknown IP"
+            `${deviceInfo.os} - ${deviceInfo.browser}`,
+            deviceInfo.location
           )
         );
 
@@ -429,8 +447,9 @@ export const google = async (
             {
               userId: user._id,
               eventType: "new_login",
-              ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-              userAgent: req.header("user-agent") || "Unknown User Agent",
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              metadata: { deviceInfo },
               isEmailSent: success,
             },
           ],
@@ -442,7 +461,7 @@ export const google = async (
           recipient: user._id,
           type: "security",
           title: "New Login Detected",
-          message: `We noticed a new login please verify it was you`,
+          message: `We noticed a new login from ${deviceInfo.os} - ${deviceInfo.browser} (${deviceInfo.location}). Please verify it was you.`,
         });
       }
 
@@ -509,8 +528,9 @@ export const google = async (
           {
             userId: user[0]._id,
             deviceId,
-            ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-            userAgent: req.header("user-agent") || "Unknown User Agent",
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            deviceInfo,
             refreshToken,
           },
         ],
@@ -522,8 +542,9 @@ export const google = async (
           {
             userId: user[0]._id,
             eventType: "signup",
-            ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-            userAgent: req.header("user-agent") || "Unknown User Agent",
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            metadata: { deviceInfo },
             isEmailSent: true,
           },
         ],

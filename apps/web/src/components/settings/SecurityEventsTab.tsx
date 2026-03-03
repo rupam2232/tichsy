@@ -181,10 +181,14 @@ export default function SecurityEventsTab() {
                       <div className="bg-muted/50 rounded-md p-3 text-sm mt-2 border space-y-2">
                         <div className="overflow-hidden">
                           <p className="text-xs text-muted-foreground mb-1 font-medium">
-                            IP Address
+                            Location
                           </p>
-                          <p className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border inline-block">
-                            {event.ipAddress}
+                          <p
+                            className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border inline-block"
+                            title={event.ipAddress}
+                          >
+                            {event.metadata?.deviceInfo?.location ||
+                              event.ipAddress}
                           </p>
                         </div>
                         <div className="overflow-hidden">
@@ -192,10 +196,12 @@ export default function SecurityEventsTab() {
                             Device / Agent
                           </p>
                           <p
-                            className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border whitespace-pre-wrap"
+                            className="font-mono text-xs text-foreground bg-background rounded px-2 py-1 border whitespace-pre-wrap break-all"
                             title={event.userAgent}
                           >
-                            {event.userAgent}
+                            {event.metadata?.deviceInfo
+                              ? `${event.metadata.deviceInfo.os} - ${event.metadata.deviceInfo.browser}`
+                              : event.userAgent}
                           </p>
                         </div>
                       </div>

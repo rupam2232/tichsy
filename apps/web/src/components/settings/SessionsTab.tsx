@@ -11,7 +11,15 @@ import {
 import { Button } from "@repo/ui/components/button";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
-import { Loader2, Monitor, MapPin, Clock, Unlink } from "lucide-react";
+import {
+  Loader2,
+  Monitor,
+  MapPin,
+  Clock,
+  Unlink,
+  Smartphone,
+  Tablet,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/types";
@@ -35,6 +43,12 @@ type Session = {
   _id: string;
   ipAddress: string;
   userAgent: string;
+  deviceInfo?: {
+    browser: string;
+    os: string;
+    type: "desktop" | "mobile" | "tablet" | "app";
+    location: string;
+  };
   lastActiveAt: string;
   createdAt: string;
   isOnline: boolean;
@@ -141,11 +155,21 @@ export default function SessionsTab() {
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="p-2 bg-primary/10 rounded-full">
-                    <Monitor className="h-5 w-5 text-primary" />
+                    {session.deviceInfo?.type === "mobile" ? (
+                      <Smartphone className="h-5 w-5 text-primary" />
+                    ) : session.deviceInfo?.type === "tablet" ? (
+                      <Tablet className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Monitor className="h-5 w-5 text-primary" />
+                    )}
                   </div>
                   <div className="space-y-1">
                     <p className="font-medium text-sm flex flex-wrap gap-2">
-                      <span>{parseUserAgent(session.userAgent)}</span>
+                      <span>
+                        {session.deviceInfo
+                          ? `${session.deviceInfo.os} - ${session.deviceInfo.browser}`
+                          : parseUserAgent(session.userAgent)}
+                      </span>
                       {session._id === currentSession?._id && (
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-semibold">
                           Current Session
@@ -155,7 +179,14 @@ export default function SessionsTab() {
                     <div className="flex flex-wrap items-center text-xs text-muted-foreground mt-1 gap-3">
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
-                        <span className="flex-1">{session.ipAddress}</span>
+                        <span
+                          className="flex-1 truncate max-w-[200px]"
+                          title={
+                            session.deviceInfo?.location || session.ipAddress
+                          }
+                        >
+                          {session.deviceInfo?.location || session.ipAddress}
+                        </span>
                       </span>
                       {session.isOnline ? (
                         <span className="flex items-center gap-1 text-green-600 font-medium">

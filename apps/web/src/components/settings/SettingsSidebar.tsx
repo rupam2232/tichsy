@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, Shield, MonitorSmartphone, History } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
+import { IconBell } from "@tabler/icons-react";
 
 const navItems = [
   { name: "Profile", href: "/settings/profile", icon: User },
@@ -12,6 +13,11 @@ const navItems = [
     name: "Sessions",
     href: "/settings/sessions",
     icon: MonitorSmartphone,
+  },
+  {
+    name: "Notifications",
+    href: "/settings/notifications",
+    icon: IconBell,
   },
   {
     name: "Security Events",

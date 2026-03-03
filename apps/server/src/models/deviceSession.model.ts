@@ -8,6 +8,12 @@ import { Schema, model, Document, Types } from "mongoose";
 export interface DeviceSession extends Document {
   userId: Types.ObjectId; // Reference to the User
   deviceId: string; // Unique cookie identifier for the physical device
+  deviceInfo: {
+    browser: string;
+    os: string;
+    type: "desktop" | "mobile" | "tablet" | "app";
+    location: string;
+  };
   ipAddress: string; // IP address of the device
   userAgent: string; // User agent string of the device/browser
   refreshToken?: string; // Refresh token for the session (optional)
@@ -34,6 +40,16 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       type: String,
       required: [true, "Device id is required"],
       index: true,
+    },
+    deviceInfo: {
+      browser: { type: String, required: true },
+      os: { type: String, required: true },
+      type: {
+        type: String,
+        enum: ["desktop", "mobile", "tablet", "app"],
+        required: true,
+      },
+      location: { type: String, required: true },
     },
     ipAddress: {
       type: String,
