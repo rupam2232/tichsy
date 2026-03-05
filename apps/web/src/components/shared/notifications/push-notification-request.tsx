@@ -27,13 +27,19 @@ const PushNotificationRequest = () => {
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
         toast.success("Notification permission granted");
+        localStorage.setItem("sendPushNotification", "true");
         handleClose();
       } else {
         toast.error("Notification permission denied", {
-          action: {
-            label: "Retry",
-            onClick: () => handleEnableNotifications(),
-          },
+          action: (
+            <Button
+              size="sm"
+              className="ml-auto h-auto px-2 py-1 text-xs bg-foreground hover:bg-foreground/80 text-background"
+              onClick={() => handleEnableNotifications()}
+            >
+              Retry
+            </Button>
+          ),
         });
       }
     });

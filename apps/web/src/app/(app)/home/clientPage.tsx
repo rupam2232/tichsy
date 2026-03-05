@@ -26,7 +26,6 @@ import {
   AvatarImage,
 } from "@repo/ui/components/avatar";
 import CreateRestaurantDialog from "@/components/features/restaurant/create-restaurant-dialog";
-import "@/utils/orderSound";
 import { Plus, Store } from "lucide-react";
 import { Badge } from "@repo/ui/components/badge";
 import {
@@ -128,14 +127,16 @@ export default function ClientPage() {
   }, [dispatch, router]);
 
   useEffect(() => {
-    if (user?.role === "owner") {
-      fetchOwnersRestaurants();
-    } else if (user?.role === "staff") {
-      fetchStaffsRestaurant();
-    } else {
+    if (!user) {
       setIsLoading(false);
+      dispatch(signOut());
+      router.push("/signin");
+    } else if (user.role === "owner") {
+      fetchOwnersRestaurants();
+    } else if (user.role === "staff") {
+      fetchStaffsRestaurant();
     }
-  }, [user, fetchOwnersRestaurants, fetchStaffsRestaurant]);
+  }, [user, fetchOwnersRestaurants, fetchStaffsRestaurant, dispatch, router]);
 
   return (
     <section className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6">

@@ -1,4 +1,4 @@
-const SOUND_PATH = "/sounds/new-order-notification-01.mp3";
+const SOUND_PATH = "/sounds/new-notification-01.mp3";
 const COOLDOWN_MS = 220; // minimal gap to restart sound cleanly
 
 let audio: HTMLAudioElement | null = null;

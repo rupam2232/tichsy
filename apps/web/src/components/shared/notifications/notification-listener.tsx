@@ -7,8 +7,8 @@ import { useSocket } from "@/context/SocketContext";
 import { addNotification, fetchNotifications } from "@/store/notificationSlice";
 import { toast } from "sonner";
 import type { Notification } from "@repo/types";
-import * as orderSound from "@/utils/orderSound";
-import { usePathname } from "next/navigation";
+import * as notificationSound from "@/utils/notificationSound";
+import { usePathname, useRouter } from "next/navigation";
 
 export function NotificationListener() {
   const dispatch = useDispatch<AppDispatch>();
@@ -18,6 +18,7 @@ export function NotificationListener() {
   );
   const socket = useSocket();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (!user?._id) return;
@@ -30,22 +31,40 @@ export function NotificationListener() {
     const handleNewNotification = (notification: Notification) => {
       dispatch(addNotification(notification));
 
-      if (Notification.permission === "granted") {
-        new Notification(notification.title, {
-          tag: "newOrder",
-          body: notification.message,
-          icon:
-            notification.data?.imageUrl.replace("/upload/", "/upload/r_max/") ||
-            "/favicon.ico",
-        });
-      }
-
       // Play sound notification
-      orderSound.play();
+      notificationSound.play();
 
+      // Show in-app toast notification
       toast(notification.title, {
         description: notification.message,
       });
+
+      // Show push notification only if the app is not actively being used
+      if (
+        !document.hasFocus() &&
+        window.Notification?.permission === "granted" &&
+        localStorage.getItem("sendPushNotification") === "true"
+      ) {
+        const notificationInstance = new window.Notification(
+          notification.title,
+          {
+            tag: "newOrder",
+            body: notification.message,
+            icon:
+              notification.data?.imageUrl.replace(
+                "/upload/",
+                "/upload/r_max/",
+              ) || "/favicon.ico",
+          },
+        );
+
+        notificationInstance.onclick = (event) => {
+          event.preventDefault();
+          window.focus();
+          notificationInstance.close();
+          router.push(`/notifications`);
+        };
+      }
     };
 
     socket.on("new_notification", handleNewNotification);
@@ -53,10 +72,10 @@ export function NotificationListener() {
     return () => {
       socket.off("new_notification", handleNewNotification);
     };
-  }, [user?._id, dispatch, socket]);
+  }, [user?._id, dispatch, socket, router]);
 
   useEffect(() => {
-    // Using a timeout to let Next.js metadata update the title first during navigation
+    // Using a timeout to let metadata update the title first during navigation
     const timeoutId = setTimeout(() => {
       const currentTitle = document.title;
       // Regex to remove any existing "(number)" from start of title

@@ -5,7 +5,7 @@ import ClientFoodMenu from "@/components/features/menu/food-menu";
 import { useEffect, useState } from "react";
 import { RestaurantMinimalInfo } from "@repo/types";
 import { Loader2 } from "lucide-react";
-import { getRestaurantDetails } from "@/utils/getRestaurantDetails";
+import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 
 const MenuClientPage = () => {
   const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ const MenuClientPage = () => {
 
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
-      const restaurant = await getRestaurantDetails(slug);
+      const restaurant = await fetchRestaurantMetadata(slug);
       setRestaurantDetails(restaurant);
       setIsPageLoading(false);
     };
