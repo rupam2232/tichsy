@@ -35,7 +35,7 @@ import { updateProfileSchema } from "@repo/types";
 import { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/types";
 import { updateProfile } from "@/store/authSlice";
-import { getOptimizedUrl } from "@/utils/cloudinary";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
 

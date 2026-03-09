@@ -52,7 +52,7 @@ import { ApiResponse } from "@repo/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
-import { getOptimizedUrl } from "@/utils/cloudinary";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { useMediaQuery } from "usehooks-ts";
 
 export function NavUser({ user }: { user: UserState["user"] }) {

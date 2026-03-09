@@ -8,11 +8,11 @@ export type RestaurantMinimalInfo = {
   isCurrentlyOpen?: boolean;
   isArchived?: boolean;
   categories?: string[];
+  openingTime?: string;
+  closingTime?: string;
 };
 
 export type RestaurantFullInfo = RestaurantMinimalInfo & {
-  openingTime?: string;
-  closingTime?: string;
   taxRate: number;
   taxLabel?: string;
   isTaxIncludedInPrice: boolean;

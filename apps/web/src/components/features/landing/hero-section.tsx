@@ -55,7 +55,7 @@ const RetroGrid = ({
     <div
       className={cn(
         "pointer-events-none absolute size-full overflow-hidden [perspective:200px]",
-        `opacity-[var(--opacity)]`
+        `opacity-[var(--opacity)]`,
       )}
       style={gridStyles}
     >
@@ -83,7 +83,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
       gridOptions,
       ...props
     },
-    ref
+    ref,
   ) => {
     const fadeUpVariants = {
       hidden: { opacity: 0, y: 30 },
@@ -93,7 +93,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         transition: {
           duration: 1,
           delay: 0.5 + i * 0.2,
-          ease: [0.25, 0.4, 0.25, 1] as Transition['ease'],
+          ease: [0.25, 0.4, 0.25, 1] as Transition["ease"],
         },
       }),
     };
@@ -184,7 +184,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         <div className="absolute bottom-0 z-20 inset-x-0 h-10 bg-gradient-to-t from-background via-background/40 to-transparent w-full pointer-events-none" />
       </div>
     );
-  }
+  },
 );
 HeroSection.displayName = "HeroSection";
 

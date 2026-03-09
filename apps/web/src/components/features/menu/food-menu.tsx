@@ -5,9 +5,8 @@ import { AllFoodItems, FoodItem, Table } from "@repo/types";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
-import Image from "next/image";
 import { cn } from "@repo/ui/lib/utils";
-import { IconSalad } from "@tabler/icons-react";
+import { FoodImage } from "@/components/shared/food-image";
 import {
   Tabs,
   TabsContent,
@@ -386,24 +385,16 @@ const ClinetFoodMenu = ({
                     />
                   </div>
                   <div className="relative aspect-square">
-                    {foodItem.imageUrls &&
-                    foodItem.imageUrls.length > 0 &&
-                    foodItem.imageUrls[0] ? (
-                      <Image
-                        src={foodItem.imageUrls[0]}
-                        alt={foodItem.foodName}
-                        fill
-                        priority={index < 3}
-                        loading={index < 3 ? "eager" : "lazy"}
-                        draggable={false}
-                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                        className="object-cover transition-all duration-200 group-hover:scale-101"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                        <IconSalad className="size-8 sm:size-16" />
-                      </div>
-                    )}
+                    <FoodImage
+                      src={foodItem.imageUrls?.[0]}
+                      alt={foodItem.foodName}
+                      fill
+                      priority={index < 3}
+                      draggable={false}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition-all duration-200 group-hover:scale-101"
+                      fallbackIconClassName="size-8 sm:size-16"
+                    />
                   </div>
                   <CardContent className="p-3">
                     <div className="space-y-1">

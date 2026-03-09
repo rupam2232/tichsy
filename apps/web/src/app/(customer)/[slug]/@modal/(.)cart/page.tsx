@@ -14,7 +14,12 @@ import {
   usePathname,
 } from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import Image from "next/image";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { Button } from "@repo/ui/components/button";
 import { IconSalad } from "@tabler/icons-react";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
@@ -167,35 +172,27 @@ const CheckoutModalPage = () => {
                       key={item.foodId + (item.variantName || "")}
                       className="flex items-center space-x-4 pt-2 pb-4 border-b last:border-b-0 last:pb-0 relative"
                     >
-                      {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          width={64}
-                          height={64}
-                          draggable={false}
-                          sizes="(max-width: 640px) 100px, (min-width: 641px) 150px"
-                          priority
+                      <Avatar
+                        className={cn(
+                          "w-16 h-16 shrink-0 rounded-lg",
+                          !item.isAvailable && "opacity-80 grayscale",
+                        )}
+                      >
+                        <AvatarImage
+                          src={getOptimizedUrl(
+                            item.imageUrl,
+                            150,
+                            150,
+                            "c_fill",
+                          )}
                           alt={item.foodName}
-                          className={cn(
-                            "w-16 h-16 object-cover rounded-lg",
-                            item.isAvailable
-                              ? "opacity-100"
-                              : "opacity-80 grayscale",
-                          )}
+                          className="object-cover"
+                          draggable={false}
                         />
-                      ) : (
-                        <div
-                          className={cn(
-                            "flex items-center justify-center bg-muted w-16 h-16 rounded-lg",
-                            item.isAvailable
-                              ? "opacity-100"
-                              : "opacity-80 grayscale",
-                          )}
-                        >
+                        <AvatarFallback className="rounded-lg bg-muted text-muted-foreground">
                           <IconSalad className="size-5" />
-                        </div>
-                      )}
-
+                        </AvatarFallback>
+                      </Avatar>
                       <div
                         className={cn(
                           "flex-1 min-w-0",

@@ -10,14 +10,14 @@ import type { AxiosError } from "axios";
 import axios from "@/utils/axiosInstance";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Card, CardContent } from "@repo/ui/components/card";
-import Image from "next/image";
 import { cn } from "@repo/ui/lib/utils";
+import { FoodImage } from "@/components/shared/food-image";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
-import { IconSalad, IconToolsKitchen } from "@tabler/icons-react";
+import { IconToolsKitchen } from "@tabler/icons-react";
 import FoodDetails from "@/components/features/menu/food-details";
 import CreateUpdateFoodItem from "@/components/features/menu/create-update-food-item";
 import {
@@ -100,32 +100,26 @@ const MenuPage = ({
     try {
       if (currentPage === 1) {
         setIsPageLoading(true);
-        const response = await axios.get(
-          `/food-item/${slug}`,
-          {
-            params: {
-              limit: 20,
-              tab: tabName !== "search" ? tabName : "",
-              search: searchInput.trim(),
-              includeArchived: "true",
-            }
-          }
-        );
+        const response = await axios.get(`/food-item/${slug}`, {
+          params: {
+            limit: 20,
+            tab: tabName !== "search" ? tabName : "",
+            search: searchInput.trim(),
+            includeArchived: "true",
+          },
+        });
         setAllFoodItems({ ...response.data.data });
       } else {
         setIsPageChanging(true);
-        const response = await axios.get(
-          `/food-item/${slug}`,
-          {
-            params: {
-              page: currentPage,
-              limit: 20,
-              tab: tabName !== "search" ? tabName : "",
-              search: searchInput.trim(),
-              includeArchived: "true",
-            }
-          }
-        );
+        const response = await axios.get(`/food-item/${slug}`, {
+          params: {
+            page: currentPage,
+            limit: 20,
+            tab: tabName !== "search" ? tabName : "",
+            search: searchInput.trim(),
+            includeArchived: "true",
+          },
+        });
         setAllFoodItems((prev) => ({
           ...response.data.data,
           foodItems: [
@@ -428,8 +422,7 @@ const MenuPage = ({
                     }
                     className={cn(
                       "overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative",
-                      foodItem.isArchived &&
-                        "text-muted-foreground grayscale-100 brightness-80",
+                      foodItem.isArchived && "text-accent grayscale-100",
                     )}
                   >
                     <div className={"absolute top-2 right-2 z-10"}>
@@ -469,22 +462,16 @@ const MenuPage = ({
                       />
                     </div>
                     <div className="relative aspect-square">
-                      {foodItem.imageUrls?.length === 0 ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                          <IconSalad className="size-8 sm:size-16" />
-                        </div>
-                      ) : (
-                        <Image
-                          src={foodItem.imageUrls?.[0] || "/placeholder.svg"}
-                          alt={foodItem.foodName}
-                          fill
-                          priority={index < 3}
-                          loading={index < 3 ? "eager" : "lazy"}
-                          draggable={false}
-                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                          className="object-cover transition-all duration-200 group-hover:scale-101"
-                        />
-                      )}
+                      <FoodImage
+                        src={foodItem.imageUrls?.[0]}
+                        alt={foodItem.foodName}
+                        fill
+                        priority={index < 3}
+                        draggable={false}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-all duration-200 group-hover:scale-101"
+                        fallbackIconClassName="size-8 sm:size-16"
+                      />
                     </div>
                     <CardContent className="p-3">
                       <div>

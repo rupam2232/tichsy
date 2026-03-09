@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
+import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/components/avatar";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Loader2, Trash2, ImagePlusIcon } from "lucide-react";
@@ -18,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
 import type { FoodItemDetails } from "@repo/types";
+import { IconSalad } from "@tabler/icons-react";
 
 interface FoodItemImageUploadProps {
   imageUrls: string[];
@@ -128,7 +130,7 @@ export default function FoodItemImageUpload({
         </Button>
       </div>
       {imageErrorMessage && (
-        <p className="text-red-500 mb-2">{imageErrorMessage}</p>
+        <p className="text-red-500 text-sm">{imageErrorMessage}</p>
       )}
 
       {((imageFiles && imageFiles.length > 0) ||
@@ -145,12 +147,16 @@ export default function FoodItemImageUpload({
                     imageUrls.length > 0 &&
                     imageUrls.map((url, index) => (
                       <div key={index} className="aspect-square w-20 relative">
-                        <Image
-                          src={url}
-                          fill
-                          alt={`Food Item Image ${index + 1}`}
-                          className="rounded-xl object-cover static"
-                        />
+                        <Avatar className="w-full h-full rounded-xl">
+                          <AvatarImage
+                            src={getOptimizedUrl(url, 200, 200)}
+                            alt={`Food Item Image ${index + 1}`}
+                            className="object-cover"
+                          />
+                          <AvatarFallback className="rounded-xl bg-muted text-muted-foreground">
+                            <IconSalad className="size-5" />
+                          </AvatarFallback>
+                        </Avatar>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -177,7 +183,7 @@ export default function FoodItemImageUpload({
                                 className="bg-red-500 hover:bg-red-600 text-white"
                                 onClick={() => handleImageRemove(url)}
                               >
-                                Continue
+                                Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -186,12 +192,13 @@ export default function FoodItemImageUpload({
                     ))}
                   {imageFiles.map((file, index) => (
                     <div key={index} className="aspect-square w-20 relative">
-                      <Image
-                        src={URL.createObjectURL(file)}
-                        fill
-                        alt={`Food Item Image ${index + 1}`}
-                        className="rounded-xl object-cover static"
-                      />
+                      <Avatar className="w-full h-full rounded-xl">
+                        <AvatarImage
+                          src={URL.createObjectURL(file)}
+                          alt={`Food Item Image ${index + 1}`}
+                          className="object-cover"
+                        />
+                      </Avatar>
                       <div className="absolute bg-muted/70 inset-0 flex items-center justify-center z-20 rounded-xl">
                         <Loader2 className="animate-spin w-6 h-6 text-primary" />
                       </div>
@@ -203,12 +210,16 @@ export default function FoodItemImageUpload({
                 imageUrls.length > 0 &&
                 imageUrls.map((url, index) => (
                   <div key={index} className="aspect-square w-20 relative">
-                    <Image
-                      src={url}
-                      fill
-                      alt={`Food Item Image ${index + 1}`}
-                      className="rounded-xl object-cover static"
-                    />
+                    <Avatar className="w-full h-full rounded-xl">
+                      <AvatarImage
+                        src={getOptimizedUrl(url, 200, 200)}
+                        alt={`Food Item Image ${index + 1}`}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="rounded-xl bg-muted text-muted-foreground">
+                        <IconSalad className="size-5" />
+                      </AvatarFallback>
+                    </Avatar>
                     {foodItemDetails?.imageUrls?.includes(url) ? (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -236,7 +247,7 @@ export default function FoodItemImageUpload({
                               className="bg-red-500 hover:bg-red-600 text-white"
                               onClick={() => handleImageRemove(url)}
                             >
-                              Continue
+                              Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

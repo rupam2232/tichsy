@@ -41,7 +41,7 @@ import { Button } from "@repo/ui/components/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCheck } from "lucide-react";
-import { getOptimizedUrl } from "@/utils/cloudinary";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -65,7 +65,10 @@ export function NotificationItem({
       router.push(
         `/restaurant/${notification.data.restaurantSlug}/orders?tab=new`,
       );
-    } else if (notification.type === "security" && notification.title.toLowerCase().includes("login")) {
+    } else if (
+      notification.type === "security" &&
+      notification.title.toLowerCase().includes("login")
+    ) {
       router.push(`/settings/sessions`);
     }
 
@@ -114,7 +117,10 @@ export function NotificationItem({
     >
       <div className="relative">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={getOptimizedUrl(hasImage, 100, 100, "r_max")} alt="Notification Icon" />
+          <AvatarImage
+            src={getOptimizedUrl(hasImage, 100, 100, "r_max")}
+            alt="Notification Icon"
+          />
           <AvatarFallback>{getIcon()}</AvatarFallback>
         </Avatar>
 

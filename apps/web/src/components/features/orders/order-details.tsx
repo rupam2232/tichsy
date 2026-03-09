@@ -16,7 +16,7 @@ import type {
   Order,
   FullOrderDetailsType,
   OrderDetails as OrderDetailsType,
-  ApiResponse
+  ApiResponse,
 } from "@repo/types";
 import axios from "@/utils/axiosInstance";
 import { AxiosError } from "axios";
@@ -35,10 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/ui/components/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import OrderStatusDropdown from "./order-status-dropdown";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 const OrderDetails = ({
   children,
@@ -229,25 +234,21 @@ const OrderDetails = ({
                               foodType={item.foodType}
                               innerClassName="size-1"
                             />
-                            {item.firstImageUrl ? (
-                              <Avatar>
-                                <AvatarImage
-                                  src={item.firstImageUrl}
-                                  alt={item.foodName}
-                                  className="w-8 h-8 object-cover rounded-md"
-                                  draggable={false}
-                                />
-                                <AvatarFallback className="rounded-md">
-                                  <IconSalad />
-                                </AvatarFallback>
-                              </Avatar>
-                            ) : (
-                              <Avatar className="w-8 h-8">
-                                <AvatarFallback className="rounded-md">
-                                  <IconSalad />
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage
+                                src={getOptimizedUrl(
+                                  item.firstImageUrl,
+                                  150,
+                                  150,
+                                )}
+                                alt={item.foodName}
+                                className="object-cover rounded-md"
+                                draggable={false}
+                              />
+                              <AvatarFallback className="rounded-md">
+                                <IconSalad className="size-4" />
+                              </AvatarFallback>
+                            </Avatar>
                             <span>
                               {item.foodName}
                               {item.isVariantOrder

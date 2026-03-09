@@ -1,5 +1,4 @@
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
-import { getRestaurantDetails } from "@/utils/getRestaurantDetails";
 import {
   Avatar,
   AvatarFallback,
@@ -45,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RestaurantPage({ params }: Props) {
   const { slug } = await params;
-  const restaurant = await getRestaurantDetails(slug);
+  const restaurant = await fetchRestaurantMetadata(slug);
 
   if (!restaurant) {
     notFound();
@@ -64,8 +63,9 @@ export default async function RestaurantPage({ params }: Props) {
                   src={restaurant.logoUrl}
                   alt={`${restaurant.restaurantName} Logo`}
                   className="object-cover"
+                  draggable={false}
                 />
-                <AvatarFallback className="text-4xl font-bold text-muted-foreground">
+                <AvatarFallback className="text-4xl font-medium text-muted-foreground">
                   {restaurant.restaurantName
                     .split(" ")
                     .map((word) => word[0])

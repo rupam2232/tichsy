@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { IconSalad, IconFlame } from "@tabler/icons-react";
+import { IconFlame } from "@tabler/icons-react";
 import {
   Select,
   SelectContent,
@@ -27,8 +27,8 @@ import {
   endOfDay,
 } from "date-fns";
 import type { DashboardAnalytics, ApiResponse } from "@repo/types";
-import Image from "next/image";
 import Link from "next/link";
+import { FoodImage } from "@/components/shared/food-image";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
@@ -176,18 +176,14 @@ export function TrendingItems({ slug }: TrendingItemsProps) {
                 >
                   {/* Image Section */}
                   <div className="relative aspect-square w-full bg-muted overflow-hidden">
-                    {item.firstImageUrl ? (
-                      <Image
-                        src={item.firstImageUrl}
-                        alt={item.foodName}
-                        fill
-                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                        <IconSalad className="w-10 h-10 text-muted-foreground" />
-                      </div>
-                    )}
+                    <FoodImage
+                      src={item.firstImageUrl}
+                      alt={item.foodName}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                      fallbackIconClassName="w-10 h-10"
+                    />
 
                     {/* Rank Badge */}
                     <div className="absolute top-2 left-2 z-[9px]">

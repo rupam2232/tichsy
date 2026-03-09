@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@repo/ui/components/tooltip";
 import { Kbd } from "@repo/ui/components/kbd";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export function SiteHeader() {
   const [currentTime, setCurrentTime] = useState<null | Date>(null);
@@ -128,7 +129,10 @@ export function SiteHeader() {
             <SidebarTrigger className="-ml-1" />
           </TooltipTrigger>
           <TooltipContent side="right">
-            Toggle Sidebar <span className="text-[10px]"><Kbd className="text-[11px] font-medium">Ctrl + B</Kbd></span>
+            Toggle Sidebar{" "}
+            <span className="text-[10px]">
+              <Kbd className="text-[11px] font-medium">Ctrl + B</Kbd>
+            </span>
           </TooltipContent>
         </Tooltip>
         <Separator
@@ -139,14 +143,24 @@ export function SiteHeader() {
           <div className="text-base font-medium flex items-center space-x-2">
             <Avatar className="w-7 h-7">
               <AvatarImage
-                src={activeRestaurant?.logoUrl}
+                src={getOptimizedUrl(
+                  activeRestaurant?.logoUrl,
+                  150,
+                  150,
+                  "r_max",
+                )}
                 alt={`${activeRestaurant?.restaurantName} Logo`}
                 className="object-cover"
                 loading="lazy"
                 draggable={false}
               />
-              <AvatarFallback>
-                {activeRestaurant?.restaurantName?.slice(0, 2).toUpperCase()}
+              <AvatarFallback className="text-xs font-medium">
+                {activeRestaurant?.restaurantName
+                  ?.split(" ")
+                  .map((word) => word[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex items-center">

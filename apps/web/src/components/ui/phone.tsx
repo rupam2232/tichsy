@@ -83,8 +83,10 @@ export function Phone({
         >
           <Image
             src={src}
-            alt=""
-            className="block size-full object-cover object-top"
+            alt="Device screen content"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="block object-cover object-top"
           />
         </div>
       )}

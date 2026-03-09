@@ -36,6 +36,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@repo/ui/components/empty";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export default function ClientPage() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -195,14 +196,24 @@ export default function ClientPage() {
                   <div className="flex flex-col items-center w-full gap-4">
                     <Avatar className="w-15 h-15">
                       <AvatarImage
-                        src={restaurant.logoUrl}
+                        src={getOptimizedUrl(
+                          restaurant.logoUrl,
+                          150,
+                          150,
+                          "r_max",
+                        )}
                         alt={`${restaurant.restaurantName} Logo`}
                         className="object-cover"
                         loading="lazy"
                         draggable={false}
                       />
-                      <AvatarFallback>
-                        {restaurant?.restaurantName?.slice(0, 2).toUpperCase()}
+                      <AvatarFallback className="font-medium">
+                        {restaurant?.restaurantName
+                          ?.split(" ")
+                          .map((word) => word[0])
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <CardAction className="self-auto">
@@ -272,15 +283,23 @@ export default function ClientPage() {
               <div className="flex flex-col items-center w-full gap-4">
                 <Avatar className="w-15 h-15">
                   <AvatarImage
-                    src={staffsrestaurant.logoUrl}
+                    src={getOptimizedUrl(
+                      staffsrestaurant.logoUrl,
+                      150,
+                      150,
+                      "r_max",
+                    )}
                     alt={`${staffsrestaurant.restaurantName} Logo`}
                     className="object-cover"
                     loading="lazy"
                     draggable={false}
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="font-medium">
                     {staffsrestaurant?.restaurantName
-                      ?.slice(0, 2)
+                      ?.split(" ")
+                      .map((word) => word[0])
+                      .slice(0, 2)
+                      .join("")
                       .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>

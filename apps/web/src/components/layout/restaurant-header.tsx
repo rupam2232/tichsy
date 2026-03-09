@@ -9,6 +9,7 @@ import {
 } from "@repo/ui/components/avatar";
 import { Badge } from "@repo/ui/components/badge";
 import Link from "next/link";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export const RestaurantHeader = ({
   restaurant,
@@ -36,11 +37,12 @@ export const RestaurantHeader = ({
         >
           <Avatar className="h-10 w-10 border border-border shadow-sm group-hover:shadow-md transition-shadow">
             <AvatarImage
-              src={restaurant.logoUrl}
+              src={getOptimizedUrl(restaurant.logoUrl, 150, 150, "r_max")}
               alt={`${restaurant.restaurantName} Logo`}
               className="object-cover"
+              draggable={false}
             />
-            <AvatarFallback className="text-xs font-bold text-muted-foreground">
+            <AvatarFallback className="text-xs font-medium text-muted-foreground">
               {restaurant.restaurantName
                 .split(" ")
                 .map((word) => word[0])

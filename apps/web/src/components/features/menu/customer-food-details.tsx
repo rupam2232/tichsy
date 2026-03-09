@@ -26,7 +26,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@repo/ui/components/carousel";
-import Image from "next/image";
+import { FoodImage } from "@/components/shared/food-image";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
 import { useCart } from "@/hooks/useCart";
@@ -401,13 +401,12 @@ const CustomerFoodDetails = ({
                                     key={index}
                                     className="relative rounded-xl"
                                   >
-                                    <Image
+                                    <FoodImage
                                       src={url}
                                       alt={`Food Item Image ${index + 1}`}
-                                      priority={index < 2} // Load first 2 images with priority
-                                      loading={index < 2 ? "eager" : "lazy"}
+                                      priority={index < 1}
                                       draggable={false}
-                                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                       className="object-cover rounded-xl h-auto w-auto"
                                       fill
                                     />

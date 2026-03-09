@@ -30,9 +30,10 @@ import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
+  AvatarImage
 } from "@repo/ui/components/avatar";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 const CustomerOrderDetailsClientPage = () => {
   const params = useParams();
@@ -270,7 +271,7 @@ const CustomerOrderDetailsClientPage = () => {
                   <div className="font-medium flex items-center gap-2">
                     <Avatar className="size-12 lg:size-16 rounded-lg">
                       <AvatarImage
-                        src={item.firstImageUrl}
+                        src={getOptimizedUrl(item.firstImageUrl, 300, 300)}
                         alt={item.foodName}
                         className="object-cover"
                         draggable={false}
