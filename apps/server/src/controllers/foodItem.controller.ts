@@ -27,12 +27,8 @@ function hasDuplicates(arr: string[]): boolean {
 }
 
 export const createFoodItem = asyncHandler(async (req, res) => {
-  if (!req.user || req.user.role !== "owner") {
+  if (req.restaurantRole !== "owner") {
     throw new ApiError(403, "You are not authorized to create food items");
-  }
-
-  if (!req.params || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Restaurant slug is required");
   }
 
   const validatedData = foodItemSchema.parse(req.body);
@@ -63,12 +59,9 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     }
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-    ownerId: req.user._id,
-  });
+  const restaurant = req.restaurant;
   if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found or you are not the owner");
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -173,19 +166,10 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
     if (!user) {
       throw new ApiError(403, "This restaurant is closed");
     }
-    if (
-      user.role === "owner" &&
-      restaurant.ownerId?.toString() !== user._id!.toString()
-    ) {
-      throw new ApiError(403, "This restaurant is closed");
-    } else if (
-      user.role === "staff" &&
-      restaurant.staffIds &&
-      restaurant.staffIds.length > 0 &&
-      restaurant.staffIds
-        .map((id) => id.toString())
-        .includes(user._id!.toString())
-    ) {
+    const isOwner = restaurant.ownerId?.toString() === user._id!.toString();
+    const isStaff = restaurant.staffMembers?.some(sm => sm.user.toString() === user._id!.toString());
+
+    if (!isOwner && !isStaff) {
       throw new ApiError(403, "This restaurant is closed");
     }
     if (forPage === "order") {
@@ -316,8 +300,8 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 });
 
 export const getFoodItemById = asyncHandler(async (req, res) => {
-  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Food item ID and restaurant slug are required");
+  if (!req.params || !req.params.foodItemId) {
+    throw new ApiError(400, "Food item ID is required");
   }
 
   if (!isValidObjectId(req.params.foodItemId)) {
@@ -351,19 +335,10 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 
     if (user) {
       const restaurantDetails = foodItem.restaurantId as unknown as Restaurant;
-      if (
-        user.role === "owner" &&
-        restaurantDetails.ownerId.toString() === user._id!.toString()
-      ) {
-        isUserPartofRestaurant = true;
-      } else if (
-        user.role === "staff" &&
-        restaurantDetails.staffIds &&
-        restaurantDetails.staffIds.length > 0 &&
-        restaurantDetails.staffIds
-          .map((id) => id.toString())
-          .includes(user._id!.toString())
-      ) {
+      const isOwner = restaurantDetails.ownerId.toString() === user._id!.toString();
+      const isStaff = restaurantDetails.staffMembers?.some(sm => sm.user.toString() === user._id!.toString());
+
+      if (isOwner || isStaff) {
         isUserPartofRestaurant = true;
       }
     }
@@ -378,9 +353,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 
   // Rename the populated field from restaurantId to restaurantDetails
   const foodItemObj = foodItem.toObject ? foodItem.toObject() : foodItem;
-  // @ts-ignore - restaurantDetails is not in the type definition but we are adding it for the response
   (foodItemObj as any).restaurantDetails = foodItemObj.restaurantId;
-  // @ts-ignore
   delete (foodItemObj as any).restaurantId;
 
   res
@@ -389,8 +362,8 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 });
 
 export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
-  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Food item ID and restaurant slug are required");
+  if (!req.params || !req.params.foodItemId) {
+    throw new ApiError(400, "Food item ID is required");
   }
 
   if (!isValidObjectId(req.params.foodItemId)) {
@@ -406,38 +379,27 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
   }
   const isVariant = req.body?.isVariant || false;
   const variantId = req.body?.variantId;
-  const restaurantSlug = req.params.restaurantSlug;
-  const user = req.user;
 
-  if (user!.restaurantIds!.length === 0) {
+  if (req.user!.restaurantIds!.length === 0) {
     throw new ApiError(
       403,
       "You do not have any restaurant associated with your account to update table status"
     );
   }
 
-  let restaurant = null;
-  if (user!.role === "owner") {
-    restaurant = await Restaurant.findOne({
-      slug: restaurantSlug,
-      ownerId: user!._id,
-    });
-  } else if (user!.role === "staff") {
-    restaurant = await Restaurant.findOne({
-      slug: restaurantSlug,
-      staffIds: { $in: [user!._id] },
-    });
-  } else {
+  if (req.restaurantRole !== "owner" && req.restaurantRole !== "staff") {
     throw new ApiError(
       403,
       "You do not have permission to toggle table status"
     );
   }
 
+  const restaurant = req.restaurant;
+
   if (!restaurant || !restaurant._id) {
     throw new ApiError(
       404,
-      "Restaurant not found or you do not have permission to toggle table status"
+      "Restaurant not found"
     );
   }
 
@@ -508,12 +470,12 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
 });
 
 export const updateFoodItem = asyncHandler(async (req, res) => {
-  if (!req.user || req.user.role !== "owner") {
+  if (req.restaurantRole !== "owner") {
     throw new ApiError(403, "You are not authorized to update food items");
   }
 
-  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Food item ID and restaurant slug are required");
+  if (!req.params || !req.params.foodItemId) {
+    throw new ApiError(400, "Food item ID is required");
   }
 
   if (!isValidObjectId(req.params.foodItemId)) {
@@ -522,12 +484,9 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
 
   const validatedData = foodItemSchema.parse(req.body);
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-    ownerId: req.user._id,
-  });
+  const restaurant = req.restaurant;
   if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found or you are not the owner");
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -620,24 +579,21 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
 });
 
 export const deleteFoodItem = asyncHandler(async (req, res) => {
-  if (!req.user || req.user.role !== "owner") {
+  if (req.restaurantRole !== "owner") {
     throw new ApiError(403, "You are not authorized to delete food items");
   }
 
-  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Food item ID and restaurant slug are required");
+  if (!req.params || !req.params.foodItemId) {
+    throw new ApiError(400, "Food item ID is required");
   }
 
   if (!isValidObjectId(req.params.foodItemId)) {
     throw new ApiError(400, "Invalid food item ID");
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-    ownerId: req.user._id,
-  });
+  const restaurant = req.restaurant;
   if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found or you are not the owner");
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -673,33 +629,30 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
 });
 
 export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
-  if (!req.params || !req.params.foodItemId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "foodItemId and restaurantSlug are required");
+  if (!req.params || !req.params.foodItemId) {
+    throw new ApiError(400, "foodItemId is required");
   }
-  const { foodItemId, restaurantSlug } = req.params;
+  const { foodItemId } = req.params;
 
   if (!isValidObjectId(foodItemId)) {
     throw new ApiError(400, "Invalid food item ID");
   }
 
-  const user = req.user;
 
-  if (user!.role !== "owner") {
+
+  if (req.restaurantRole !== "owner") {
     throw new ApiError(
       403,
       "You do not have permission to toggle food item archive status"
     );
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: restaurantSlug,
-    ownerId: user!._id,
-  });
+  const restaurant = req.restaurant;
 
   if (!restaurant) {
     throw new ApiError(
       404,
-      "Restaurant not found or you do not own this restaurant"
+      "Restaurant not found"
     );
   }
 

@@ -70,6 +70,7 @@ const FoodDetails = ({
   restaurantSlug: string;
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
   const [foodItemDetails, setFoodItemDetails] =
     useState<FoodItemDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -753,7 +754,7 @@ const FoodDetails = ({
             <SheetFooter className="flex flex-row items-center justify-between">
               <SheetClose asChild ref={sheetCloseRef} />
 
-              {user?.role === "owner" && !foodVariant && (
+              {activeRestaurant?.userRole === "owner" && !foodVariant && (
                 <>
                   <CreateUpdateFoodItem
                     isEditing={true}

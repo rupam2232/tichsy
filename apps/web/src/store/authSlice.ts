@@ -5,7 +5,6 @@ export interface UserState {
   user: {
     _id: string;
     email: string;
-    role: "admin" | "owner" | "staff";
     firstName: string;
     lastName?: string;
     avatar?: string;

@@ -10,6 +10,7 @@ export type RestaurantMinimalInfo = {
   categories?: string[];
   openingTime?: string;
   closingTime?: string;
+  userRole?: string;
 };
 
 export type RestaurantFullInfo = RestaurantMinimalInfo & {

@@ -3,13 +3,14 @@ import {
   verifyAuth,
   verifyOptionalAuth,
 } from "../middlewares/auth.middleware.js";
+import { verifyRestaurantAccess } from "../middlewares/restaurantAccess.middleware.js";
 import {
   checkUniqueRestaurantSlug,
   createRestaurant,
   addRestaurantCategory,
-  getAllRestaurantofOwner,
+  getOwnedRestaurants,
+  getJoinedRestaurants,
   getRestaurantBySlug,
-  getRestaurantofStaff,
   removeRestaurantCategories,
   setRestaurantTax,
   toggleRestaurantOpenStatus,
@@ -17,7 +18,6 @@ import {
   updateRestaurantLogo,
   getRestaurantCategories,
   getAllStaffOfRestaurant,
-  addStaffToRestaurant,
   removeStaffFromRestaurant,
   toggleRestaurantArchiveStatus,
   getDashboardOperations,
@@ -65,8 +65,8 @@ router.post(
   createRestaurant
 );
 
-router.get("/owner", verifyAuth, getAllRestaurantofOwner);
-router.get("/staff", verifyAuth, getRestaurantofStaff);
+router.get("/owned", verifyAuth, getOwnedRestaurants);
+router.get("/joined", verifyAuth, getJoinedRestaurants);
 
 router
   .route("/:slug")
@@ -75,12 +75,14 @@ router
 router.patch(
   "/:slug/toggle-open-status",
   verifyAuth,
+  verifyRestaurantAccess,
   toggleRestaurantOpenStatus
 );
 
 router.patch(
   "/:slug/toggle-archive-status",
   verifyAuth,
+  verifyRestaurantAccess,
   isSubscriptionActive,
   toggleRestaurantArchiveStatus
 );
@@ -90,33 +92,38 @@ router
   .get(getRestaurantCategories)
   .post(
     verifyAuth,
+    verifyRestaurantAccess,
     isSubscriptionActive,
     addRestaurantCategory
   )
-  .patch(verifyAuth, removeRestaurantCategories);
+  .patch(verifyAuth, verifyRestaurantAccess, removeRestaurantCategories);
 
-router.post("/:slug/tax", verifyAuth, setRestaurantTax);
+router.post("/:slug/tax", verifyAuth, verifyRestaurantAccess, setRestaurantTax);
 
-router.get("/:slug/dashboard/operations", verifyAuth, getDashboardOperations);
-router.get("/:slug/dashboard/analytics/kpis", verifyAuth, getAnalyticsKPIs);
+router.get("/:slug/dashboard/operations", verifyAuth, verifyRestaurantAccess, getDashboardOperations);
+router.get("/:slug/dashboard/analytics/kpis", verifyAuth, verifyRestaurantAccess, getAnalyticsKPIs);
 router.get(
   "/:slug/dashboard/analytics/revenue",
   verifyAuth,
+  verifyRestaurantAccess,
   getAnalyticsRevenue
 );
 router.get(
   "/:slug/dashboard/analytics/trending",
   verifyAuth,
+  verifyRestaurantAccess,
   getAnalyticsTrending
 );
 router.get(
   "/:slug/dashboard/analytics/categories",
   verifyAuth,
+  verifyRestaurantAccess,
   getAnalyticsCategories
 );
 router.get(
   "/:slug/dashboard/analytics/top-tables",
   verifyAuth,
+  verifyRestaurantAccess,
   getAnalyticsTopTables
 );
 
@@ -124,14 +131,14 @@ router.get("/:slug/is-unique-slug", verifyAuth, checkUniqueRestaurantSlug);
 
 router
   .route("/:slug/staff")
-  .get(verifyAuth, getAllStaffOfRestaurant)
-  .post(verifyAuth, addStaffToRestaurant)
-  .delete(verifyAuth, removeStaffFromRestaurant);
+  .get(verifyAuth, verifyRestaurantAccess, getAllStaffOfRestaurant)
+  .delete(verifyAuth, verifyRestaurantAccess, removeStaffFromRestaurant);
 
 router.post(
   "/:slug/update-logo",
   isProduction ? logoUploadLimit : (req, res, next) => next(),
   verifyAuth,
+  verifyRestaurantAccess,
   upload.single("restaurantLogo"),
   updateRestaurantLogo
 );

@@ -3,7 +3,7 @@ import axios from "@/utils/axiosInstance";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { updateRestaurant, setActiveRestaurant } from "@/store/restaurantSlice";
 import type { AxiosError } from "axios";
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@repo/ui/components/alert-dialog";
-import type { AppDispatch } from "@/store/store";
+import type { AppDispatch, RootState } from "@/store/store";
 import { Avatar, AvatarImage } from "@repo/ui/components/avatar";
 import {
   Form,
@@ -59,6 +59,8 @@ const ClientPage = () => {
   const [isSlugUnique, setIsSlugUnique] = useState<boolean | null>(null);
   const [isCheckingSlug, setIsCheckingSlug] = useState<boolean>(false);
   const debounced = useDebounceCallback(setFormSlug, 300);
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const role = activeRestaurant?.userRole;
 
   const form = useForm<z.infer<typeof updateRestaurantSchema>>({
     resolver: zodResolver(updateRestaurantSchema),
@@ -308,6 +310,9 @@ const ClientPage = () => {
     });
 
   const fetchRestaurantData = useCallback(async () => {
+    if (role !== "owner"){
+      return;
+    }
     try {
       setIsPageLoading(true);
       const response = await axios.get(`/restaurant/${slug}`);
@@ -334,7 +339,7 @@ const ClientPage = () => {
     } finally {
       setIsPageLoading(false);
     }
-  }, [slug, router, dispatch]);
+  }, [slug, router, dispatch, role]);
 
   const toggleArchiveStatus = useCallback(async () => {
     if (!restaurantData) return;
@@ -491,20 +496,30 @@ const ClientPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logoUrl, restaurantData]);
 
+  if (role !== "owner"){
+    return (
+      <section className="flex flex-1 items-center justify-center p-4 h-[calc(100vh-5rem)]">
+        <p className="text-muted-foreground text-center">
+          You do not have permission to view restaurant settings
+        </p>
+      </section>
+    );
+  }
+
   if (isPageLoading) {
     return (
-      <div className="h-[95vh] flex items-center justify-center">
+      <section className="h-[95vh] flex items-center justify-center">
         <Loader2 className="animate-spin" />
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="@container/main flex flex-1 flex-col px-6 py-4 pt-0">
+    <section className="@container/main flex flex-1 flex-col px-6 py-4 pt-0">
       <div className="lg:sticky top-(--header-height) z-2 bg-background/40 pt-2 backdrop-blur-xl">
         <h1 className="text-2xl font-bold">Restaurant Settings</h1>
         <p className="text-muted-foreground mb-4 text-sm">
-          Manage your restaurant&apos;s settings and preferences.
+          Manage your restaurant&apos;s settings and preferences
         </p>
       </div>
       <Form {...form}>
@@ -860,7 +875,7 @@ const ClientPage = () => {
           </AlertDialog>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

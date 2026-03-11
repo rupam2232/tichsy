@@ -4,15 +4,24 @@ import { ApiError } from "../utils/ApiError.js";
 import { type Restaurant as RestaurantType } from "../models/restaurant.models.js";
 import { Subscription } from "../models/subscription.model.js";
 import { Coupon } from "../models/coupon.model.js";
+import { Invitation } from "../models/invitation.model.js";
 import { env } from "../env.js";
 const isProduction = env.NODE_ENV === "production";
 
 export async function checkStaffLimit(
   restaurant: RestaurantType,
-  userId: User["_id"]
+  userId: User["_id"],
+  isInvitee: boolean = false
 ) {
   if (!isProduction) return;
-  const staffCount = restaurant.staffIds ? restaurant.staffIds.length : 0;
+  const activeStaffCount = restaurant.staffMembers ? restaurant.staffMembers.length : 0;
+  
+  const pendingInvitesCount = await Invitation.countDocuments({
+    restaurantId: restaurant._id,
+    status: "pending",
+  });
+
+  const staffCount = activeStaffCount + pendingInvitesCount;
 
   const subscription = await Subscription.findOne({ userId: userId });
   const plan =
@@ -21,10 +30,17 @@ export async function checkStaffLimit(
   const maxStaff = SUBSCRIPTION_PLANS[plan].maxStaffPerRestaurant;
 
   if (staffCount >= maxStaff) {
-    throw new ApiError(
-      403,
-      `Your plan allows to add max ${maxStaff} staff members per restaurant. Upgrade to add more.`
-    );
+    if (isInvitee) {
+      throw new ApiError(
+        403,
+        "This restaurant has reached its maximum staff limit and cannot accept new members at this time"
+      );
+    } else {
+      throw new ApiError(
+        403,
+        `Your plan allows to add max ${maxStaff} staff members per restaurant. Upgrade to add more`
+      );
+    }
   }
 }
 

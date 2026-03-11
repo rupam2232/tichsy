@@ -8,10 +8,10 @@ import {
   IconTable,
   IconToolsKitchen,
   IconLayoutDashboard,
-  IconUser,
   IconCreditCard,
   IconHome,
   IconChartBar,
+  IconUsers,
 } from "@tabler/icons-react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -34,7 +34,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { X } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
@@ -77,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Analytics",
       url: `/restaurant/${restaurantSlug}/analytics`,
-      showInSidebar: user?.role === "owner",
+      showInSidebar: activeRestaurant?.userRole === "owner",
       icon: IconChartBar,
     },
     {
@@ -100,14 +102,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Staffs",
-      url: `/restaurant/${restaurantSlug}/staff-management`,
-      showInSidebar: user?.role === "owner",
-      icon: IconUser,
+      url: `/restaurant/${restaurantSlug}/staffs`,
+      showInSidebar: activeRestaurant?.userRole === "owner",
+      icon: IconUsers,
     },
     {
       title: "Settings",
       url: `/restaurant/${restaurantSlug}/settings`,
-      showInSidebar: user?.role === "owner",
+      showInSidebar: activeRestaurant?.userRole === "owner",
       icon: IconSettings,
     },
   ];
@@ -147,7 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );

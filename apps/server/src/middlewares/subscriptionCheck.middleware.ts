@@ -11,7 +11,8 @@ const isProduction = env.NODE_ENV === "production";
 
 export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   if (!isProduction) return next();
-  const subscription = await Subscription.findOne({ userId: req.user!._id });
+  const targetUserId = req.restaurant ? req.restaurant.ownerId : req.user!._id;
+  const subscription = await Subscription.findOne({ userId: targetUserId });
   if (!subscription || subscription.isSubscriptionActive === false)
     throw new ApiError(
       403,
@@ -91,7 +92,8 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
  */
 export const optionalSubscriptionActive = asyncHandler(async (req, _, next) => {
   if (!isProduction) return next();
-  const subscription = await Subscription.findOne({ userId: req.user!._id });
+  const targetUserId = req.restaurant ? req.restaurant.ownerId : req.user!._id;
+  const subscription = await Subscription.findOne({ userId: targetUserId });
   req.subscription = subscription;
   return next();
 });

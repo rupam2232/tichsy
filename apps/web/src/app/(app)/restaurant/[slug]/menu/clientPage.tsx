@@ -77,7 +77,10 @@ const MenuPage = ({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const observer = useRef<IntersectionObserver>(null);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
+
   const debouncedSearchInput = useDebounceCallback(setSearchInput, 300);
   const currentPage = tabPages[tabName] || 1;
   const pathname = usePathname();
@@ -277,114 +280,114 @@ const MenuPage = ({
           setTabName(value);
         }}
       >
-        <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
-          <ScrollArea className="w-full sm:w-0 flex-1 pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
-            <TabsList>
-              <TabsTrigger
-                value="all"
-                className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                onClick={() => setTabName("all")}
-              >
-                All
-              </TabsTrigger>
-              <TabsTrigger
-                value="available"
-                className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                onClick={() => setTabName("available")}
-              >
-                Available
-              </TabsTrigger>
-              <TabsTrigger
-                value="unavailable"
-                className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                onClick={() => setTabName("unavailable")}
-              >
-                Unavailable
-              </TabsTrigger>
-              {restaurantCategories.map((tab, label) => (
+        {(tabName !== "all" ||
+          (allFoodItems &&
+            Array.isArray(allFoodItems.foodItems) &&
+            allFoodItems.foodItems.length > 0)) && (
+          <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
+            <ScrollArea className="w-full sm:w-0 flex-1 pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
+              <TabsList>
                 <TabsTrigger
-                  key={label}
-                  value={tab}
+                  value="all"
                   className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                  onClick={() => setTabName(tab)}
+                  onClick={() => setTabName("all")}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  All
                 </TabsTrigger>
-              ))}
-            </TabsList>
-            <ScrollBar orientation="horizontal" className="h-2" />
-          </ScrollArea>
-          <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
-            <InputGroupInput
-              placeholder="Search food items by name, category, tags..."
-              type="search"
-              onChange={(e) => {
-                debouncedSearchInput(e.target.value);
-                if (e.target.value.trim() === "") {
-                  setTabName("all");
-                  setSearchInput("");
-                } else {
-                  setTabName("search");
-                }
-              }}
-              ref={searchInputRef}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (searchInputRef.current?.value.trim() === "") {
-                    toast.error("Search input cannot be empty");
-                    return;
-                  }
-                  debouncedSearchInput.cancel();
-                  setTabName("search");
-                  setSearchInput(searchInputRef.current?.value || "");
-                }
-              }}
-            />
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                className={cn(
-                  "hover:opacity-100 hover:bg-accent h-6 w-6",
-                  searchInputRef.current && searchInputRef.current.value !== ""
-                    ? ""
-                    : "hidden",
-                )}
-                onClick={() => {
-                  if (searchInputRef.current) {
-                    searchInputRef.current.value = "";
-                    setSearchInput("");
+                <TabsTrigger
+                  value="available"
+                  className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
+                  onClick={() => setTabName("available")}
+                >
+                  Available
+                </TabsTrigger>
+                <TabsTrigger
+                  value="unavailable"
+                  className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
+                  onClick={() => setTabName("unavailable")}
+                >
+                  Unavailable
+                </TabsTrigger>
+                {restaurantCategories.map((tab, label) => (
+                  <TabsTrigger
+                    key={label}
+                    value={tab}
+                    className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
+                    onClick={() => setTabName(tab)}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <ScrollBar orientation="horizontal" className="h-2" />
+            </ScrollArea>
+            <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
+              <InputGroupInput
+                placeholder="Search food items by name, category, tags..."
+                type="search"
+                onChange={(e) => {
+                  debouncedSearchInput(e.target.value);
+                  if (e.target.value.trim() === "") {
                     setTabName("all");
+                    setSearchInput("");
+                  } else {
+                    setTabName("search");
                   }
                 }}
-              >
-                <X />
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-
-          {(isPageLoading ||
-            isPageChanging ||
-            tabName !== "all" ||
-            (allFoodItems &&
-              Array.isArray(allFoodItems.foodItems) &&
-              allFoodItems.foodItems.length > 0 &&
-              user?.role === "owner")) && (
-            <div className="flex justify-end">
-              <CreateUpdateFoodItem
-                setAllFoodItems={setAllFoodItems}
-                setTabName={setTabName}
-                formLoading={isPageLoading}
-                setFormLoading={setIsPageLoading}
-                restaurantSlug={slug}
-                categories={restaurantCategories}
-                setCategories={setRestaurantCategories}
+                ref={searchInputRef}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (searchInputRef.current?.value.trim() === "") {
+                      toast.error("Search input cannot be empty");
+                      return;
+                    }
+                    debouncedSearchInput.cancel();
+                    setTabName("search");
+                    setSearchInput(searchInputRef.current?.value || "");
+                  }
+                }}
               />
-            </div>
-          )}
-        </div>
+              <InputGroupAddon>
+                <Search />
+              </InputGroupAddon>
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  className={cn(
+                    "hover:opacity-100 hover:bg-accent h-6 w-6",
+                    searchInputRef.current &&
+                      searchInputRef.current.value !== ""
+                      ? ""
+                      : "hidden",
+                  )}
+                  onClick={() => {
+                    if (searchInputRef.current) {
+                      searchInputRef.current.value = "";
+                      setSearchInput("");
+                      setTabName("all");
+                    }
+                  }}
+                >
+                  <X />
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+
+            {activeRestaurant?.userRole === "owner" && (
+              <div className="flex justify-end">
+                <CreateUpdateFoodItem
+                  setAllFoodItems={setAllFoodItems}
+                  setTabName={setTabName}
+                  formLoading={isPageLoading}
+                  setFormLoading={setIsPageLoading}
+                  restaurantSlug={slug}
+                  categories={restaurantCategories}
+                  setCategories={setRestaurantCategories}
+                />
+              </div>
+            )}
+          </div>
+        )}
         <TabsContent value={tabName} className="mt-2">
           {isPageLoading ? (
             <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @3xl/main:grid-cols-4 @5xl/main:grid-cols-5">
@@ -529,14 +532,15 @@ const MenuPage = ({
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                {user?.role === "owner" && tabName === "all" && (
-                  <CreateUpdateFoodItem
-                    setAllFoodItems={setAllFoodItems}
-                    formLoading={isPageLoading}
-                    setFormLoading={setIsPageLoading}
-                    restaurantSlug={slug}
-                  />
-                )}
+                {activeRestaurant?.userRole === "owner" &&
+                  tabName === "all" && (
+                    <CreateUpdateFoodItem
+                      setAllFoodItems={setAllFoodItems}
+                      formLoading={isPageLoading}
+                      setFormLoading={setIsPageLoading}
+                      restaurantSlug={slug}
+                    />
+                  )}
               </EmptyContent>
             </Empty>
           )}

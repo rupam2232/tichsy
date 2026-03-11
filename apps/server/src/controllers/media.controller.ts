@@ -21,11 +21,6 @@ export const restaurantLogoUpload = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Logo file is required");
   }
 
-  if (req.user!.role !== "owner") {
-    fs.unlinkSync(logoLocalPath); // Remove the file if the user is not an owner
-    throw new ApiError(403, "Only owners can upload restaurant logos");
-  }
-
   let restaurant: Restaurant | null = null;
   const validatedData = restaurantLogoUploadSchema.parse(req.body);
   const { restaurantId } = validatedData;
@@ -83,9 +78,7 @@ export const restaurantLogoDelete = asyncHandler(async (req, res) => {
   const validatedData = restaurantLogoDeleteSchema.parse(req.body);
   const { mediaUrl, restaurantId } = validatedData;
 
-  if (req.user!.role !== "owner") {
-    throw new ApiError(403, "Only owners can delete restaurant logos");
-  }
+  // Global role check removed.
 
   let restaurant: Restaurant | null = null;
 
@@ -157,13 +150,7 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
     });
     throw new ApiError(400, "You can only upload a maximum of 5 images");
   }
-  // Check if the user is an owner
-  if (req.user!.role !== "owner") {
-    imageLocalPaths.forEach((file: Express.Multer.File) => {
-      fs.unlinkSync(file.path); // Remove the file if the user is not an owner
-    });
-    throw new ApiError(403, "Only owners can upload menu item images");
-  }
+
   let foodItem: FoodItemType | null = null;
   const validatedData = foodItemImageUploadSchema.parse(req.body);
   const { foodItemId } = validatedData;
@@ -186,7 +173,7 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
     // Check if the user owns the restaurant of the food item
     if (
       !req.user?.restaurantIds
-        ?.map((id: any) => id.toString())
+        ?.map((id) => id.toString())
         .includes(foodItem.restaurantId.toString())
     ) {
       imageLocalPaths.forEach((file: Express.Multer.File) => {
@@ -259,10 +246,6 @@ export const deleteFoodItemImage = asyncHandler(async (req, res) => {
   const validatedData = foodItemImageDeleteSchema.parse(req.body);
   const { mediaUrl, foodItemId } = validatedData;
 
-  if (req.user!.role !== "owner") {
-    throw new ApiError(403, "Only owners can delete menu item images");
-  }
-
   let foodItem: FoodItemType | null = null;
 
   if (foodItemId) {
@@ -277,7 +260,7 @@ export const deleteFoodItemImage = asyncHandler(async (req, res) => {
 
     if (
       !req.user?.restaurantIds
-        ?.map((id: any) => id.toString())
+        ?.map((id) => id.toString())
         .includes(foodItem.restaurantId.toString())
     ) {
       throw new ApiError(403, "You do not own this restaurant");

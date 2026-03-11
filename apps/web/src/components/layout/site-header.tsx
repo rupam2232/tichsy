@@ -42,7 +42,7 @@ export function SiteHeader() {
   const activeRestaurant = useSelector(
     (state: RootState) => state.restaurantsSlice.activeRestaurant,
   );
-  const user = useSelector((state: RootState) => state.auth.user);
+
   const isMobile = useIsMobile();
   const dispatch = useDispatch();
   const router = useRouter();
@@ -167,12 +167,14 @@ export function SiteHeader() {
               <span className="line-clamp-1">
                 {activeRestaurant?.restaurantName}
               </span>
-              <Separator
-                orientation="vertical"
-                className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
-              />
+              {activeRestaurant?.userRole === "owner" && (
+                <Separator
+                  orientation="vertical"
+                  className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
+                />
+              )}
             </div>
-            {user?.role === "owner" && (
+            {activeRestaurant?.userRole === "owner" && (
               <Select
                 disabled={isLoading}
                 value={isRestaurantOpen ? "open" : "closed"}

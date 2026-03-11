@@ -43,7 +43,8 @@ const CreateTableDialog = ({
   setAllTables: React.Dispatch<React.SetStateAction<AllTables | null>>;
   restaurantSlug: string;
 }) => {
-  const user = useSelector((state: RootState) => state.auth.user);
+
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
   const [formLoading, setformLoading] = useState<boolean>(false);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const dispatch = useDispatch<AppDispatch>();
@@ -59,7 +60,7 @@ const CreateTableDialog = ({
 
   const onSubmit = async (data: z.infer<typeof tableSchema>) => {
     if (isLoading || formLoading) return; // Prevent multiple submissions
-    if (!user || user?.role !== "owner") {
+    if (!activeRestaurant || activeRestaurant?.userRole !== "owner") {
       toast.error("You do not have permission to create a table");
       return;
     }

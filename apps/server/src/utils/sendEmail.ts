@@ -57,6 +57,11 @@ const optionsArray = [
     emailCategory: "Email Change",
     subject: "Your email has been changed",
   },
+  {
+    context: "invitation",
+    emailCategory: "Invitation",
+    subject: "You have been invited to join a restaurant",
+  },
 ];
 
 async function sendEmail(
@@ -71,6 +76,7 @@ async function sendEmail(
     | "restaurant-created"
     | "password-reset-success"
     | "forgot-password"
+    | "invitation"
     | "email-change-success",
   template: string
 ): Promise<T> {

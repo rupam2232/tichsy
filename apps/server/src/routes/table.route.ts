@@ -9,6 +9,7 @@ import {
   toggleTableArchiveStatus,
 } from "../controllers/table.controller.js";
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
+import { verifyRestaurantAccess } from "../middlewares/restaurantAccess.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { isSubscriptionActive, optionalSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
@@ -40,10 +41,11 @@ const occupiedStatusUpdateLimit = rateLimit({
 
 router
   .route("/:restaurantSlug")
-  .get(verifyAuth, getAllTablesOfRestaurant)
+  .get(verifyAuth, verifyRestaurantAccess, getAllTablesOfRestaurant)
   .post(
     isProduction ? createLimit : (req, res, next) => next(),
     verifyAuth,
+    verifyRestaurantAccess,
     isSubscriptionActive,
     createTable
   );
@@ -52,12 +54,14 @@ router.patch(
   "/:restaurantSlug/:qrSlug/toggle-occupied-status",
   isProduction ? occupiedStatusUpdateLimit : (req, res, next) => next(),
   verifyAuth,
+  verifyRestaurantAccess,
   toggleOccupiedStatus
 );
 
 router.patch(
   "/:restaurantSlug/:qrSlug/toggle-archive-status",
   verifyAuth,
+  verifyRestaurantAccess,
   optionalSubscriptionActive,
   toggleTableArchiveStatus
 );
@@ -65,7 +69,7 @@ router.patch(
 router
   .route("/:restaurantSlug/:qrSlug")
   .get(verifyOptionalAuth, getTableBySlug)
-  .patch(verifyAuth, updateTable)
-  .delete(verifyAuth, deleteTable);
+  .patch(verifyAuth, verifyRestaurantAccess, updateTable)
+  .delete(verifyAuth, verifyRestaurantAccess, deleteTable);
 
 export default router;

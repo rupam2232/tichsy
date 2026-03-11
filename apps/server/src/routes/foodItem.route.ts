@@ -9,6 +9,7 @@ import {
   toggleFoodItemArchiveStatus,
 } from "../controllers/foodItem.controller.js";
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
+import { verifyRestaurantAccess } from "../middlewares/restaurantAccess.middleware.js";
 import { isSubscriptionActive, optionalSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
@@ -33,6 +34,7 @@ router
   .post(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
+    verifyRestaurantAccess,
     isSubscriptionActive,
     createFoodItem
   )
@@ -44,12 +46,14 @@ router
   .patch(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
+    verifyRestaurantAccess,
     isSubscriptionActive,
     updateFoodItem
   )
   .delete(
     isProduction ? limit : (req, res, next) => next(),
     verifyAuth,
+    verifyRestaurantAccess,
     isSubscriptionActive,
     deleteFoodItem
   );
@@ -58,12 +62,14 @@ router.patch(
   "/:restaurantSlug/:foodItemId/toggle-availability-status",
   isProduction ? limit : (req, res, next) => next(),
   verifyAuth,
+  verifyRestaurantAccess,
   toggleFoodItemAvailability
 );
 
 router.patch(
   "/:restaurantSlug/:foodItemId/toggle-archive-status",
   verifyAuth,
+  verifyRestaurantAccess,
   optionalSubscriptionActive,
   toggleFoodItemArchiveStatus
 );

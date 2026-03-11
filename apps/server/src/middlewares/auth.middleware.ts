@@ -62,7 +62,6 @@ export const verifyAuth = asyncHandler(
       // Generate new tokens
       const newAccessToken = generateAccessToken({
         _id: user._id.toString(),
-        role: user.role,
         email: user.email,
       });
       const newRefreshToken = generateRefreshToken(user._id.toString());

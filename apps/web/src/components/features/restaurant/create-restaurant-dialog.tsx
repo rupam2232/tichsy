@@ -230,8 +230,8 @@ const CreateRestaurantDialog = ({
 
   const onSubmit = async (data: z.infer<typeof createRestaurantSchema>) => {
     if (isLoading || formLoading) return; // Prevent multiple submissions
-    if (!user || user?.role !== "owner") {
-      toast.error("You do not have permission to create a restaurant");
+    if (!user) {
+      toast.error("You must be logged in to create a restaurant.");
       return;
     }
     await checkUsernameUnique(); // Ensure slug uniqueness check is done

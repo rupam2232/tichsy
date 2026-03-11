@@ -65,7 +65,6 @@ export const signup = async (
     const refreshToken = generateRefreshToken(user[0]._id.toString());
     const accessToken = generateAccessToken({
       _id: user[0]._id.toString(),
-      role: user[0].role,
       email: user[0].email,
     });
 
@@ -177,7 +176,6 @@ export const signup = async (
           {
             _id: user[0]._id,
             email: user[0].email,
-            role: user[0].role,
             firstName: user[0].firstName || "",
             lastName: user[0].lastName || "",
             avatar: user[0].avatar || "",
@@ -224,7 +222,6 @@ export const signin = async (
     const refreshToken = generateRefreshToken(user._id.toString());
     const accessToken = generateAccessToken({
       _id: user._id.toString(),
-      role: user.role,
       email: user.email,
       firstName: user.firstName || "",
     });
@@ -315,7 +312,6 @@ export const signin = async (
           {
             _id: user._id,
             email: user.email,
-            role: user.role,
             firstName: user.firstName || "",
             lastName: user.lastName || "",
             avatar: user.avatar || "",
@@ -398,7 +394,6 @@ export const google = async (
       const accessToken = generateAccessToken({
         _id: user._id.toString(),
         email: user.email,
-        role: user.role,
         firstName: user.firstName || "",
       });
 
@@ -489,7 +484,6 @@ export const google = async (
             {
               _id: user._id,
               email: user.email,
-              role: user.role,
               firstName: user.firstName || "",
               lastName: user.lastName || "",
               avatar: user.avatar || "",
@@ -518,7 +512,6 @@ export const google = async (
       const accessToken = generateAccessToken({
         _id: user[0]._id.toString(),
         email: user[0].email,
-        role: user[0].role,
         firstName: "",
       });
 
@@ -625,7 +618,6 @@ export const google = async (
             {
               _id: user[0]._id,
               email: user[0].email,
-              role: user[0].role,
               firstName: user[0].firstName || "",
               lastName: user[0].lastName || "",
               avatar: user[0].avatar || "",

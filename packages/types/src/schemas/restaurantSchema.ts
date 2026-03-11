@@ -96,6 +96,7 @@ export const updateRestaurantSchema = z.object({
     });
   }
 });
-export const addStaffSchema = z.object({
+export const sendInviteSchema = z.object({
   email: z.email("Email must be a valid email address").trim(),
+  role: z.string("Role must be a string").trim().max(20, "Role must not exceed 20 characters length").optional(),
 });

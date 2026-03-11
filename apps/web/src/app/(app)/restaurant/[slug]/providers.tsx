@@ -67,7 +67,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         setAuthError(null);
         const response = await axios.get(`/restaurant/${slug}`);
         if (response.data.success) {
-          dispatch(setActiveRestaurant(response.data.data));
+          dispatch(setActiveRestaurant({...response.data.data, userRole: response.data.data.userRole.toLowerCase()}));
         }
       } catch (error) {
         console.error("Error fetching restaurant data:", error);
@@ -159,21 +159,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
   if (authError) {
     return (
       <div className="fixed inset-0 flex h-screen w-full items-center justify-center bg-background z-20">
-      <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 flex items-center justify-center mt-12">
-        <EmptyHeader>
-          <EmptyMedia variant="icon" className="size-9">
-            <ShieldAlert className="size-4" />
-          </EmptyMedia>
-          <EmptyTitle>{authError.title}</EmptyTitle>
-          <EmptyDescription>{authError.description}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {authError.content && <p>{authError.content}</p>}
-          <Button asChild className="px-8">
-            <Link href="/home">Go Home</Link>
-          </Button>
-        </EmptyContent>
-      </Empty>
+        <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 flex items-center justify-center mt-12">
+          <EmptyHeader>
+            <EmptyMedia variant="icon" className="size-9">
+              <ShieldAlert className="size-4" />
+            </EmptyMedia>
+            <EmptyTitle>{authError.title}</EmptyTitle>
+            <EmptyDescription>{authError.description}</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            {authError.content && <p>{authError.content}</p>}
+            <Button asChild className="px-8">
+              <Link href="/home">Go Home</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
       </div>
     );
   }

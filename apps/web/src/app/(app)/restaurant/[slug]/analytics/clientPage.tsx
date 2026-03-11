@@ -11,7 +11,8 @@ import { Loader2 } from "lucide-react";
 
 const ClientPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const role = useSelector((state: RootState) => state.auth.user?.role);
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const role = activeRestaurant?.userRole;
 
   if (!role) {
     return (

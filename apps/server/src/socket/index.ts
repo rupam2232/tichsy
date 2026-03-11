@@ -71,19 +71,15 @@ export function setupSocketIO(server: http.Server) {
           return socket.disconnect();
         }
 
-        if (decoded.role === "owner") {
-          if (decoded._id !== restaurant.ownerId.toString()) {
-            return socket.disconnect();
-          }
-        } else if (decoded.role === "staff") {
-          if (
-            !restaurant.staffIds?.some(
-              (staff) => staff._id.toString() === decoded._id
-            )
-          ) {
-            return socket.disconnect();
-          }
+        if (
+          decoded._id !== restaurant.ownerId.toString() &&
+          !restaurant.staffMembers?.some(
+            (staff) => staff.user.toString() === decoded._id
+          )
+        ) {
+          return socket.disconnect();
         }
+
         socket.join(`restaurant_${activeRestaurantId}`);
         console.log(`User joined ${activeRestaurantId} room`);
       } catch (err) {

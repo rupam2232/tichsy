@@ -72,6 +72,9 @@ const TableDetails = ({
   restaurantSlug: string;
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const [tableDetails, setTableDetails] = useState<TableDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -175,7 +178,7 @@ const TableDetails = ({
 
   const onSubmit = async (data: z.infer<typeof tableSchema>) => {
     if (isLoading || formLoading) return; // Prevent multiple submissions
-    if (!user || user.role !== "owner") {
+    if (!activeRestaurant || activeRestaurant?.userRole !== "owner") {
       toast.error("You do not have permission to edit tables");
       return;
     }
@@ -658,48 +661,53 @@ const TableDetails = ({
         )}
         <SheetFooter className="flex flex-row items-center justify-between">
           <SheetClose asChild ref={sheetCloseRef} />
-
-          {!isEditing && user?.role === "owner" && !isEditing && (
-            <Button
-              type="button"
-              className="w-2/4"
-              onClick={() => setIsEditing(true)}
-            >
-              <Pen />
-              Edit
-            </Button>
-          )}
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={isLoading || formLoading}
-                type="button"
-                className="w-1/3 bg-red-500 hover:bg-red-600 text-white ml-auto"
-              >
-                <Trash2 />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  table and all associated data.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-red-500 hover:bg-red-600 text-white"
-                  onClick={deleteTable}
+          {activeRestaurant?.userRole === "owner" && (
+            <>
+              {!isEditing && (
+                <Button
+                  type="button"
+                  className="w-2/4"
+                  onClick={() => setIsEditing(true)}
                 >
-                  Continue
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Pen />
+                  Edit
+                </Button>
+              )}
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={isLoading || formLoading}
+                    type="button"
+                    className="w-1/3 bg-red-500 hover:bg-red-600 text-white ml-auto"
+                  >
+                    <Trash2 />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete
+                      the table and all associated data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-500 hover:bg-red-600 text-white"
+                      onClick={deleteTable}
+                    >
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>

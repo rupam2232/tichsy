@@ -13,7 +13,6 @@ export interface User extends Document {
   email: string;
   password?: string;
   avatar?: string;
-  role: "admin" | "owner" | "staff";
   restaurantIds?: Types.ObjectId[];
   oauthProvider?: string;
   oauthId?: string;
@@ -50,13 +49,6 @@ const userSchema: Schema<User> = new Schema(
       },
     },
     avatar: String,
-    role: {
-      type: String,
-      required: [true, "Role is required"],
-      enum: ["admin", "owner", "staff"],
-      default: "owner",
-      immutable: true,
-    },
     restaurantIds: {
       type: [Schema.Types.ObjectId],
       ref: "Restaurant",
@@ -109,7 +101,7 @@ userSchema.pre<User>("save", async function (next) {
  */
 userSchema.methods.isPasswordCorrect = async function (
   password: User["password"]
-): Promise<Boolean> {
+): Promise<boolean> {
   if (!this.password || !password) {
     return false;
   } else {

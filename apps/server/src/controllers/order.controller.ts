@@ -73,8 +73,8 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     await canRestaurantRecieveOrders(restaurant);
 
-    let foodItems = [];
-    let orderedFoodItems = []; // to send real-time updates with socket.io
+    const foodItems = [];
+    const orderedFoodItems = []; // to send real-time updates with socket.io
     // check if food variants are valid
     for (const foodItem of incomingFoodItems) {
       const isFoodItemValid = await FoodItem.findOne({
@@ -261,8 +261,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
       // Send in-app notifications to owner and staff
       const notificationRecipients = [
-        restaurant.ownerId,
-        ...(restaurant.staffIds || []),
+        ...(restaurant.staffMembers?.map(sm => sm.user) || []),
       ];
 
       await Promise.all(
@@ -306,7 +305,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       // Send in-app notifications to owner and staff
       const notificationRecipients = [
         restaurant.ownerId,
-        ...(restaurant.staffIds || []),
+        ...(restaurant.staffMembers?.map(sm => sm.user) || []),
       ];
 
       await Promise.all(
@@ -431,7 +430,6 @@ export const getOrderById = asyncHandler(async (req, res) => {
               _id: 1,
               firstName: 1,
               lastName: 1,
-              role: 1,
               avatar: 1,
             },
           },
@@ -542,9 +540,22 @@ export const getOrderById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Order not found");
   }
 
+  const orderData = order[0];
+
+  if (orderData.kitchenStaff) {
+    if (orderData.kitchenStaff._id.toString() === restaurant.ownerId.toString()) {
+      orderData.kitchenStaff.role = "owner";
+    } else {
+      const staffMember = restaurant.staffMembers?.find(
+        (sm) => sm.user.toString() === orderData.kitchenStaff._id.toString()
+      );
+      orderData.kitchenStaff.role = staffMember ? staffMember.role : "staff";
+    }
+  }
+
   res
     .status(200)
-    .json(new ApiResponse(200, order[0], "Order retrieved successfully"));
+    .json(new ApiResponse(200, orderData, "Order retrieved successfully"));
 });
 
 export const getOrdersByIds = asyncHandler(async (req, res) => {
@@ -650,10 +661,6 @@ export const getOrdersByIds = asyncHandler(async (req, res) => {
 });
 
 export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
-  if (!req.params.restaurantSlug) {
-    throw new ApiError(400, "Restaurant slug is required");
-  }
-
   const {
     page = 1,
     limit = 10,
@@ -670,34 +677,9 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Page and limit must be positive integers");
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-  });
-
+  const restaurant = req.restaurant;
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
-  }
-
-  if (req.user?.role === "owner") {
-    if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view orders for this restaurant"
-      );
-    }
-  } else if (req.user?.role === "staff") {
-    if (
-      !restaurant.staffIds ||
-      restaurant.staffIds.length === 0 ||
-      !restaurant.staffIds.some(
-        (staff) => staff._id.toString() === req.user!._id!.toString()
-      )
-    ) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view orders for this restaurant"
-      );
-    }
   }
 
   const baseMatch: any = {
@@ -943,43 +925,13 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
 });
 
 export const getOrderByTable = asyncHandler(async (req, res) => {
-  if (!req.params.restaurantSlug || !req.params.tableQrSlug) {
-    throw new ApiError(400, "Restaurant slug and table QR slug are required");
+  if (!req.params.tableQrSlug) {
+    throw new ApiError(400, "Table QR slug is required");
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-  });
-
+  const restaurant = req.restaurant;
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
-  }
-
-  if (req.user?.role === "owner") {
-    if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view orders for this restaurant"
-      );
-    }
-  } else if (req.user?.role === "staff") {
-    if (
-      !restaurant.staffIds ||
-      restaurant.staffIds.length === 0 ||
-      !restaurant.staffIds.some(
-        (staff) => staff._id.toString() === req.user!._id!.toString()
-      )
-    ) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view orders for this restaurant"
-      );
-    }
-  } else {
-    throw new ApiError(
-      403,
-      "You are not authorized to view orders for this restaurant"
-    );
   }
 
   const table = await Table.findOne({
@@ -1085,8 +1037,8 @@ export const getOrderByTable = asyncHandler(async (req, res) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
-  if (!req.params.orderId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Order ID and restaurant slug are required");
+  if (!req.params.orderId) {
+    throw new ApiError(400, "Order ID is required");
   }
 
   if (!req.body || !req.body.status) {
@@ -1109,10 +1061,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Valid status is required");
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-  });
-
+  const restaurant = req.restaurant;
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
@@ -1121,33 +1070,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(
       403,
       "Restaurant is archived. Please unarchive restaurant to update order status."
-    );
-  }
-
-  if (req.user?.role === "owner") {
-    if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-      throw new ApiError(
-        403,
-        "You are not authorized to update orders for this restaurant"
-      );
-    }
-  } else if (req.user?.role === "staff") {
-    if (
-      !restaurant.staffIds ||
-      restaurant.staffIds.length === 0 ||
-      !restaurant.staffIds.some(
-        (staff) => staff._id.toString() === req.user!._id!.toString()
-      )
-    ) {
-      throw new ApiError(
-        403,
-        "You are not authorized to update orders for this restaurant"
-      );
-    }
-  } else {
-    throw new ApiError(
-      403,
-      "You are not authorized to update orders for this restaurant"
     );
   }
 
@@ -1165,9 +1087,8 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, `Order status is already set to ${status}`);
   }
 
-  // Check if the staff is the one who updated the order before
   if (
-    req.user!.role !== "owner" &&
+    req.restaurantRole !== "owner" &&
     order.kitchenStaffId &&
     order.kitchenStaffId.toString() !== req.user!._id!.toString()
   ) {
@@ -1205,7 +1126,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   order.status = status;
 
   if (!order.kitchenStaffId) {
-    order.kitchenStaffId = req.user._id as Types.ObjectId; // Set the kitchen staff who updated the order status
+    order.kitchenStaffId = req.user!._id as Types.ObjectId; // Set the kitchen staff who updated the order status
   }
 
   await order.save();
@@ -1244,8 +1165,8 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
   const session = await startSession();
   try {
     session.startTransaction();
-    if (!req.params.orderId || !req.params.restaurantSlug) {
-      throw new ApiError(400, "Order ID and restaurant slug are required");
+    if (!req.params.orderId) {
+      throw new ApiError(400, "Order ID is required");
     }
 
     if (!req.body || !req.body.foodItems) {
@@ -1258,10 +1179,7 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       throw new ApiError(400, "Food items are required");
     }
 
-    const restaurant = await Restaurant.findOne({
-      slug: req.params.restaurantSlug,
-    }).session(session);
-
+    const restaurant = req.restaurant;
     if (!restaurant) {
       throw new ApiError(404, "Restaurant not found");
     }
@@ -1270,33 +1188,6 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       throw new ApiError(
         403,
         "Restaurant is archived. Please unarchive restaurant to update order."
-      );
-    }
-
-    if (req.user?.role === "owner") {
-      if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-        throw new ApiError(
-          403,
-          "You are not authorized to update orders for this restaurant"
-        );
-      }
-    } else if (req.user?.role === "staff") {
-      if (
-        !restaurant.staffIds ||
-        restaurant.staffIds.length === 0 ||
-        !restaurant.staffIds.some(
-          (staff) => staff._id.toString() === req.user!._id!.toString()
-        )
-      ) {
-        throw new ApiError(
-          403,
-          "You are not authorized to update orders for this restaurant"
-        );
-      }
-    } else {
-      throw new ApiError(
-        403,
-        "You are not authorized to update orders for this restaurant"
       );
     }
 
@@ -1318,7 +1209,7 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     }
 
     // Validate food items
-    let updatedFoodItems = [];
+    const updatedFoodItems = [];
     for (const foodItem of foodItems) {
       if (
         !foodItem._id ||
@@ -1438,14 +1329,11 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
 });
 
 export const updatePaidStatus = asyncHandler(async (req, res) => {
-  if (!req.params.orderId || !req.params.restaurantSlug) {
-    throw new ApiError(400, "Order ID and restaurant slug are required");
+  if (!req.params.orderId) {
+    throw new ApiError(400, "Order ID is required");
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug: req.params.restaurantSlug,
-  });
-
+  const restaurant = req.restaurant;
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
@@ -1454,33 +1342,6 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
     throw new ApiError(
       403,
       "Restaurant is archived. Please unarchive restaurant to update paid status."
-    );
-  }
-
-  if (req.user!.role === "owner") {
-    if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-      throw new ApiError(
-        403,
-        "You are not authorized to update orders for this restaurant"
-      );
-    }
-  } else if (req.user?.role === "staff") {
-    if (
-      !restaurant.staffIds ||
-      restaurant.staffIds.length === 0 ||
-      !restaurant.staffIds.some(
-        (staff) => staff._id.toString() === req.user!._id!.toString()
-      )
-    ) {
-      throw new ApiError(
-        403,
-        "You are not authorized to update orders for this restaurant"
-      );
-    }
-  } else {
-    throw new ApiError(
-      403,
-      "You are not authorized to update orders for this restaurant"
     );
   }
 

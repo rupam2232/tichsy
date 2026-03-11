@@ -36,7 +36,7 @@ export default function SelectTable() {
   const router = useRouter();
   const [allTables, setAllTables] = useState<AllTables | null>(null);
   const observer = useRef<IntersectionObserver>(null);
-  const user = useSelector((state: RootState) => state.auth.user);
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
 
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table);
@@ -133,7 +133,7 @@ export default function SelectTable() {
         {allTables &&
           Array.isArray(allTables.tables) &&
           allTables.tables.length > 0 &&
-          user?.role === "owner" && (
+          activeRestaurant?.userRole === "owner" && (
             <div>
               <CreateTableDialog
                 isLoading={isPageLoading}
@@ -158,7 +158,7 @@ export default function SelectTable() {
       ) : allTables &&
         Array.isArray(allTables.tables) &&
         allTables.tables.length > 0 ? (
-        <div className="grid grid-cols-2 @md/main:grid-cols-3 @2xl/main:grid-cols-4 @4xl/main:grid-cols-5 @5xl/main:grid-cols-6 gap-4 p-4 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="grid grid-cols-2 @md/main:grid-cols-3 @2xl/main:grid-cols-4 @4xl/main:grid-cols-5 @5xl/main:grid-cols-6 gap-4 p-4 animate-in fade-in slide-in-from-top-4 duration-500">
           {allTables.tables.map((table, index) => {
             const isSelected = selectedTable?._id === table._id;
 
@@ -231,7 +231,7 @@ export default function SelectTable() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            {user?.role === "owner" && (
+            {activeRestaurant?.userRole === "owner" && (
               <CreateTableDialog
                 isLoading={isPageLoading}
                 restaurantSlug={slug}

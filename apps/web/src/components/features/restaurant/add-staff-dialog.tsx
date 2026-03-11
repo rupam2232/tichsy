@@ -8,12 +8,14 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { z } from "zod";
-import { addStaffSchema } from "@repo/types";
+import { sendInviteSchema } from "@repo/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { InvitationType } from "@repo/types";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,34 +29,75 @@ import { toast } from "sonner";
 import type { AxiosError } from "axios";
 import type { ApiResponse } from "@repo/types";
 
-const AddStaffDialog = ({ restaurantSlug }: { restaurantSlug: string }) => {
-  const form = useForm<z.infer<typeof addStaffSchema>>({
-    resolver: zodResolver(addStaffSchema),
+const AddStaffDialog = ({ 
+  restaurantSlug, 
+  onInviteSuccess 
+}: { 
+  restaurantSlug: string;
+  onInviteSuccess?: (invitation: InvitationType) => void;
+}) => {
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const router = useRouter();
+  
+  const form = useForm<z.infer<typeof sendInviteSchema>>({
+    resolver: zodResolver(sendInviteSchema),
     defaultValues: {
       email: "",
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof addStaffSchema>) => {
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsDialogOpen(false);
+      form.reset();
+    };
+
+    if (isDialogOpen) {
+      window.addEventListener("popstate", handlePopState);
+    }
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isDialogOpen, form]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setIsDialogOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    } else {
+      router.back();
+    }
+  };
+
+  const onSubmit = async (data: z.infer<typeof sendInviteSchema>) => {
+    const toastId = toast.loading("Sending invite...");
     try {
       const response = await axios.post(
-        `/restaurant/${restaurantSlug}/staff`,
+        `/invitation/${restaurantSlug}/send`,
         data,
       );
-      toast.success(response.data.message || "Staff member added successfully");
+      toast.success(
+        response.data.message || "Staff member added successfully",
+        { id: toastId },
+      );
+      if (onInviteSuccess && response.data.data) {
+        onInviteSuccess(response.data.data);
+      }
       form.reset();
+      router.back();
     } catch (error) {
       console.error("Failed to add staff member:", error);
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
           "Failed to add staff member. Please try again later.",
+        { id: toastId },
       );
     }
   };
 
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus />
@@ -66,7 +109,7 @@ const AddStaffDialog = ({ restaurantSlug }: { restaurantSlug: string }) => {
           <DialogTitle>Add Staff</DialogTitle>
           <DialogDescription>
             Invite a new staff member to your restaurant by entering their email
-            address below.
+            address below
           </DialogDescription>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -88,19 +131,21 @@ const AddStaffDialog = ({ restaurantSlug }: { restaurantSlug: string }) => {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription>
-                        The email address of the staff member. It will be used
-                        for login and notifications.
-                        <span className="text-muted-foreground block">
-                          Note: All staff members must have unique email
-                          addresses.
-                        </span>
-                      </FormDescription>
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
-                  Send Invite <Send />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? (
+                    <>Sending invite...</>
+                  ) : (
+                    <>
+                      Send Invite <Send />
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

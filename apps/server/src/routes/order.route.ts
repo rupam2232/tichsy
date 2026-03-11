@@ -12,6 +12,7 @@ import {
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { verifyAuth, verifyOptionalAuth } from "../middlewares/auth.middleware.js";
+import { verifyRestaurantAccess } from "../middlewares/restaurantAccess.middleware.js";
 import { env } from "../env.js";
 
 const isProduction = env.NODE_ENV === "production";
@@ -36,16 +37,16 @@ router.post(
 router
   .route("/:restaurantSlug/:orderId")
   .get(verifyOptionalAuth, getOrderById) // Get order by ID
-  .patch(verifyAuth, updateOrder); // Update order
+  .patch(verifyAuth, verifyRestaurantAccess, updateOrder); // Update order
 
 router.get("/by-ids", verifyOptionalAuth, getOrdersByIds);
 
-router.get("/:restaurantSlug", verifyAuth, getOrdersByRestaurant);
+router.get("/:restaurantSlug", verifyAuth, verifyRestaurantAccess, getOrdersByRestaurant);
 
-router.get("/:restaurantSlug/table/:tableQrSlug", verifyAuth, getOrderByTable);
+router.get("/:restaurantSlug/table/:tableQrSlug", verifyAuth, verifyRestaurantAccess, getOrderByTable);
 
-router.patch("/:restaurantSlug/:orderId/status", verifyAuth, updateOrderStatus);
+router.patch("/:restaurantSlug/:orderId/status", verifyAuth, verifyRestaurantAccess, updateOrderStatus);
 
-router.patch("/:restaurantSlug/:orderId/paid-status", verifyAuth, updatePaidStatus);
+router.patch("/:restaurantSlug/:orderId/paid-status", verifyAuth, verifyRestaurantAccess, updatePaidStatus);
 
 export default router;

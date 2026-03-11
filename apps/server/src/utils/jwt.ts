@@ -3,7 +3,6 @@ import { env } from "../env.js";
 
 export interface accessTokenUser {
   _id: string;
-  role: "admin" | "owner" | "staff";
   email: string;
   firstName?: string;
   [key: string]: any;

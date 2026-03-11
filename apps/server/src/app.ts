@@ -17,6 +17,7 @@ import paymentRoute from "./routes/payment.route.js";
 import cartRoute from "./routes/cart.route.js";
 import subscriptionRoute from "./routes/subscription.route.js";
 import notificationRoute from "./routes/notification.route.js";
+import invitationRoute from "./routes/invitation.route.js";
 
 // Create Express app instance
 const app = express();
@@ -70,6 +71,7 @@ app.use("/api/v1/payment", paymentRoute);
 app.use("/api/v1/cart", cartRoute);
 app.use("/api/v1/subscription", subscriptionRoute);
 app.use("/api/v1/notification", notificationRoute);
+app.use("/api/v1/invitation", invitationRoute);
 
 // Global error handler middleware
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -49,7 +49,7 @@ const FoodOrderStepsForStaffs = ({
   const router = useRouter();
   const { slug } = useParams<{ slug: string }>();
   const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
+
   const activeRestaurant = useSelector(
     (state: RootState) => state.restaurantsSlice.activeRestaurant,
   );
@@ -306,7 +306,7 @@ const FoodOrderStepsForStaffs = ({
                 <p className="text-center text-muted-foreground">
                   No tables created yet. Please create a table to proceed.
                 </p>
-                {user?.role === "owner" && (
+                {activeRestaurant?.userRole === "owner" && (
                   <Link href={`/restaurant/${slug}/tables`}>
                     <Button type="button">Create a new table</Button>
                   </Link>

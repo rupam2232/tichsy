@@ -68,7 +68,8 @@ const CreateUpdateFoodItem = ({
     null,
   ); // Child accordion state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const user = useSelector((state: RootState) => state.auth.user);
+
+  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const pathname = usePathname();
@@ -301,7 +302,7 @@ const CreateUpdateFoodItem = ({
 
   const onSubmit = async (data: z.infer<typeof foodItemSchema>) => {
     if (formLoading) return; // Prevent multiple submissions
-    if (!user || user.role !== "owner") {
+    if (!activeRestaurant || activeRestaurant?.userRole !== "owner") {
       toast.error("You do not have permission to edit food items");
       return;
     }
@@ -511,7 +512,7 @@ const CreateUpdateFoodItem = ({
                     handleImageRemove={handleImageRemove}
                     handleImageUpload={handleImageUpload}
                     MAX_IMAGE_SIZE={MAX_IMAGE_SIZE}
-                    userRole={user?.role}
+                    userRole={activeRestaurant?.userRole}
                     foodItemDetails={foodItemDetails}
                   />
 

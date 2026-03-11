@@ -5,7 +5,7 @@ import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { ApiResponse, RestaurantMinimalInfo } from "@repo/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import {
   Card,
   CardAction,
@@ -37,107 +37,179 @@ import {
   EmptyTitle,
 } from "@repo/ui/components/empty";
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
+import { Skeleton } from "@repo/ui/components/skeleton";
+import { cn } from "@repo/ui/lib/utils";
 
 export default function ClientPage() {
   const user = useSelector((state: RootState) => state.auth.user);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [ownersRestaurant, setOwnersRestaurant] = useState<
+  const [isOwnedLoading, setIsOwnedLoading] = useState<boolean>(true);
+  const [ownedRestaurants, setOwnedRestaurants] = useState<
     RestaurantMinimalInfo[]
   >([]);
-  const [staffsrestaurant, setStaffsRestaurant] =
-    useState<RestaurantMinimalInfo | null>(null);
+  const [ownedPage, setOwnedPage] = useState<number>(1);
+  const [hasMoreOwned, setHasMoreOwned] = useState<boolean>(true);
+  const [isOwnedChanging, setIsOwnedChanging] = useState<boolean>(false);
+  const ownedObserver = useRef<IntersectionObserver>(null);
+
+  const [isJoinedLoading, setIsJoinedLoading] = useState<boolean>(true);
+  const [staffRestaurants, setStaffRestaurants] = useState<
+    RestaurantMinimalInfo[]
+  >([]);
+  const [joinedPage, setJoinedPage] = useState<number>(1);
+  const [hasMoreJoined, setHasMoreJoined] = useState<boolean>(true);
+  const [isJoinedChanging, setIsJoinedChanging] = useState<boolean>(false);
+  const joinedObserver = useRef<IntersectionObserver>(null);
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
 
-  const fetchOwnersRestaurants = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get("/restaurant/owner");
-      if (response.data.success) {
-        setOwnersRestaurant(response.data.data);
-        dispatch(
-          setAllRestaurants(
-            response.data.data.map((restaurant: RestaurantMinimalInfo) => ({
-              _id: restaurant._id,
-              restaurantName: restaurant.restaurantName,
-              slug: restaurant.slug,
-            })),
-          ),
-        );
-        dispatch(setActiveRestaurant(null));
-        setStaffsRestaurant(null);
-      } else {
-        toast.error(
-          response.data.message || "Failed to fetch owner's restaurants",
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching owner's restaurants:", error);
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to fetch owner's restaurants",
-      );
-      if (axiosError.response?.status === 401) {
-        dispatch(signOut());
-        router.push("/signin");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [dispatch, router]);
+  const fetchOwnedRestaurants = useCallback(async () => {
+    if (!hasMoreOwned && ownedPage !== 1) return;
 
-  const fetchStaffsRestaurant = useCallback(async () => {
-    setIsLoading(true);
+    if (ownedPage === 1) setIsOwnedLoading(true);
+    else setIsOwnedChanging(true);
+
     try {
-      const response = await axios.get("/restaurant/staff");
+      const response = await axios.get("/restaurant/owned", {
+        params: { page: ownedPage, limit: 12 },
+      });
       if (response.data.success) {
-        setStaffsRestaurant(response.data.data);
-        dispatch(
-          setAllRestaurants([
-            {
-              _id: response.data.data._id,
-              restaurantName: response.data.data.restaurantName,
-              slug: response.data.data.slug,
-            },
-          ]),
-        );
+        const newOwned = response.data.data.restaurants;
+        const newHasNextPage = response.data.data.hasNextPage;
+
+        if (ownedPage === 1) {
+          setOwnedRestaurants(newOwned);
+        } else {
+          setOwnedRestaurants((prev) => [...prev, ...newOwned]);
+        }
+        setHasMoreOwned(newHasNextPage);
         dispatch(setActiveRestaurant(null));
-        setOwnersRestaurant([]);
       } else {
         toast.error(
-          response.data.message || "Failed to fetch staff's restaurants",
+          response.data.message || "Failed to fetch owned restaurants",
         );
       }
     } catch (error) {
-      console.error("Error fetching staff's restaurants:", error);
+      console.error("Error fetching owned restaurants:", error);
       const axiosError = error as AxiosError<ApiResponse>;
       toast.error(
         axiosError.response?.data.message ||
-          "Failed to fetch staff's restaurants",
+          "Failed to fetch owned restaurants",
       );
       if (axiosError.response?.status === 401) {
         dispatch(signOut());
         router.push("/signin");
       }
     } finally {
-      setIsLoading(false);
+      setIsOwnedLoading(false);
+      setIsOwnedChanging(false);
     }
-  }, [dispatch, router]);
+  }, [ownedPage, dispatch, router, hasMoreOwned]);
+
+  const fetchJoinedRestaurants = useCallback(async () => {
+    if (!hasMoreJoined && joinedPage !== 1) return;
+
+    if (joinedPage === 1) setIsJoinedLoading(true);
+    else setIsJoinedChanging(true);
+
+    try {
+      const response = await axios.get("/restaurant/joined", {
+        params: { page: joinedPage, limit: 12 },
+      });
+      if (response.data.success) {
+        const newJoined = response.data.data.restaurants;
+        const newHasNextPage = response.data.data.hasNextPage;
+
+        if (joinedPage === 1) {
+          setStaffRestaurants(newJoined);
+        } else {
+          setStaffRestaurants((prev) => [...prev, ...newJoined]);
+        }
+        setHasMoreJoined(newHasNextPage);
+        dispatch(setActiveRestaurant(null));
+      } else {
+        toast.error(
+          response.data.message || "Failed to fetch joined restaurants",
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching joined restaurants:", error);
+      const axiosError = error as AxiosError<ApiResponse>;
+      toast.error(
+        axiosError.response?.data.message ||
+          "Failed to fetch joined restaurants",
+      );
+      if (axiosError.response?.status === 401) {
+        dispatch(signOut());
+        router.push("/signin");
+      }
+    } finally {
+      setIsJoinedLoading(false);
+      setIsJoinedChanging(false);
+    }
+  }, [joinedPage, dispatch, router, hasMoreJoined]);
+
+  const lastOwnedElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (ownedObserver.current) ownedObserver.current.disconnect();
+      ownedObserver.current = new IntersectionObserver((entries) => {
+        if (entries && Array.isArray(entries) && entries[0]?.isIntersecting) {
+          if (hasMoreOwned && !isOwnedChanging && !isOwnedLoading) {
+            setOwnedPage((prev) => prev + 1);
+          }
+        }
+      });
+      if (node) ownedObserver.current.observe(node);
+    },
+    [hasMoreOwned, isOwnedChanging, isOwnedLoading],
+  );
+
+  const lastJoinedElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (joinedObserver.current) joinedObserver.current.disconnect();
+      joinedObserver.current = new IntersectionObserver((entries) => {
+        if (entries && Array.isArray(entries) && entries[0]?.isIntersecting) {
+          if (hasMoreJoined && !isJoinedChanging && !isJoinedLoading) {
+            setJoinedPage((prev) => prev + 1);
+          }
+        }
+      });
+      if (node) joinedObserver.current.observe(node);
+    },
+    [hasMoreJoined, isJoinedChanging, isJoinedLoading],
+  );
 
   useEffect(() => {
     if (!user) {
-      setIsLoading(false);
+      setIsOwnedLoading(false);
+      setIsJoinedLoading(false);
       dispatch(signOut());
       router.push("/signin");
-    } else if (user.role === "owner") {
-      fetchOwnersRestaurants();
-    } else if (user.role === "staff") {
-      fetchStaffsRestaurant();
+    } else {
+      fetchOwnedRestaurants();
     }
-  }, [user, fetchOwnersRestaurants, fetchStaffsRestaurant, dispatch, router]);
+  }, [user, ownedPage, dispatch, router, fetchOwnedRestaurants]);
+
+  useEffect(() => {
+    if (user) {
+      fetchJoinedRestaurants();
+    }
+  }, [user, joinedPage, fetchJoinedRestaurants]);
+
+  useEffect(() => {
+    const combined = [...ownedRestaurants, ...staffRestaurants];
+    dispatch(
+      setAllRestaurants(
+        combined.map((restaurant: RestaurantMinimalInfo) => ({
+          _id: restaurant._id,
+          restaurantName: restaurant.restaurantName,
+          slug: restaurant.slug,
+        })),
+      ),
+    );
+  }, [ownedRestaurants, staffRestaurants, dispatch]);
 
   return (
     <section className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6">
@@ -147,200 +219,246 @@ export default function ClientPage() {
             ? `Welcome to ${process.env.NEXT_PUBLIC_APP_NAME}, ${user?.firstName ?? "User"}!`
             : `Welcome back, ${user?.firstName ?? "User"}!`}
         </p>
-        {user?.role === "owner" && (
-          <div className="px-4 lg:px-6">
-            <CreateRestaurantDialog
-              setOwnersRestaurant={setOwnersRestaurant}
-              isLoading={isLoading}
-            >
-              <Plus /> New Restaurant
-            </CreateRestaurantDialog>
-          </div>
-        )}
+        <div className="px-4 lg:px-6">
+          <CreateRestaurantDialog
+            setOwnersRestaurant={setOwnedRestaurants}
+            isLoading={isOwnedLoading && isJoinedLoading}
+          >
+            <Plus /> New Restaurant
+          </CreateRestaurantDialog>
+        </div>
       </div>
       <div className="flex flex-col gap-4 px-4 lg:px-6">
-        {isLoading ? (
+        {isOwnedLoading && isJoinedLoading ? (
           <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4">
             {Array.from({ length: 3 }).map((_, index) => (
-              <div
+              <Skeleton
                 key={index}
-                className={`animate-pulse ${index > 0 ? `delay-${(index + 1) * 100}` : ""} h-52 border border-accent shadow-md rounded-md flex flex-col items-center justify-between p-4`}
-              >
-                <div className="flex flex-col items-center gap-2 w-full">
-                  <div className="animate-pulse bg-accent h-6 w-full rounded-md"></div>
-                  <div className="animate-pulse bg-accent h-4 w-4/5 rounded-md"></div>
-                </div>
-                <div className="animate-pulse bg-accent h-15 w-15 rounded-full"></div>
-                <div className="animate-pulse bg-accent h-8 w-2/3 rounded-md"></div>
-              </div>
+                className={cn(
+                  "h-52 rounded-md",
+                  index > 0 ? `delay-${(index + 1) * 100}` : "",
+                )}
+              />
             ))}
           </div>
-        ) : user?.role === "owner" ? (
-          ownersRestaurant.length > 0 ? (
-            <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-              {ownersRestaurant.map((restaurant) => (
-                <Card key={restaurant._id} className="@container/card">
-                  <CardHeader>
-                    {restaurant.isArchived && (
-                      <Badge variant="destructive" className="ml-auto">
-                        Archived
-                      </Badge>
-                    )}
-                    <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
-                      {restaurant.restaurantName}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {restaurant.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <div className="flex flex-col items-center w-full gap-4">
-                    <Avatar className="w-15 h-15">
-                      <AvatarImage
-                        src={getOptimizedUrl(
-                          restaurant.logoUrl,
-                          150,
-                          150,
-                          "r_max",
-                        )}
-                        alt={`${restaurant.restaurantName} Logo`}
-                        className="object-cover"
-                        loading="lazy"
-                        draggable={false}
-                      />
-                      <AvatarFallback className="font-medium">
-                        {restaurant?.restaurantName
-                          ?.split(" ")
-                          .map((word) => word[0])
-                          .slice(0, 2)
-                          .join("")
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <CardAction className="self-auto">
-                      <Button
-                        variant="outline"
-                        className="text-sm"
-                        onClick={async () => {
-                          dispatch(
-                            setActiveRestaurant({
-                              _id: restaurant._id,
-                              restaurantName: restaurant.restaurantName,
-                              slug: restaurant.slug,
-                              logoUrl: restaurant.logoUrl,
-                              isCurrentlyOpen: restaurant.isCurrentlyOpen,
-                            }),
-                          );
-                          router.push(
-                            `/restaurant/${restaurant.slug}/dashboard`,
-                          );
-                        }}
-                      >
-                        Manage Restaurant
-                      </Button>
-                    </CardAction>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
-              <EmptyHeader>
-                <EmptyMedia variant="icon" className="size-9">
-                  <Store className="size-4" />
-                </EmptyMedia>
-                <EmptyTitle>No restaurants found</EmptyTitle>
-                <EmptyDescription>
-                  You have not created any restaurants yet. Get started by
-                  creating a new restaurant
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <CreateRestaurantDialog
-                  setOwnersRestaurant={setOwnersRestaurant}
-                  isLoading={isLoading}
-                >
-                  Create Restaurant
-                </CreateRestaurantDialog>
-              </EmptyContent>
-            </Empty>
-          )
-        ) : user?.role === "staff" && staffsrestaurant ? (
-          <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-            <Card className="@container/card">
-              {staffsrestaurant.isArchived && (
-                <Badge variant="destructive" className="ml-auto">
-                  Archived
-                </Badge>
-              )}
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
-                  {staffsrestaurant.restaurantName}
-                </CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {staffsrestaurant.description}
-                </CardDescription>
-              </CardHeader>
-              <div className="flex flex-col items-center w-full gap-4">
-                <Avatar className="w-15 h-15">
-                  <AvatarImage
-                    src={getOptimizedUrl(
-                      staffsrestaurant.logoUrl,
-                      150,
-                      150,
-                      "r_max",
-                    )}
-                    alt={`${staffsrestaurant.restaurantName} Logo`}
-                    className="object-cover"
-                    loading="lazy"
-                    draggable={false}
-                  />
-                  <AvatarFallback className="font-medium">
-                    {staffsrestaurant?.restaurantName
-                      ?.split(" ")
-                      .map((word) => word[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <CardAction className="self-auto">
-                  <Button
-                    variant="outline"
-                    className="text-sm"
-                    onClick={async () => {
-                      dispatch(
-                        setActiveRestaurant({
-                          _id: staffsrestaurant._id,
-                          restaurantName: staffsrestaurant.restaurantName,
-                          slug: staffsrestaurant.slug,
-                          logoUrl: staffsrestaurant.logoUrl,
-                          isCurrentlyOpen: staffsrestaurant.isCurrentlyOpen,
-                        }),
-                      );
-                      router.push(
-                        `/restaurant/${staffsrestaurant.slug}/dashboard`,
-                      );
-                    }}
-                  >
-                    Manage Restaurant
-                  </Button>
-                </CardAction>
-              </div>
-            </Card>
-          </div>
         ) : (
-          <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
-            <EmptyHeader>
-              <EmptyMedia variant="icon" className="size-9">
-                <Store className="size-4" />
-              </EmptyMedia>
-              <EmptyTitle>No restaurants found</EmptyTitle>
-              <EmptyDescription>
-                You are not assigned to any restaurant yet. Please contact your
-                manager or owner to get assigned to a restaurant
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <div className="flex flex-col gap-8 w-full">
+            {ownedRestaurants.length > 0 || staffRestaurants.length > 0 ? (
+              <>
+                {ownedRestaurants.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-2xl font-medium tracking-tight">
+                      My Restaurants
+                    </h2>
+                    <p className="text-muted-foreground text-sm">
+                      Restaurants you own and manage
+                    </p>
+                    <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500 mt-3">
+                      {ownedRestaurants.map((restaurant, index) => (
+                        <Card
+                          key={restaurant._id}
+                          className="@container/card"
+                          ref={
+                            index === ownedRestaurants.length - 1
+                              ? lastOwnedElementRef
+                              : null
+                          }
+                        >
+                          <CardHeader>
+                            {restaurant.isArchived && (
+                              <Badge variant="destructive" className="ml-auto">
+                                Archived
+                              </Badge>
+                            )}
+                            <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
+                              {restaurant.restaurantName}
+                            </CardTitle>
+                            <CardDescription className="line-clamp-2">
+                              {restaurant.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <div className="flex flex-col items-center w-full gap-4 pb-6">
+                            <Avatar className="w-15 h-15">
+                              <AvatarImage
+                                src={getOptimizedUrl(
+                                  restaurant.logoUrl,
+                                  150,
+                                  150,
+                                  "r_max",
+                                )}
+                                alt={`${restaurant.restaurantName} Logo`}
+                                className="object-cover"
+                                loading="lazy"
+                                draggable={false}
+                              />
+                              <AvatarFallback className="font-medium">
+                                {restaurant?.restaurantName
+                                  ?.split(" ")
+                                  .map((word) => word[0])
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <CardAction className="self-auto">
+                              <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={async () => {
+                                  dispatch(
+                                    setActiveRestaurant({
+                                      _id: restaurant._id,
+                                      restaurantName: restaurant.restaurantName,
+                                      slug: restaurant.slug,
+                                      logoUrl: restaurant.logoUrl,
+                                      isCurrentlyOpen:
+                                        restaurant.isCurrentlyOpen,
+                                    }),
+                                  );
+                                  router.push(
+                                    `/restaurant/${restaurant.slug}/dashboard`,
+                                  );
+                                }}
+                              >
+                                Manage Restaurant
+                              </Button>
+                            </CardAction>
+                          </div>
+                        </Card>
+                      ))}
+                      {isOwnedChanging &&
+                        Array.from({ length: 4 }).map((_, index) => (
+                          <Skeleton
+                            key={index}
+                            className={cn(
+                              "rounded-md",
+                              index > 0 ? `delay-${(index + 1) * 100}` : "",
+                            )}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {staffRestaurants.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <h2 className="text-2xl font-medium tracking-tight">
+                      Joined Restaurants
+                    </h2>
+                    <p className="text-muted-foreground text-sm">
+                      Restaurants you manage as staff
+                    </p>
+                    <div className="grid grid-cols-1 @xl/main:grid-cols-2 @3xl/main:grid-cols-3 @5xl/main:grid-cols-4 gap-4 text-center animate-in fade-in slide-in-from-top-4 duration-500 mt-3">
+                      {staffRestaurants.map((staffsrestaurant, index) => (
+                        <Card
+                          key={staffsrestaurant._id}
+                          className="@container/card"
+                          ref={
+                            index === staffRestaurants.length - 1
+                              ? lastJoinedElementRef
+                              : null
+                          }
+                        >
+                          <CardHeader>
+                            {staffsrestaurant.isArchived && (
+                              <Badge variant="destructive" className="ml-auto">
+                                Archived
+                              </Badge>
+                            )}
+                            <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl line-clamp-2">
+                              {staffsrestaurant.restaurantName}
+                            </CardTitle>
+                            <CardDescription className="line-clamp-2">
+                              {staffsrestaurant.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <div className="flex flex-col items-center w-full gap-4 pb-6">
+                            <Avatar className="w-15 h-15">
+                              <AvatarImage
+                                src={getOptimizedUrl(
+                                  staffsrestaurant.logoUrl,
+                                  150,
+                                  150,
+                                  "r_max",
+                                )}
+                                alt={`${staffsrestaurant.restaurantName} Logo`}
+                                className="object-cover"
+                                loading="lazy"
+                                draggable={false}
+                              />
+                              <AvatarFallback className="font-medium">
+                                {staffsrestaurant?.restaurantName
+                                  ?.split(" ")
+                                  .map((word) => word[0])
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <CardAction className="self-auto">
+                              <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={async () => {
+                                  dispatch(
+                                    setActiveRestaurant({
+                                      _id: staffsrestaurant._id,
+                                      restaurantName:
+                                        staffsrestaurant.restaurantName,
+                                      slug: staffsrestaurant.slug,
+                                      logoUrl: staffsrestaurant.logoUrl,
+                                      isCurrentlyOpen:
+                                        staffsrestaurant.isCurrentlyOpen,
+                                    }),
+                                  );
+                                  router.push(
+                                    `/restaurant/${staffsrestaurant.slug}/dashboard`,
+                                  );
+                                }}
+                              >
+                                Manage Restaurant
+                              </Button>
+                            </CardAction>
+                          </div>
+                        </Card>
+                      ))}
+                      {isJoinedChanging &&
+                        Array.from({ length: 4 }).map((_, index) => (
+                          <Skeleton
+                            key={index}
+                            className={cn(
+                              "rounded-md",
+                              index > 0 ? `delay-${(index + 1) * 100}` : "",
+                            )}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Empty className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon" className="size-9">
+                    <Store className="size-4" />
+                  </EmptyMedia>
+                  <EmptyTitle>No restaurants found</EmptyTitle>
+                  <EmptyDescription>
+                    You have not created any restaurants and are not assigned to
+                    any. Get started by creating a new restaurant.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <CreateRestaurantDialog
+                    setOwnersRestaurant={setOwnedRestaurants}
+                    isLoading={isOwnedLoading && isJoinedLoading}
+                  >
+                    Create Restaurant
+                  </CreateRestaurantDialog>
+                </EmptyContent>
+              </Empty>
+            )}
+          </div>
         )}
       </div>
     </section>

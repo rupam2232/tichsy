@@ -26,7 +26,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@repo/ui/components/sidebar";
-import { UserState } from "@/store/authSlice";
 import ToggleTheme from "@/components/shared/toggle-theme";
 import Link from "next/link";
 import {
@@ -55,7 +54,8 @@ import { cn } from "@repo/ui/lib/utils";
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { useMediaQuery } from "usehooks-ts";
 
-export function NavUser({ user }: { user: UserState["user"] }) {
+export function NavUser() {
+  const user = useSelector((state: RootState) => state.auth.user);
   const { isMobile } = useSidebar();
   const dispatch = useDispatch();
   const userState = useSelector((state: RootState) => state.auth.status);
