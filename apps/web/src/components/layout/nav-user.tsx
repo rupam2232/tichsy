@@ -53,16 +53,25 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { useMediaQuery } from "usehooks-ts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function NavUser() {
   const user = useSelector((state: RootState) => state.auth.user);
-  const { isMobile } = useSidebar();
   const dispatch = useDispatch();
   const userState = useSelector((state: RootState) => state.auth.status);
   const router = useRouter();
   const [isLogoutBtnLoading, setisLogoutBtnLoading] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const { openMobile, setOpenMobile } = useSidebar();
+
+  const closeSidebarForMobile = () => {
+    setIsDropdownOpen(false);
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleLogout = async () => {
     if (!userState) {
@@ -112,7 +121,7 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer mb-2 group-data-[collapsible=icon]:p-0! p-2 transition-none"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
@@ -177,7 +186,7 @@ export function NavUser() {
               {NavUserItems.map((item) => (
                 <DropdownMenuItem
                   key={item.name}
-                  onClick={() => setIsDropdownOpen(false)}
+                  onClick={closeSidebarForMobile}
                 >
                   <Link href={item.href} className="absolute inset-0" />
                   <item.icon />

@@ -157,7 +157,7 @@ export default function ClientPage() {
         currency: data.currency,
         name: `${process.env.NEXT_PUBLIC_APP_NAME} ${selectedPlan?.title}`,
         description: selectedPlan?.description,
-        image: process.env.NEXT_PUBLIC_CLIENT_BASE_URL + "/favicon.ico",
+        image: process.env.NEXT_PUBLIC_APP_URL + "/favicon.ico",
         order_id: data.id,
         handler: (response: unknown) => verifyPayment(response, data.id),
         notes: {

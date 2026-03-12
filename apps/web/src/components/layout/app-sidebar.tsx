@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  IconInnerShadowTop,
   IconReceipt,
   IconSettings,
   IconTable,
@@ -32,6 +31,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { X } from "lucide-react";
+import Image from "next/image";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const activeRestaurant = useSelector(
@@ -116,16 +116,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="px-0 pl-1">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between gap-2">
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5 text-sidebar-accent-foreground flex-1 hover:bg-sidebar"
             >
-              <Link href="/">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">
+              <Link href="/" className="gap-1! transition-all duration-300">
+                <Image
+                  loading="eager"
+                  src="/white-transparent-icon.svg"
+                  className="hidden dark:block"
+                  alt="logo"
+                  width={30}
+                  height={30}
+                />
+                <Image
+                  loading="eager"
+                  src="/black-transparent-icon.svg"
+                  className="block dark:hidden"
+                  alt="logo"
+                  width={30}
+                  height={30}
+                />
+                <span className="text-xl font-bold">
                   {process.env.NEXT_PUBLIC_APP_NAME}
                 </span>
               </Link>
@@ -148,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           />
         </ScrollArea>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="group-data-[collapsible=icon]:p-2 px-2 md:p-0">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

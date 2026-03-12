@@ -1,55 +1,117 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@repo/ui/styles/globals.css";
 import { Providers } from "./providers";
 import serverAxios from "@/utils/server-axios";
 
-export const metadata: Metadata = {
-  title: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
-  description:
-    "The best point of sale system for restaurants, cafes, and retail businesses. Streamline orders, manage tables, and accept payments with QR codes.",
-  keywords: [
-    "POS",
-    "Point of Sale",
-    "Restaurant POS",
-    "QR Menu",
-    "Digital Menu",
-    "Contactless Ordering",
-    "Restaurant Management",
-    "Cafe POS",
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" }, // You can adjust this to your exact dark theme hex
   ],
-  authors: [{ name: "Your Company Name" }],
-  creator: "Your Company Name",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  ),
+  title: "Tichsy – QR Menu Ordering & POS for Restaurants",
+  description:
+    "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
+  keywords: [
+  "restaurant pos system",
+  "restaurant pos software",
+  "qr menu for restaurant",
+  "qr code menu for restaurant",
+  "qr code ordering system",
+  "qr ordering system for restaurants",
+  "restaurant qr ordering system",
+  "table qr code ordering",
+  "restaurant ordering system",
+  "digital menu for restaurant",
+  "digital menu ordering system",
+  "contactless ordering system",
+  "contactless restaurant ordering",
+  "restaurant table ordering system",
+  "restaurant table management system",
+  "restaurant order management system",
+  "restaurant order tracking system",
+  "restaurant menu management software",
+  "restaurant staff management software",
+  "restaurant analytics dashboard",
+  "restaurant management software",
+  "restaurant pos india",
+  "pos for cafes",
+  "cafe pos system",
+  "restaurant qr menu system",
+  "restaurant qr code ordering india",
+  "restaurant online ordering system",
+  "restaurant order dashboard",
+  "restaurant operations management",
+  "restaurant digital ordering system",
+  "tichsy",
+  "tichsy pos",
+  "tichsy restaurant pos"
+],
+  authors: [{ name: "Rupam Mondal" }],
+  creator: "Rupam Mondal",
+  alternates: {
+    canonical: "/",
+  },
+  formatDetection: {
+    telephone: false,
+    date: false,
+    email: false,
+    address: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Tichsy",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL,
-    title: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
+    title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
-      "Revolutionize your restaurant operations with our all-in-one POS solution. Lightning-fast orders, real-time table management, and seamless QR ordering.",
-    siteName: process.env.NEXT_PUBLIC_APP_NAME,
+      "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
+    siteName: "Tichsy",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: `${process.env.NEXT_PUBLIC_APP_NAME} Preview`,
+        alt: "Tichsy Preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${process.env.NEXT_PUBLIC_APP_NAME} - Modern POS for Restaurants`,
+    title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
-      "Streamline orders, manage tables, and grow your business with our modern POS solution.",
+      "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
     images: ["/og-image.png"],
-    creator: "@yourhandle",
+    creator: "@rupam2232",
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      {
+        url: "/light-icon.svg",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/dark-icon.svg",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: {
+      url: "/apple-touch-icon.png",
+      sizes: "180x180",
+      type: "image/png",
+    },
   },
-  manifest: "/site.webmanifest",
   robots: {
     index: true,
     follow: true,
@@ -83,6 +145,25 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "Tichsy",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "INR",
+              },
+              description:
+                "Tichsy is a QR code ordering system and POS platform for restaurants. Customers scan table QR codes, browse the menu and place orders instantly.",
+            }),
+          }}
+        />
         <Providers user={user}>
           {modal}
           {children}

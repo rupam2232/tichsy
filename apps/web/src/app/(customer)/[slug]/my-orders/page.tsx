@@ -12,7 +12,8 @@ export async function generateMetadata({
   if (!restaurant) {
     return {
       title: "Page not found",
-      description: "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
+      description:
+        "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
     };
   }
   return {
@@ -23,7 +24,7 @@ export async function generateMetadata({
         rel: "icon",
         url:
           restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-          `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/favicon.ico`,
+          `${process.env.NEXT_PUBLIC_APP_URL}/favicon.ico`,
       },
     ],
   };

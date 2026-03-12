@@ -37,7 +37,7 @@ const BillReceipt = ({
           new QRCodeStyling({
             width: 1200,
             height: 1200,
-            data: `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/${restaurantSlug}/order/${orderId}`,
+            data: `${process.env.NEXT_PUBLIC_APP_URL}/${restaurantSlug}/order/${orderId}`,
             type: "svg",
             margin: 40,
             dotsOptions: {

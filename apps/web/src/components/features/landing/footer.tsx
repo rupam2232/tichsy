@@ -12,6 +12,7 @@ import React, {
   useState,
 } from "react";
 import { cn } from "@repo/ui/lib/utils";
+import Image from "next/image";
 
 // Helper function to convert any CSS color to rgba
 export const getRGBA = (
@@ -405,7 +406,23 @@ export default function Footer() {
     <footer id="footer" className="w-full pb-0 pt-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between p-10">
         <div className="flex flex-col items-start justify-start gap-y-5 md:max-w-xs mx-0">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-1">
+            <Image
+              loading="eager"
+              src="/black-transparent-icon.svg"
+              className="block dark:hidden"
+              alt="logo"
+              width={30}
+              height={30}
+            />
+            <Image
+              loading="eager"
+              src="/white-transparent-icon.svg"
+              className="hidden dark:block"
+              alt="logo"
+              width={30}
+              height={30}
+            />
             <p className="text-xl font-bold tracking-tight text-foreground">
               {process.env.NEXT_PUBLIC_APP_NAME}
             </p>

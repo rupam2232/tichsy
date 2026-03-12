@@ -24,7 +24,7 @@ export async function generateMetadata({
         rel: "icon",
         url:
           restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-          `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/favicon.ico`,
+          `${process.env.NEXT_PUBLIC_APP_URL}/favicon.ico`,
       },
     ],
   };

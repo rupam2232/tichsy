@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import MenuClientPage from "./clientPage";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export async function generateMetadata({
   params,
@@ -10,9 +11,10 @@ export async function generateMetadata({
   const { slug } = await params;
   const restaurant = await fetchRestaurantMetadata(slug);
   if (!restaurant) {
-   return {
+    return {
       title: "Page not found",
-      description: "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
+      description:
+        "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
     };
   }
   return {
@@ -23,9 +25,7 @@ export async function generateMetadata({
     icons: [
       {
         rel: "icon",
-        url:
-          restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-          `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/favicon.ico`,
+        url: getOptimizedUrl(restaurant.logoUrl!, 40, 40, "r_max") || "",
       },
     ],
     openGraph: {
@@ -37,7 +37,7 @@ export async function generateMetadata({
         {
           url:
             restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-            `${process.env.NEXT_PUBLIC_CLIENT_BASE_URL}/favicon.ico`,
+            `${process.env.NEXT_PUBLIC_APP_URL}/favicon.ico`,
           alt: restaurant.restaurantName,
         },
       ],

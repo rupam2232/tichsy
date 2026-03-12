@@ -7,6 +7,7 @@ import {
   useScroll,
   useMotionValueEvent,
 } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 
 import React, { useRef, useState } from "react";
@@ -250,17 +251,25 @@ export const NavbarLogo = () => {
   return (
     <Link
       href="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+      className="relative z-20 mr-4 flex items-center gap-1 px-2 py-1"
     >
-      <img
-        src="https://assets.aceternity.com/logo-dark.png"
+      <Image
+        loading="eager"
+        src="/white-transparent-icon.svg"
+        className="hidden dark:block"
         alt="logo"
         width={30}
         height={30}
       />
-      <span className="font-medium text-black dark:text-white">
-        {process.env.NEXT_PUBLIC_APP_NAME}
-      </span>
+      <Image
+        loading="eager"
+        src="/black-transparent-icon.svg"
+        className="block dark:hidden"
+        alt="logo"
+        width={30}
+        height={30}
+      />
+      <span className="font-bold text-xl">{process.env.NEXT_PUBLIC_APP_NAME}</span>
     </Link>
   );
 };
