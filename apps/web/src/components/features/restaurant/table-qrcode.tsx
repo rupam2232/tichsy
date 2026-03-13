@@ -188,7 +188,7 @@ const TableQRCode = ({
                     textAlign: "center",
                   }}
                 >
-                  Powered by {process.env.NEXT_PUBLIC_APP_NAME || "POS App"}
+                  Powered by Tichsy
                 </p>
               </div>
             </div>

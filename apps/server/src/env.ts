@@ -14,7 +14,7 @@ const envSchema = z.object({
   EMAIL: z.email("Invalid email"),
   EMAIL_PASSWORD: z.string("Invalid email password").min(1),
   EMAIL_SERVICE: z.string("Invalid email service").min(1),
-  COOKIE_DOMAIN: z.string("Invalid cookie domain").min(1),
+  COOKIE_DOMAIN: z.string("Invalid cookie domain").min(1).optional(),
   ACCESS_TOKEN_EXPIRY: z.string("Invalid access token expiry").transform(Number),
   ACCESS_TOKEN_SECRET: z.string("Invalid access token secret").min(1),
   REFRESH_TOKEN_EXPIRY: z.string("Invalid refresh token expiry").transform(Number),

@@ -16,8 +16,8 @@ export async function generateMetadata({
     };
   }
   return {
-    title: `Staffs | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Manage your restaurant's staffs.`,
+    title: `Staffs | ${restaurant.restaurantName} - Tichsy`,
+    description: `Manage staffs for your restaurant.`,
   };
 }
 

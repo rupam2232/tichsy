@@ -3,7 +3,7 @@ import ClientPage from "./clientPage";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Checkout - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Checkout - Tichsy`,
     description: `Checkout for your subscription.`,
   };
 }

@@ -3,7 +3,7 @@ import SecurityEventsTab from "@/components/settings/SecurityEventsTab";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Security Events | Settings - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Security Events | Settings - Tichsy`,
     description:
       "Review your account security activity scale and login history.",
   };

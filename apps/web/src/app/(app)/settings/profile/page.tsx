@@ -3,7 +3,7 @@ import ProfileTab from "@/components/settings/ProfileTab";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Profile | Settings - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Profile | Settings - Tichsy`,
     description: "Update your personal information and profile picture.",
   };
 }

@@ -1,13 +1,15 @@
-"use client";
-
 import {
   PlanProps,
   PricingTable,
 } from "@/components/features/billing/pricing-table";
-import { useRouter } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Pricing - Tichsy",
+  description: "Affordable pricing plans for restaurants.",
+};
 
 export default function PricingPage() {
-  const router = useRouter();
   const plans: PlanProps[] = [
     {
       id: "starter",
@@ -58,7 +60,6 @@ export default function PricingPage() {
   return (
     <PricingTable
       plans={plans}
-      onPlanSelect={() => router.push("/billing")}
     />
   );
 }

@@ -5,7 +5,8 @@ import { Loader2 } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Forgot Password | ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Forgot Password - Tichsy`,
+    description: `Change your password`,
   };
 }
 

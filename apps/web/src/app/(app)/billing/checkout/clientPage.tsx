@@ -155,7 +155,7 @@ export default function ClientPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: data.amount,
         currency: data.currency,
-        name: `${process.env.NEXT_PUBLIC_APP_NAME} ${selectedPlan?.title}`,
+        name: `Tichsy ${selectedPlan?.title}`,
         description: selectedPlan?.description,
         image: process.env.NEXT_PUBLIC_APP_URL + "/favicon.ico",
         order_id: data.id,

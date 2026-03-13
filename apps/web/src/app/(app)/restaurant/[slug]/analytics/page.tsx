@@ -18,7 +18,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `Analytics | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Analytics | ${restaurant.restaurantName} - Tichsy`,
     description: `View historical performance and analytics for your restaurant.`,
   };
 }

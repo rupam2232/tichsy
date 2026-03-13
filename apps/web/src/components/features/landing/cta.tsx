@@ -12,7 +12,7 @@ export default function CTA() {
           </h2>
           <p className="mt-4 text-lg text-primary-foreground/90">
             Join hundreds of restaurants streamlining their operations with{" "}
-            {process.env.NEXT_PUBLIC_APP_NAME}. Start your free trial today.
+            Tichsy. Start your free trial today.
           </p>
         </div>
 

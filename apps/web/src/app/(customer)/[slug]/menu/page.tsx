@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
+import {
+  buildOgImageUrl,
+  getRestaurantIcons,
+  notFoundMeta,
+} from "@/utils/og-utils";
 import MenuClientPage from "./clientPage";
-import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export async function generateMetadata({
   params,
@@ -10,45 +14,51 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const restaurant = await fetchRestaurantMetadata(slug);
+
   if (!restaurant) {
-    return {
-      title: "Page not found",
-      description:
-        "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
-    };
+    return notFoundMeta();
   }
+
+  const title = `Menu | ${restaurant.restaurantName}`;
+  const description =
+    `Explore the full menu at ${restaurant.restaurantName}. Browse categories, view dishes, and place your order instantly from your table.`;
+  const ogImageUrl = buildOgImageUrl(slug, "menu");
+
   return {
-    title: `Menu | ${restaurant.restaurantName}`,
-    description:
-      restaurant.description ||
-      `See what's available at ${restaurant.restaurantName}.`,
-    icons: [
-      {
-        rel: "icon",
-        url: getOptimizedUrl(restaurant.logoUrl!, 40, 40, "r_max") || "",
-      },
+    title,
+    description,
+    keywords: [
+      restaurant.restaurantName,
+      ...(restaurant.categories || []),
+      "food menu",
+      "restaurant menu",
+      "QR ordering",
+      "digital menu",
+      "order food",
     ],
+    icons: getRestaurantIcons(restaurant.logoUrl),
     openGraph: {
-      title: `Menu | ${restaurant.restaurantName}`,
-      description:
-        restaurant.description ||
-        `See what's available at ${restaurant.restaurantName}.`,
+      type: "website",
+      locale: "en_US",
+      url: `${process.env.NEXT_PUBLIC_APP_URL}/${slug}/menu`,
+      title,
+      description,
+      siteName: "Tichsy",
       images: [
         {
-          url:
-            restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-            `${process.env.NEXT_PUBLIC_APP_URL}/favicon.ico`,
-          alt: restaurant.restaurantName,
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${restaurant.restaurantName} – Browse Menu`,
         },
       ],
     },
-    keywords: [
-      restaurant.restaurantName,
-      ...(Array.isArray(restaurant.categories) ? restaurant.categories : []),
-      "Food",
-      "Menu",
-      "Restaurant",
-    ],
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
   };
 }
 

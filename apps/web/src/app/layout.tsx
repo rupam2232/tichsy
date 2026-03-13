@@ -6,7 +6,7 @@ import serverAxios from "@/utils/server-axios";
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#171717" }, // You can adjust this to your exact dark theme hex
+    { media: "(prefers-color-scheme: dark)", color: "#171717" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Tichsy",
   },
-  openGraph: {
+  openGraph: {  
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL,
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
     siteName: "Tichsy",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-01.png",
         width: 1200,
         height: 630,
         alt: "Tichsy Preview",
@@ -92,7 +92,7 @@ export const metadata: Metadata = {
     title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
       "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
-    images: ["/og-image.png"],
+    images: ["/og-image-01.png"],
     creator: "@rupam2232",
   },
   icons: {

@@ -197,8 +197,8 @@ const ForgotPasswordForm = () => {
     <div className="flex h-auto items-center justify-center py-10 sm:px-6 lg:px-8">
       <Card className="w-full border-none shadow-md sm:max-w-lg max-h-[84vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
         <CardHeader>
-          <CardTitle className="mb-1.5 text-2xl">Forgot Password?</CardTitle>
-          <CardDescription>
+          <CardTitle className="mb-1.5 text-2xl text-center md:text-left">Forgot Password?</CardTitle>
+          <CardDescription className="text-center md:text-left">
             Enter your email address and we will send you a OTP to reset your
             password.
           </CardDescription>

@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { Providers } from "./providers";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function Layout({
   children,

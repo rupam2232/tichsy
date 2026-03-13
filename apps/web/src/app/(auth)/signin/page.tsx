@@ -5,8 +5,8 @@ import { SigninForm } from "@/components/features/auth/signin-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Sign In | ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Sign in to ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Sign In - Tichsy`,
+    description: `Sign in to Tichsy`,
   };
 }
 

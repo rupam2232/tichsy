@@ -389,14 +389,15 @@ const footerLinks = [
       { id: 1, title: "Features", url: "/#features" },
       { id: 2, title: "Pricing", url: "/pricing" },
     ],
-  }, {
+  },
+  {
     title: "Socials",
     links: [
       { id: 3, title: "LinkedIn", url: "https://linkedin.com/in/rupam2232" },
       { id: 4, title: "X/Twitter", url: "https://x.com/rupam2232" },
       { id: 5, title: "Github", url: "https://github.com/rupam2232" },
     ],
-  }
+  },
 ];
 
 export default function Footer() {
@@ -424,7 +425,7 @@ export default function Footer() {
               height={30}
             />
             <p className="text-xl font-bold tracking-tight text-foreground">
-              {process.env.NEXT_PUBLIC_APP_NAME}
+              Tichsy
             </p>
           </Link>
           <p className="text-muted-foreground text-sm">
@@ -458,7 +459,7 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-background/20 to-background z-10 from-40%" />
         <div className="absolute inset-0 mx-6">
           <FlickeringGrid
-            text={process.env.NEXT_PUBLIC_APP_NAME?.toUpperCase() || "Footer"}
+            text="TICHSY"
             fontSize={140}
             fitText={true}
             className="w-full"

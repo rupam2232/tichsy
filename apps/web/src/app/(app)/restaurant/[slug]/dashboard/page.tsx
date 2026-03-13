@@ -16,8 +16,8 @@ export async function generateMetadata({
     };
   }
   return {
-    title: `Dashboard | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `View your restaurant's performance and orders.`,
+    title: `Dashboard | ${restaurant.restaurantName} - Tichsy`,
+    description: `View and manage your restaurant's operations and orders.`,
   };
 }
 

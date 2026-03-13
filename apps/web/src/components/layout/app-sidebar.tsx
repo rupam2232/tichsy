@@ -140,9 +140,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   width={30}
                   height={30}
                 />
-                <span className="text-xl font-bold">
-                  {process.env.NEXT_PUBLIC_APP_NAME}
-                </span>
+                <span className="text-xl font-bold">Tichsy</span>
               </Link>
             </SidebarMenuButton>
             {isMobile && (

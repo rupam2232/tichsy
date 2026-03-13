@@ -16,7 +16,7 @@ export async function generateMetadata({
     };
   }
   return {
-    title: `Menu | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Menu | ${restaurant.restaurantName} - Tichsy`,
     description: `Manage your restaurant ${restaurant.restaurantName} menu, and update settings.`,
   };
 }

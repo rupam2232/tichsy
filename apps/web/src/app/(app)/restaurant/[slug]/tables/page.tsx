@@ -16,8 +16,8 @@ export async function generateMetadata({
     };
   }
   return {
-    title: `Tables | ${restaurant.restaurantName} - ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Manage your restaurant ${restaurant.restaurantName} tables, view orders, and update settings.`,
+    title: `Tables | ${restaurant.restaurantName} - Tichsy`,
+    description: `Create and manage tables for your restaurant.`,
   };
 }
 

@@ -4,7 +4,7 @@ export default function Hero() {
   return (
     <HeroSection
       id="hero"
-      title={`Introducing ${process.env.NEXT_PUBLIC_APP_NAME}`}
+      title={`Introducing Tichsy`}
       subtitle={{
         regular: "Modernize Operations with",
         gradient: "Seamless QR Ordering",

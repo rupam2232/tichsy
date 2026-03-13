@@ -279,9 +279,9 @@ export function SignupForm({
               <ScrollArea className="h-full">
                 <div className="flex flex-col gap-6 p-6 md:p-8">
                   <div className="flex flex-col items-center text-center">
-                    <h1 className="text-2xl font-bold">{`Welcome to ${process.env.NEXT_PUBLIC_APP_NAME}`}</h1>
+                    <h1 className="text-2xl font-bold">{`Welcome to Tichsy`}</h1>
                     <p className="text-muted-foreground text-balance">
-                      {`Create an account to get started with ${process.env.NEXT_PUBLIC_APP_NAME}`}
+                      {`Create an account to get started with Tichsy`}
                     </p>
                   </div>
 

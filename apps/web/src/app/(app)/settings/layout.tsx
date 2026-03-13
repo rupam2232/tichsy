@@ -3,7 +3,7 @@ import SettingsSidebar from "@/components/settings/SettingsSidebar";
 import SettingsMobileNav from "@/components/settings/SettingsMobileNav";
 
 export const metadata: Metadata = {
-  title: `Settings - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+  title: `Settings - Tichsy`,
   description:
     "Manage your profile, security preferences, and active sessions.",
 };

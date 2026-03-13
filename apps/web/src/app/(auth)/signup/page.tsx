@@ -5,8 +5,8 @@ import { Loader2 } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Sign Up | ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Sign up to ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Sign Up - Tichsy`,
+    description: `Sign up to Tichsy`,
   };
 }
 

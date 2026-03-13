@@ -29,7 +29,7 @@ export const RestaurantHeader = ({
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 h-[calc(var(--spacing)*16)]">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="px-4 h-16 flex items-center justify-between gap-4">
         {/* Left: Logo & Details Linked to Overview */}
         <Link
           href={`/${restaurant.slug}`}

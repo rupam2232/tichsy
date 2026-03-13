@@ -5,8 +5,8 @@ import { JoinForm } from "@/components/features/auth/join-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Join | ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Join a restaurant on ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Join - Tichsy`,
+    description: `Join a restaurant on Tichsy`,
   };
 }
 

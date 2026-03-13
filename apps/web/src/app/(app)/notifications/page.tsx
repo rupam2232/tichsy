@@ -5,8 +5,8 @@ import { Loader2 } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Notifications - ${process.env.NEXT_PUBLIC_APP_NAME}`,
-    description: `Notification page of ${process.env.NEXT_PUBLIC_APP_NAME}. View and Manage your notifications.`,
+    title: `Notifications - Tichsy`,
+    description: `Notification page of Tichsy. View and Manage your notifications.`,
   };
 }
 

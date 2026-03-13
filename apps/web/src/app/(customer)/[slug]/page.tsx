@@ -1,5 +1,10 @@
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import {
+  buildOgImageUrl,
+  getRestaurantIcons,
+  notFoundMeta,
+} from "@/utils/og-utils";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -19,26 +24,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const restaurant = await fetchRestaurantMetadata(slug);
 
   if (!restaurant) {
-    return {
-      title: "Page not found",
-      description:
-        "Sorry, we couldn't find the page you're looking for. It might have been removed, had its name changed, or is temporarily unavailable.",
-    };
+    return notFoundMeta();
   }
 
+  const title = `${restaurant.restaurantName} – Browse Menu & Order`;
+  const description =
+    restaurant.description ||
+    `Welcome to ${restaurant.restaurantName}. Browse the menu, place orders from your table, and track them in real time.`;
+  const ogImageUrl = buildOgImageUrl(slug, "overview");
+
   return {
-    title: `${restaurant.restaurantName}`,
-    description:
-      restaurant.description ||
-      `Welcome to ${restaurant.restaurantName}. Check our opening hours and location.`,
-    icons: [
-      {
-        rel: "icon",
-        url:
-          restaurant.logoUrl?.replace("/upload/", "/upload/r_max/") ||
-          `${process.env.NEXT_PUBLIC_APP_URL}/favicon.ico`,
-      },
+    title,
+    description,
+    keywords: [
+      restaurant.restaurantName,
+      ...(restaurant.categories || []),
+      "restaurant",
     ],
+    icons: getRestaurantIcons(restaurant.logoUrl),
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: `${process.env.NEXT_PUBLIC_APP_URL}/${slug}`,
+      title,
+      description,
+      siteName: "Tichsy",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${restaurant.restaurantName} – Browse Menu & Order`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
   };
 }
 

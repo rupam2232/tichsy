@@ -1,6 +1,7 @@
 import { env } from "../env.js";
+import { CookieOptions } from "express";
 
-export const getCookieOptions = () => {
+export const getCookieOptions = (): CookieOptions => {
   const isProd = env.NODE_ENV === "production";
   const cookieDomain = env.COOKIE_DOMAIN;
   return {

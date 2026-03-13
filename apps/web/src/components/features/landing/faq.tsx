@@ -48,9 +48,8 @@ export default function Faq() {
           Frequently Asked Questions
         </h4>
         <p className="text-lg lg:text-lg max-w-2xl my-4 mb-10 mx-auto text-neutral-500 text-center font-normal dark:text-neutral-300">
-          Answers to common questions about {process.env.NEXT_PUBLIC_APP_NAME}{" "}
-          and its features. If you have any other questions, please don&apos;t
-          hesitate to contact us.
+          Answers to common questions about Tichsy and its features. If you have
+          any other questions, please don&apos;t hesitate to contact us.
         </p>
         <Accordion type="single" collapsible className="w-full">
           {faqs.map((faq, index) => (

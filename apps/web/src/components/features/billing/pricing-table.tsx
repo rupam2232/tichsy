@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 
 export interface PlanProps {
   id: string;
@@ -18,7 +19,7 @@ export interface PlanProps {
 
 export interface PricingTableSixProps {
   plans: PlanProps[];
-  onPlanSelect: (planId: string) => void;
+  onPlanSelect?: (planId: string) => void;
 }
 
 const gradientFrom = ["from-chart-2/70", "from-chart-1/70", "from-chart-3/70"];
@@ -43,7 +44,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
         <div className="mb-16 grid items-start gap-8 lg:grid-cols-2 lg:gap-16">
           <div>
             <h2 className="text-foreground text-4xl leading-tight font-bold tracking-tight sm:text-5xl lg:text-[3.5rem]">
-              Tailored plans for {" "}
+              Tailored plans for{" "}
               <span className="font-light italic">every stage</span>
             </h2>
           </div>
@@ -61,9 +62,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
               <button
                 onClick={() => setIsYearly(false)}
                 className={`text-foreground relative z-10 cursor-pointer rounded-full px-4 py-2 text-sm font-medium ${
-                  !isYearly
-                    ? "text-foreground"
-                    : "text-muted-foreground"
+                  !isYearly ? "text-foreground" : "text-muted-foreground"
                 }`}
                 aria-pressed={!isYearly}
               >
@@ -80,9 +79,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
               <button
                 onClick={() => setIsYearly(true)}
                 className={`text-foreground relative z-10 cursor-pointer rounded-full px-4 py-2 text-sm font-medium ${
-                  isYearly
-                    ? "text-foreground"
-                    : "text-muted-foreground"
+                  isYearly ? "text-foreground" : "text-muted-foreground"
                 }`}
                 aria-pressed={isYearly}
               >
@@ -176,11 +173,14 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
               {/* CTA Button */}
               <div className="mb-8">
                 <Button
+                  asChild
                   className="bg-foreground text-background hover:bg-foreground/90 border-primary-foreground h-12 w-full rounded-xl border font-medium transition-all duration-200 hover:cursor-pointer"
                   aria-label={`Start ${plan.title} plan${(isYearly ? plan.yearlyPrice : plan.monthlyPrice) === 0 ? " — free" : ""}`}
-                  onClick={() => onPlanSelect(plan.id)}
+                  onClick={() => onPlanSelect?.(plan.id)}
                 >
-                  {plan.isCustom ? "Contact team" : "Get started"}
+                  <Link href="/billing">
+                    {plan.isCustom ? "Contact team" : "Get started"}
+                  </Link>
                 </Button>
               </div>
 

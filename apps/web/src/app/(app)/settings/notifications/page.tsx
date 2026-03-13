@@ -3,7 +3,7 @@ import NotificationTab from "@/components/settings/NotificationTab";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Notifications | Settings - ${process.env.NEXT_PUBLIC_APP_NAME}`,
+    title: `Notifications | Settings - Tichsy`,
     description: "Manage your notification preferences.",
   };
 }
