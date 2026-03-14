@@ -144,6 +144,7 @@ export function SigninForm({
                   <div className="relative">
                     {googleLoginLoading ? (
                       <Button
+                        type="button"
                         disabled
                         className="w-full font-normal bg-white text-black border-zinc-400 border rounded-[4px] py-4.5"
                       >
@@ -228,6 +229,7 @@ export function SigninForm({
                               />
                               <InputGroupAddon align="inline-end">
                                 <InputGroupButton
+                                  type="button"
                                   onClick={() => setShowPassword(!showPassword)}
                                 >
                                   {showPassword ? <Eye /> : <EyeOff />}

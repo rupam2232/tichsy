@@ -20,7 +20,7 @@ const navItems = [
     icon: IconBell,
   },
   {
-    name: "Security Events",
+    name: "Events",
     href: "/settings/events",
     icon: History,
   },

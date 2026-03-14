@@ -236,6 +236,8 @@ export const signin = async (
       // Update session with new refresh token, revoked status and last active time
       deviceSession.revoked = false;
       deviceSession.refreshToken = refreshToken;
+      deviceSession.previousRefreshToken = undefined;
+      deviceSession.previousTokenExpiresAt = undefined;
       deviceSession.lastActiveAt = new Date();
       await deviceSession.save();
     } else {
@@ -395,7 +397,7 @@ export const google = async (
         _id: user._id.toString(),
         email: user.email,
         firstName: user.firstName || "",
-      });
+      }); 
 
       // Check for existing device session for this user/device
       const deviceSession = await DeviceSession.findOne({
@@ -406,6 +408,8 @@ export const google = async (
       if (deviceSession) {
         // Update session with new refresh token, revoked status and last active time
         deviceSession.refreshToken = refreshToken;
+        deviceSession.previousRefreshToken = undefined;
+        deviceSession.previousTokenExpiresAt = undefined;
         deviceSession.revoked = false;
         deviceSession.lastActiveAt = new Date();
         await deviceSession.save();
@@ -647,8 +651,7 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
       userId,
       deviceId: req.cookies.deviceId,
     },
-    { $unset: { refreshToken: 1 }, $set: { lastActiveAt: new Date() } },
-    { new: true }
+    { $unset: { refreshToken: 1, previousRefreshToken: 1, previousTokenExpiresAt: 1 }, $set: { lastActiveAt: new Date() } },
   );
 
   // Clear auth cookies

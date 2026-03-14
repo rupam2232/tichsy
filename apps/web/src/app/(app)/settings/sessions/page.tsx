@@ -3,8 +3,8 @@ import SessionsTab from "@/components/settings/SessionsTab";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Active Sessions | Settings - Tichsy`,
-    description: "Manage devices securely logged into your account.",
+    title: `Sessions | Settings - Tichsy`,
+    description: "Manage your device sessions securely.",
   };
 }
 

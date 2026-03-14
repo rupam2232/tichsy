@@ -35,16 +35,20 @@ export const verifyAuth = asyncHandler(
     const userId = decodedRefreshToken._id as accessTokenUser["_id"];
     const deviceSession = await DeviceSession.findOne({
       userId,
-      refreshToken,
+      $or: [
+        { refreshToken },
+        {
+          previousRefreshToken: refreshToken,
+          previousTokenExpiresAt: { $gte: new Date() },
+        },
+      ],
     });
-
     if (!deviceSession || deviceSession.revoked) {
       res
-        .status(401)
         .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
-        .json(new ApiError(401, "Unauthorized request"));
-      return;
+        .clearCookie("refreshToken", options);
+
+      throw new ApiError(401, "Unauthorized request");
     }
 
     let user: UserType;
@@ -52,26 +56,40 @@ export const verifyAuth = asyncHandler(
     if (!accessToken) {
       user = await User.findById(deviceSession.userId).select("-password -__v");
       if (!user) {
-        res
-          .status(401)
-          .clearCookie("refreshToken", options)
-          .json(new ApiError(401, "Unauthorized request"));
-        return;
+        res.clearCookie("refreshToken", options);
+
+        throw new ApiError(401, "Unauthorized request");
       }
 
-      // Generate new tokens
+      // Generate new access token
       const newAccessToken = generateAccessToken({
-        _id: user._id.toString(),
+        _id: user.id,
         email: user.email,
       });
-      const newRefreshToken = generateRefreshToken(user._id.toString());
+      res.cookie("accessToken", newAccessToken, {
+        ...options,
+        maxAge: env.ACCESS_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+      });
 
-      // Set new tokens in cookie
-      res.cookie("accessToken", newAccessToken, options);
-      res.cookie("refreshToken", newRefreshToken, options);
-
-      // Update refresh token of the device session
-      deviceSession.refreshToken = newRefreshToken;
+      // Only rotate the refresh token if this request matched on the current token.
+      // If it matched on previousRefreshToken, another concurrent request already
+      // rotated it — just reuse the current token to keep browser and DB in sync.
+      if (deviceSession.refreshToken === refreshToken) {
+        const newRefreshToken = generateRefreshToken(user.id);
+        deviceSession.previousRefreshToken = refreshToken;
+        deviceSession.previousTokenExpiresAt = new Date(Date.now() + 30_000);
+        deviceSession.refreshToken = newRefreshToken;
+        res.cookie("refreshToken", newRefreshToken, {
+          ...options,
+          maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+        });
+      } else {
+        // Concurrent request — sync the browser cookie to the already-rotated token
+        res.cookie("refreshToken", deviceSession.refreshToken, {
+          ...options,
+          maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
+        });
+      }
     } else {
       const decodedAccessToken = jwt.verify(
         accessToken,
@@ -83,11 +101,10 @@ export const verifyAuth = asyncHandler(
         !decodedAccessToken._id
       ) {
         res
-          .status(401)
           .clearCookie("accessToken", options)
-          .clearCookie("refreshToken", options)
-          .json(new ApiError(401, "Invalid Access Token"));
-        return;
+          .clearCookie("refreshToken", options);
+
+        throw new ApiError(401, "Invalid Access Token");
       }
       const decodedToken = decodedAccessToken as accessTokenUser;
 
@@ -95,11 +112,10 @@ export const verifyAuth = asyncHandler(
 
       if (!user) {
         res
-          .status(401)
           .clearCookie("accessToken", options)
-          .clearCookie("refreshToken", options)
-          .json(new ApiError(401, "Invalid Access Token"));
-        return;
+          .clearCookie("refreshToken", options);
+
+        throw new ApiError(401, "Unauthorized request");
       }
     }
 
@@ -144,7 +160,13 @@ export const verifyOptionalAuth = asyncHandler(
         } else {
           const deviceSession = await DeviceSession.findOne({
             userId: user._id,
-            refreshToken,
+            $or: [
+              { refreshToken },
+              {
+                previousRefreshToken: refreshToken,
+                previousTokenExpiresAt: { $gte: new Date() },
+              },
+            ],
           });
 
           if (!deviceSession || deviceSession.revoked) {

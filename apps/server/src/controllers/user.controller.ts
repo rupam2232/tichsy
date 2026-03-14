@@ -251,7 +251,9 @@ export const getSessions = asyncHandler(async (req, res) => {
     .limit(20);
 
   const currentSession = sessions.find(
-    (session) => session.refreshToken === req.cookies.refreshToken
+    (session) =>
+      session.refreshToken === req.cookies.refreshToken ||
+      session.previousRefreshToken === req.cookies.refreshToken
   );
 
   if (currentSession) {

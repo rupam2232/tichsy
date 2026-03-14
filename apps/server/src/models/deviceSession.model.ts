@@ -17,6 +17,8 @@ export interface DeviceSession extends Document {
   ipAddress: string; // IP address of the device
   userAgent: string; // User agent string of the device/browser
   refreshToken?: string; // Refresh token for the session (optional)
+  previousRefreshToken?: string; // Previous refresh token kept for grace period during rotation
+  previousTokenExpiresAt?: Date; // Expiry time for the previous refresh token grace period
   isOnline: boolean; // Indicates if the device currently maintains an active WebSocket connection
   lastActiveAt: Date; // Last activity timestamp
   revoked: boolean; // Whether the session is revoked
@@ -68,6 +70,13 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       unique: true,
       sparse: true,
     },
+    previousRefreshToken: {
+      type: String,
+      index: true,
+    },
+    previousTokenExpiresAt: {
+      type: Date,
+    },
     isOnline: {
       type: Boolean,
       default: false,
@@ -92,10 +101,10 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
   }
 );
 
-// Add a TTL index to automatically delete sessions inactive for 60 days (2 months)
+// Add a TTL index to automatically delete sessions inactive for 30 days (1 month)
 deviceSessionSchema.index(
   { lastActiveAt: 1 },
-  { expireAfterSeconds: 60 * 24 * 60 * 60 }
+  { expireAfterSeconds: 30 * 24 * 60 * 60 }
 );
 
 /**
