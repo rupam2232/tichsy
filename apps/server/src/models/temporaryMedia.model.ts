@@ -31,6 +31,8 @@ const temporaryMediaSchema = new Schema<TemporaryMedia>({
   },
 });
 
+temporaryMediaSchema.index({ userId: 1, mediaUrl: 1 });
+
 export const TemporaryMedia = model<TemporaryMedia>(
   "TemporaryMedia",
   temporaryMediaSchema

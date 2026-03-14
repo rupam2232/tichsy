@@ -22,13 +22,13 @@ class cloudinaryOptions {
       // Remove the local file after uploading
       fs.unlinkSync(localPath);
       return response;
-    } catch (error) {
+    } catch {
       fs.unlinkSync(localPath); // Ensure the local file is removed even if upload fails
       throw new ApiError(500, "Failed to upload file to Cloudinary.");
     }
   }
 
-  async delete(mediaUrl: string, resourceType: string = "image"): Promise<any> {
+  async delete(mediaUrl: string, resourceType: string = "image"): Promise<{result: string}> {
     try {
       const lastSegment = mediaUrl?.split("/")?.pop();
       const publicId = lastSegment ? lastSegment.split(".")[0] : "";

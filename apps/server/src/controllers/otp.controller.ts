@@ -16,7 +16,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
   const validatedData = sendOtpSchema.parse(req.body);
   const { email, name, context } = validatedData;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).lean();
 
   if (context === "forgot-password") {
     if (!user) {
@@ -47,16 +47,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   const otp = generateOtp(6);
   const expires = new Date(Date.now() + 600000); // 10 minutes
 
-  let otpDoc = await Otp.findOne({ email });
-  if (!otpDoc) {
-    otpDoc = new Otp({ email, otp, context, expires });
-  } else {
-    otpDoc.otp = otp;
-    otpDoc.expiresAt = expires;
-    otpDoc.context = context;
-  }
-
-  await otpDoc.save();
+  const otpDoc = await Otp.findOneAndUpdate(
+    { email },
+    { $set: { otp, expiresAt: expires, context } },
+    { upsert: true, new: true, lean: true }
+  );
 
   if (!otpDoc) {
     throw new ApiError(500, "Otp not created");
@@ -72,11 +67,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
-
-    res.status(200).json(new ApiResponse(200, true, "Otp sent successfully"));
-    return;
-  }
-  if (context === "change-password" || context === "forgot-password") {
+  } else if (context === "change-password" || context === "forgot-password") {
     const emailResponse = await sendEmail(
       email,
       context,
@@ -86,11 +77,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
-
-    res.status(200).json(new ApiResponse(200, true, "Otp sent successfully"));
-    return;
-  }
-  if (context === "verify-current-email") {
+  } else if (context === "verify-current-email") {
     const emailResponse = await sendEmail(
       email,
       context,
@@ -100,12 +87,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
-
-    res.status(200).json(new ApiResponse(200, true, "Otp sent successfully"));
-    return;
+  } else {
+    throw new ApiError(400, "Invalid template");
   }
 
-  throw new ApiError(400, "Invalid template");
+  res.status(200).json(new ApiResponse(200, true, "Otp sent successfully"));
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {

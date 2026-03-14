@@ -9,7 +9,7 @@ export interface SubscriptionHistory extends Document {
   userId: Types.ObjectId; // Reference to the User
   plan?: "starter" | "medium" | "pro"; // Subscription plan name
   period: "monthly" | "yearly" | "trial";
-  amount: Number; // Payment that user has made
+  amount: number; // Payment that user has made
   isTrial: boolean; // Whether the subscription is a trial
   trialExpiresAt?: Date; // When the trial expires
   subscriptionStartDate?: Date; // When the subscription starts
@@ -36,6 +36,7 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
       ref: "User",
       required: [true, "Id of the user is required"],
       immutable: true,
+      index: true,
     },
     plan: {
       type: String,

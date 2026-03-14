@@ -4,7 +4,7 @@
  * @template T - The type of the data being returned.
  */
 
-class ApiResponse<T = any> {
+class ApiResponse<T = unknown> {
   status: number; // HTTP status code for the response
   data: T; // The actual data payload of the response
   message: string; // A message describing the response

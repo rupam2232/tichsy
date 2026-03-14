@@ -11,7 +11,7 @@ export interface SecurityEvent extends Document {
   ipAddress: string; // IP address where the event occurred
   userAgent: string; // User agent string of the device/browser
   isEmailSent: boolean; // True if email sent for the event
-  metadata?: Record<string, any>; // Flexible context (e.g. oldEmail/newEmail)
+  metadata?: Record<string, unknown>; // Flexible context (e.g. oldEmail/newEmail)
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
   updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
@@ -69,6 +69,9 @@ securityEventSchema.index(
   { createdAt: 1 },
   { expireAfterSeconds: 365 * 24 * 60 * 60 }
 ); // 1 year
+
+// Compound index to help query security events for a user quickly
+securityEventSchema.index({ userId: 1, createdAt: -1 });
 
 /**
  * Mongoose model for the SecurityEvent schema.

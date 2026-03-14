@@ -56,14 +56,6 @@ const restaurantSchema: Schema<Restaurant> = new Schema(
     },
     logoUrl: {
       type: String,
-      unique: true,
-      sparse: true,
-      validate: {
-        validator: function (url: string) {
-          return !url || /^https?:\/\/.+\.(jpg|jpeg|png)$/.test(url);
-        },
-        message: "Logo URL must be a valid image URL",
-      },
     },
     description: String,
     isCurrentlyOpen: {
@@ -75,6 +67,7 @@ const restaurantSchema: Schema<Restaurant> = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Id of the owner is required"],
+      index: true,
     },
     staffMembers: [
       {
@@ -82,6 +75,7 @@ const restaurantSchema: Schema<Restaurant> = new Schema(
           type: Schema.Types.ObjectId,
           ref: "User",
           required: true,
+          index: true,
         },
         role: {
           type: String,
@@ -101,6 +95,7 @@ const restaurantSchema: Schema<Restaurant> = new Schema(
     isArchived: {
       type: Boolean,
       default: false,
+      index: true,
     },
     archivedAt: Date,
     archivedReason: String,

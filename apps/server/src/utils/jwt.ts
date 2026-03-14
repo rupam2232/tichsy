@@ -5,7 +5,7 @@ export interface accessTokenUser {
   _id: string;
   email: string;
   firstName?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const generateAccessToken = (user: accessTokenUser) => {
@@ -26,7 +26,7 @@ export const generateRefreshToken = (userId: accessTokenUser["_id"]) => {
   });
 };
 
-export const generateActionToken = (data: Record<string, any>) => {
+export const generateActionToken = (data: Record<string, unknown>) => {
   return jwt.sign(data, env.JWT_SECRET_KEY!, {
     expiresIn: "15m",
   });

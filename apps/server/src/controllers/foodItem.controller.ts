@@ -2,7 +2,7 @@ import { FoodItem } from "../models/foodItem.model.js";
 import type { FoodVariant as FoodVariantType } from "../models/foodItem.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import {
   canCreateFoodItem,
   canUnarchiveFoodItem,
@@ -88,7 +88,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     await checkVariantLimit(variants.length, req.subscription!);
   }
   // Check if the food item already exists
-  const existingFoodItem = await FoodItem.findOne({
+  const existingFoodItem = await FoodItem.exists({
     restaurantId: restaurant._id,
     foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
   });
@@ -156,18 +156,24 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   const restaurant = await Restaurant.findOne({
     slug: req.params.restaurantSlug,
-  });
+  }).lean();
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  if (includeArchivedBoolean || restaurant.isArchived || !restaurant.isCurrentlyOpen) {
+  if (
+    includeArchivedBoolean ||
+    restaurant.isArchived ||
+    !restaurant.isCurrentlyOpen
+  ) {
     if (!user) {
       throw new ApiError(403, "This restaurant is closed");
     }
     const isOwner = restaurant.ownerId?.toString() === user._id!.toString();
-    const isStaff = restaurant.staffMembers?.some(sm => sm.user.toString() === user._id!.toString());
+    const isStaff = restaurant.staffMembers?.some(
+      (sm) => sm.user.toString() === user._id!.toString()
+    );
 
     if (!isOwner && !isStaff) {
       throw new ApiError(403, "This restaurant is closed");
@@ -279,7 +285,8 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       })
       .skip((pageNumber - 1) * limitNumber) // Pagination logic
       .limit(limitNumber) // Limit the number of results
-      .select("-restaurantId -__v -tags -category -variants"); // Exclude unnecessary fields;
+      .select("-restaurantId -__v -tags -category -variants") // Exclude unnecessary fields
+      .lean();
 
     const totalPages = Math.ceil(foodItemCount / limitNumber);
 
@@ -313,7 +320,8 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     .populate({
       path: "restaurantId",
       select: "name slug categories ownerId staffIds",
-    });
+    })
+    .lean();
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -324,7 +332,8 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     !foodItem.restaurantId ||
     typeof foodItem.restaurantId !== "object" ||
     !("slug" in (foodItem.restaurantId as object)) ||
-    (foodItem.restaurantId as any).slug !== req.params.restaurantSlug
+    (foodItem.restaurantId as unknown as { slug: string }).slug !==
+      req.params.restaurantSlug
   ) {
     throw new ApiError(404, "Food item not found");
   }
@@ -335,8 +344,11 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
 
     if (user) {
       const restaurantDetails = foodItem.restaurantId as unknown as Restaurant;
-      const isOwner = restaurantDetails.ownerId.toString() === user._id!.toString();
-      const isStaff = restaurantDetails.staffMembers?.some(sm => sm.user.toString() === user._id!.toString());
+      const isOwner =
+        restaurantDetails.ownerId.toString() === user._id!.toString();
+      const isStaff = restaurantDetails.staffMembers?.some(
+        (sm) => sm.user.toString() === user._id!.toString()
+      );
 
       if (isOwner || isStaff) {
         isUserPartofRestaurant = true;
@@ -352,13 +364,13 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
   }
 
   // Rename the populated field from restaurantId to restaurantDetails
-  const foodItemObj = foodItem.toObject ? foodItem.toObject() : foodItem;
-  (foodItemObj as any).restaurantDetails = foodItemObj.restaurantId;
-  delete (foodItemObj as any).restaurantId;
+  (foodItem as unknown as { restaurantDetails: unknown }).restaurantDetails =
+    foodItem.restaurantId;
+  delete (foodItem as unknown as { restaurantId: unknown }).restaurantId;
 
   res
     .status(200)
-    .json(new ApiResponse(200, foodItemObj, "Food item fetched successfully"));
+    .json(new ApiResponse(200, foodItem, "Food item fetched successfully"));
 });
 
 export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
@@ -397,10 +409,7 @@ export const toggleFoodItemAvailability = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant;
 
   if (!restaurant || !restaurant._id) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -541,10 +550,10 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   }
   if (foodName !== foodItem.foodName) {
     // Check if the food item with the same name already exists in the restaurant
-    const existingFoodItem = await FoodItem.findOne({
+    const existingFoodItem = await FoodItem.exists({
       restaurantId: restaurant._id,
       foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
-      _id: { $ne: foodItem._id }, // Exclude the current food item from the check ($ne means "not equal to")
+      _id: { $ne: foodItem._id }, // Exclude the current food item from the check
     });
 
     if (existingFoodItem) {
@@ -616,9 +625,7 @@ export const deleteFoodItem = asyncHandler(async (req, res) => {
   }
 
   if (foodItem.imageUrls && foodItem.imageUrls.length > 0) {
-    for (const imageUrl of foodItem.imageUrls) {
-      await cloudinary.delete(imageUrl);
-    }
+    await Promise.all(foodItem.imageUrls.map((url) => cloudinary.delete(url)));
   }
 
   await foodItem.deleteOne();
@@ -638,8 +645,6 @@ export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid food item ID");
   }
 
-
-
   if (req.restaurantRole !== "owner") {
     throw new ApiError(
       403,
@@ -650,10 +655,7 @@ export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant;
 
   if (!restaurant) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {

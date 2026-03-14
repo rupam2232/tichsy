@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Types } from "mongoose";
 import { Invitation } from "../models/invitation.model.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { User } from "../models/user.model.js";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
@@ -22,7 +22,9 @@ export const sendInvitation = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant!;
 
   // Check if user is already a staff member
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  const existingUser = await User.findOne({
+    email: email.toLowerCase(),
+  }).lean();
   if (existingUser) {
     const isAlreadyStaff = restaurant.staffMembers?.some(
       (sm) => sm.user.toString() === existingUser._id.toString()
@@ -105,7 +107,8 @@ export const getInvitations = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant!;
   const invitations = await Invitation.find({ restaurantId: restaurant._id })
     .populate("invitedBy", "firstName lastName email")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   res
     .status(200)

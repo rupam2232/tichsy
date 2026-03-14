@@ -101,7 +101,7 @@ export const createSubscription = asyncHandler(async (req, res) => {
   const existingSubscription = await Subscription.findOne({
     userId: req.user!._id,
     isSubscriptionActive: true,
-  });
+  }).lean();
 
   if (
     existingSubscription &&
@@ -205,7 +205,7 @@ export const previewSubscription = asyncHandler(async (req, res) => {
   const existingSubscription = await Subscription.findOne({
     userId: req.user!._id,
     isSubscriptionActive: true,
-  });
+  }).lean();
 
   if (
     existingSubscription &&
@@ -285,7 +285,8 @@ export const previewSubscription = asyncHandler(async (req, res) => {
 export const getSubscriptionHistory = asyncHandler(async (req, res) => {
   const history = await SubscriptionHistory.find({ userId: req.user!._id })
     .sort({ createdAt: -1 })
-    .limit(10);
+    .limit(10)
+    .lean();
 
   res
     .status(200)

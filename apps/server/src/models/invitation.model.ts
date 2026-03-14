@@ -58,4 +58,10 @@ const invitationSchema: Schema<Invitation> = new Schema(
 // Compound index to help query invitations for an email per restaurant quickly
 invitationSchema.index({ email: 1, restaurantId: 1 });
 
+// Compound index to help query invitations for a restaurant quickly`
+invitationSchema.index({ restaurantId: 1, status: 1 });
+
+// TTL index to automatically remove expired invitations after 30 days
+invitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+
 export const Invitation = model<Invitation>("Invitation", invitationSchema);

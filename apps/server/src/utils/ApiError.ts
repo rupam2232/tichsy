@@ -5,9 +5,9 @@
 
 class ApiError extends Error {
   status: number; // HTTP status code for the error
-  data: any; // Data set to null by default for all the errors
+  data: unknown; // Data set to null by default for all the errors
   success: boolean; // Indicates if the request was successful (always false for errors)
-  errors: any[]; // Array of additional error details
+  errors: unknown[]; // Array of additional error details
 
   /**
    * Creates a new ApiError instance.
@@ -21,7 +21,7 @@ class ApiError extends Error {
   constructor(
     status: number,
     message: string = "Something went wrong",
-    errors: any[] = [],
+    errors: unknown[] = [],
     stack: string = ""
   ) {
     super(message);

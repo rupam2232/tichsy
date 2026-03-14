@@ -7,7 +7,7 @@ export const createNotification = async (data: {
   type: Notification["type"];
   title: string;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
   mergeKey?: string;
   expiresAt?: Date;
   pluralTitle?: string;
@@ -98,16 +98,15 @@ export const getNotifications = async (
   page: number = 1,
   limit: number = 20
 ) => {
-  const notifications = await Notification.find({ recipient: userId })
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit);
-
-  const total = await Notification.countDocuments({ recipient: userId });
-  const unreadCount = await Notification.countDocuments({
-    recipient: userId,
-    read: false,
-  });
+  const [notifications, total, unreadCount] = await Promise.all([
+    Notification.find({ recipient: userId })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Notification.countDocuments({ recipient: userId }),
+    Notification.countDocuments({ recipient: userId, read: false }),
+  ]);
 
   return {
     notifications,
@@ -124,8 +123,8 @@ export const markNotificationAsRead = async (
 ) => {
   const notification = await Notification.findOneAndUpdate(
     { _id: notificationId, recipient: userId },
-    { read: true },
-    { new: true }
+    { $set: { read: true } },
+    { new: true, lean: true }
   );
   return notification;
 };
@@ -146,8 +145,8 @@ export const markNotificationAsReadByMergeKey = async (
 ) => {
   const notification = await Notification.findOneAndUpdate(
     { mergeKey, recipient: userId, read: false },
-    { read: true },
-    { new: true }
+    { $set: { read: true } },
+    { new: true, lean: true }
   );
   return notification;
 };
@@ -159,6 +158,6 @@ export const deleteNotification = async (
   const notification = await Notification.findOneAndDelete({
     _id: notificationId,
     recipient: userId,
-  });
+  }).lean();
   return notification;
 };

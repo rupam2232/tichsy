@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import cloudinary from "../utils/cloudinary.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { Types } from "mongoose";
 import {
   canAddCategory,
@@ -53,7 +53,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   await canCreateRestaurant(req.user!, req.subscription!);
 
   // Check if the restaurant already exists
-  const existingRestaurant = await Restaurant.findOne({
+  const existingRestaurant = await Restaurant.exists({
     $or: [
       { slug },
       {
@@ -294,7 +294,7 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
   }
 
   if (slug !== newSlug) {
-    const duplicateRestaurantSlug = await Restaurant.findOne({
+    const duplicateRestaurantSlug = await Restaurant.exists({
       slug: newSlug,
     });
     if (duplicateRestaurantSlug) {
@@ -314,7 +314,7 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
   }
 
   if (restaurant.restaurantName !== restaurantName) {
-    const duplicateRestaurantName = await Restaurant.findOne({
+    const duplicateRestaurantName = await Restaurant.exists({
       restaurantName,
       ownerId: req.user!._id,
       _id: { $ne: restaurant._id },
@@ -380,10 +380,7 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
 
 export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(
-      403,
-      "Only owners can toggle restaurant archive status"
-    );
+    throw new ApiError(403, "Only owners can toggle restaurant archive status");
   }
 
   const restaurant = req.restaurant;
@@ -454,7 +451,13 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, getRestaurantProfile(restaurant), "Category added successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        getRestaurantProfile(restaurant),
+        "Category added successfully"
+      )
+    );
 });
 
 export const removeRestaurantCategories = asyncHandler(async (req, res) => {
@@ -463,10 +466,7 @@ export const removeRestaurantCategories = asyncHandler(async (req, res) => {
   }
   const { categories } = req.body;
   if (categories.length === 0) {
-    throw new ApiError(
-      400,
-      "At least one category must be provided to remove"
-    );
+    throw new ApiError(400, "At least one category must be provided to remove");
   }
   if (req.restaurantRole !== "owner") {
     throw new ApiError(403, "Only owners can remove restaurant categories");
@@ -484,13 +484,19 @@ export const removeRestaurantCategories = asyncHandler(async (req, res) => {
     );
   }
 
-  restaurant.categories = restaurant.categories.filter(c => !categories.includes(c));
+  restaurant.categories = restaurant.categories.filter(
+    (c) => !categories.includes(c)
+  );
   await restaurant.save();
 
   res
     .status(200)
     .json(
-      new ApiResponse(200, getRestaurantProfile(restaurant), "Categories removed successfully")
+      new ApiResponse(
+        200,
+        getRestaurantProfile(restaurant),
+        "Categories removed successfully"
+      )
     );
 });
 
@@ -500,7 +506,9 @@ export const getRestaurantCategories = asyncHandler(async (req, res) => {
   }
   const { slug } = req.params;
 
-  const restaurant = await Restaurant.findOne({ slug });
+  const restaurant = await Restaurant.findOne({ slug })
+    .select("categories")
+    .lean();
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
@@ -568,7 +576,13 @@ export const setRestaurantTax = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, getRestaurantProfile(restaurant), "Tax set successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        getRestaurantProfile(restaurant),
+        "Tax set successfully"
+      )
+    );
 });
 
 export const checkUniqueRestaurantSlug = asyncHandler(async (req, res) => {
@@ -583,7 +597,7 @@ export const checkUniqueRestaurantSlug = asyncHandler(async (req, res) => {
     throw result.error;
   }
 
-  const restaurant = await Restaurant.findOne({ slug });
+  const restaurant = await Restaurant.exists({ slug });
   if (restaurant) {
     res
       .status(200)
@@ -653,7 +667,11 @@ export const updateRestaurantLogo = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(
-      new ApiResponse(200, getRestaurantProfile(restaurant), "Restaurant logo updated successfully")
+      new ApiResponse(
+        200,
+        getRestaurantProfile(restaurant),
+        "Restaurant logo updated successfully"
+      )
     );
 });
 
@@ -669,6 +687,7 @@ export const getAllStaffOfRestaurant = asyncHandler(async (req, res) => {
   const restaurant = await restaurantReq.populate({
     path: "staffMembers.user",
     select: "_id firstName lastName email avatar",
+    options: { lean: true },
   });
 
   res.status(200).json(
@@ -677,7 +696,7 @@ export const getAllStaffOfRestaurant = asyncHandler(async (req, res) => {
       {
         staffs:
           restaurant.staffMembers?.map((sm) => ({
-            ...((sm.user as any)["_doc"] || sm.user),
+            ...sm.user,
             role: sm.role,
             joinedAt: sm.joinedAt,
           })) || [],

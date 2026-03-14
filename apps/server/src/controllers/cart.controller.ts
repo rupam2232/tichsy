@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { isValidObjectId, Types } from "mongoose";
 import { Cart, CartItem } from "../models/cart.model.js";
@@ -29,7 +29,7 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid quantity");
   }
 
-  const restaurant = await Restaurant.findOne({ slug: restaurantSlug });
+  const restaurant = await Restaurant.findOne({ slug: restaurantSlug }).lean();
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
@@ -54,7 +54,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   const foodItem = await FoodItem.findOne({
     _id: foodId,
     restaurantId: restaurant._id,
-  });
+  }).lean();
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -211,7 +211,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Item not found in cart");
   }
 
-  const restaurant = await Restaurant.findOne({ slug: restaurantSlug });
+  const restaurant = await Restaurant.findOne({ slug: restaurantSlug }).lean();
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
@@ -225,7 +225,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   const foodItem = await FoodItem.findOne({
     _id: foodId,
     restaurantId: restaurant._id,
-  });
+  }).lean();
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
@@ -296,13 +296,21 @@ export const getCartItems = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Restaurant slug is required");
   }
 
+  if (!req.cookies || !req.cookies.cartId) {
+    throw new ApiError(404, "Cart not found");
+  }
+
   const restaurantSlug = req.params.restaurantSlug;
   let cart = null;
+  const { cartId } = req.cookies;
+  if (!isValidObjectId(cartId)) {
+    throw new ApiError(404, "Cart not found");
+  }
 
   if (req.cookies && req.cookies.cartId) {
     cart = await Cart.aggregate([
       {
-        $match: { _id: new Types.ObjectId(req.cookies.cartId) },
+        $match: { _id: Types.ObjectId.createFromHexString(cartId) },
       },
       {
         $lookup: {

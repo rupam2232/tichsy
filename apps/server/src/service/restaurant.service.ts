@@ -7,7 +7,7 @@ import {
 import {
   Restaurant,
   type Restaurant as RestaurantType,
-} from "../models/restaurant.models.js";
+} from "../models/restaurant.model.js";
 import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlan,

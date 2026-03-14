@@ -29,6 +29,7 @@ const tableSchema: Schema<Table> = new Schema(
       ref: "Restaurant",
       required: [true, "Restaurant id is required"],
       immutable: true,
+      index: true,
     },
     tableName: {
       type: String,
@@ -80,6 +81,8 @@ tableSchema.index({ restaurantId: 1, qrSlug: 1 }, { unique: true });
  * Allows the table name to be used by different restaurants, but only once per restaurant.
  */
 tableSchema.index({ restaurantId: 1, tableName: 1 }, { unique: true });
+
+tableSchema.index({ restaurantId: 1, isOccupied: 1, isArchived: 1 });
 
 /**
  * Mongoose model for the Table schema.

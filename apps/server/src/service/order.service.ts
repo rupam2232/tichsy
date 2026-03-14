@@ -1,6 +1,6 @@
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
-import type { Restaurant as RestaurantType } from "../models/restaurant.models.js";
+import type { Restaurant as RestaurantType } from "../models/restaurant.model.js";
 import { env } from "../env.js";
 
 const isProduction = env.NODE_ENV === "production";

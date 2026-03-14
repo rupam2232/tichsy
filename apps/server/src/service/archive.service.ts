@@ -1,4 +1,4 @@
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { FoodItem } from "../models/foodItem.model.js";
 import { Table } from "../models/table.model.js";
 import {

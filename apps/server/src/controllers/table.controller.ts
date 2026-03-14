@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { Table } from "../models/table.model.js";
 import { canCreateTable, canUnarchiveTable } from "../service/table.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -33,10 +33,7 @@ export const createTable = asyncHandler(async (req, res) => {
 
   const restaurant = req.restaurant;
   if (!restaurant) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -63,9 +60,18 @@ export const createTable = asyncHandler(async (req, res) => {
         seatCount: seatCount ? Math.ceil(seatCount) : 1,
       });
       break; // Success, exit loop
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 11000 is MongoDB duplicate key error code
-      if (err.code === 11000 && err.keyPattern && err.keyPattern.qrSlug) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === 11000 &&
+        "keyPattern" in err &&
+        err.keyPattern &&
+        typeof err.keyPattern === "object" &&
+        "qrSlug" in err.keyPattern
+      ) {
         attempts++;
         // Try again with a new qrSlug
         continue;
@@ -112,10 +118,7 @@ export const updateTable = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant;
 
   if (!restaurant) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -139,24 +142,21 @@ export const updateTable = asyncHandler(async (req, res) => {
   table.seatCount = Math.ceil(seatCount || table.seatCount);
   await table.save();
 
-  const totalTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-  });
-
-  const availableTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: false,
-    isArchived: false,
-  });
-  const occupiedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: true,
-    isArchived: false,
-  });
-  const archivedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isArchived: true,
-  });
+  const [totalTables, availableTables, occupiedTables, archivedTables] =
+    await Promise.all([
+      Table.countDocuments({ restaurantId: restaurant._id }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: false,
+        isArchived: false,
+      }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: true,
+        isArchived: false,
+      }),
+      Table.countDocuments({ restaurantId: restaurant._id, isArchived: true }),
+    ]);
 
   res.status(200).json(
     new ApiResponse(
@@ -232,7 +232,7 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
   }
 
   if (table.isOccupied && table.currentOrderId) {
-    const order = await Order.findById(table.currentOrderId);
+    const order = await Order.findById(table.currentOrderId).lean();
     if (order && !["completed", "cancelled"].includes(order.status)) {
       throw new ApiError(
         400,
@@ -246,24 +246,21 @@ export const toggleOccupiedStatus = asyncHandler(async (req, res) => {
   table.isOccupied = !table.isOccupied;
   await table.save();
 
-  const totalTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-  });
-
-  const availableTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: false,
-    isArchived: false,
-  });
-  const occupiedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: true,
-    isArchived: false,
-  });
-  const archivedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isArchived: true,
-  });
+  const [totalTables, availableTables, occupiedTables, archivedTables] =
+    await Promise.all([
+      Table.countDocuments({ restaurantId: restaurant._id }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: false,
+        isArchived: false,
+      }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: true,
+        isArchived: false,
+      }),
+      Table.countDocuments({ restaurantId: restaurant._id, isArchived: true }),
+    ]);
 
   res.status(200).json(
     new ApiResponse(
@@ -295,7 +292,9 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
   if (req.user) {
     // If user is authenticated, check if they are the owner or staff of the restaurant
     const isOwner = restaurant.ownerId.toString() === req.user._id!.toString();
-    const isStaff = restaurant.staffMembers?.some(sm => sm.user.toString() === req.user!._id!.toString());
+    const isStaff = restaurant.staffMembers?.some(
+      (sm) => sm.user.toString() === req.user!._id!.toString()
+    );
 
     if (isOwner || isStaff) {
       isUserPartofRestaurant = true;
@@ -422,32 +421,33 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
       )
     );
   } else {
-    // Fetch all tables for the restaurant
-    const tables = await Table.find({
-      restaurantId: restaurant._id,
-      ...(!includeArchivedBoolean && { isArchived: false }),
-    })
-      .sort({
-        [sortBy.toString()]: sortType === "asc" ? 1 : -1, // Ascending or descending sort
-      })
-      .skip((pageNumber - 1) * limitNumber) // Pagination logic
-      .limit(limitNumber) // Limit the number of results
-      .select("-restaurantId -__v"); // Exclude restaurantId and __v fields
-
-    const availableTables = await Table.countDocuments({
-      restaurantId: restaurant._id,
-      isOccupied: false,
-      isArchived: false,
-    });
-    const occupiedTables = await Table.countDocuments({
-      restaurantId: restaurant._id,
-      isOccupied: true,
-      isArchived: false,
-    });
-    const archivedTables = await Table.countDocuments({
-      restaurantId: restaurant._id,
-      isArchived: true,
-    });
+    const [tables, availableTables, occupiedTables, archivedTables] =
+      await Promise.all([
+        Table.find({
+          restaurantId: restaurant._id,
+          ...(!includeArchivedBoolean && { isArchived: false }),
+        })
+          .sort({
+            [sortBy.toString()]: sortType === "asc" ? 1 : -1, // Ascending or descending sort
+          })
+          .skip((pageNumber - 1) * limitNumber) // Pagination logic
+          .limit(limitNumber) // Limit the number of results
+          .select("-restaurantId -__v"), // Exclude restaurantId and __v fields
+        Table.countDocuments({
+          restaurantId: restaurant._id,
+          isOccupied: false,
+          isArchived: false,
+        }),
+        Table.countDocuments({
+          restaurantId: restaurant._id,
+          isOccupied: true,
+          isArchived: false,
+        }),
+        Table.countDocuments({
+          restaurantId: restaurant._id,
+          isArchived: true,
+        }),
+      ]);
     const totalPages = Math.ceil(tableCount / limitNumber);
     res
       .status(200)
@@ -485,10 +485,7 @@ export const deleteTable = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant;
 
   if (!restaurant) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -501,7 +498,7 @@ export const deleteTable = asyncHandler(async (req, res) => {
   const table = await Table.findOneAndDelete({
     qrSlug,
     restaurantId: restaurant._id,
-  });
+  }).lean();
 
   if (!table) {
     throw new ApiError(404, "Table not found");
@@ -528,10 +525,7 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant;
 
   if (!restaurant) {
-    throw new ApiError(
-      404,
-      "Restaurant not found"
-    );
+    throw new ApiError(404, "Restaurant not found");
   }
 
   if (restaurant.isArchived) {
@@ -565,24 +559,26 @@ export const toggleTableArchiveStatus = asyncHandler(async (req, res) => {
 
   await table.save();
 
-  const totalTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-  });
-
-  const availableTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: false,
-    isArchived: false,
-  });
-  const occupiedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isOccupied: true,
-    isArchived: false,
-  });
-  const archivedTables = await Table.countDocuments({
-    restaurantId: restaurant._id,
-    isArchived: true,
-  });
+  const [totalTables, availableTables, occupiedTables, archivedTables] =
+    await Promise.all([
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+      }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: false,
+        isArchived: false,
+      }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isOccupied: true,
+        isArchived: false,
+      }),
+      Table.countDocuments({
+        restaurantId: restaurant._id,
+        isArchived: true,
+      }),
+    ]);
 
   res.status(200).json(
     new ApiResponse(

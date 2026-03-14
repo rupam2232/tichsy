@@ -53,6 +53,16 @@ export const verifyAuth = asyncHandler(
 
     let user: UserType;
 
+    // Update the last active time and other details of the device session
+    deviceSession.lastActiveAt = new Date();
+    if (deviceSession.ipAddress !== requestIp.getClientIp(req)) {
+      deviceSession.ipAddress = requestIp.getClientIp(req) || "Unknown IP";
+    }
+    if (deviceSession.userAgent !== req.header("user-agent")) {
+      deviceSession.userAgent =
+        req.header("user-agent") || "Unknown User Agent";
+    }
+
     if (!accessToken) {
       user = await User.findById(deviceSession.userId).select("-password -__v");
       if (!user) {
@@ -79,6 +89,7 @@ export const verifyAuth = asyncHandler(
         deviceSession.previousRefreshToken = refreshToken;
         deviceSession.previousTokenExpiresAt = new Date(Date.now() + 30_000);
         deviceSession.refreshToken = newRefreshToken;
+        await deviceSession.save();
         res.cookie("refreshToken", newRefreshToken, {
           ...options,
           maxAge: env.REFRESH_TOKEN_EXPIRY * 24 * 60 * 60 * 1000,
@@ -117,18 +128,8 @@ export const verifyAuth = asyncHandler(
 
         throw new ApiError(401, "Unauthorized request");
       }
+      deviceSession.save();
     }
-
-    // Update the last active time and other details of the device session
-    deviceSession.lastActiveAt = new Date();
-    if (deviceSession.ipAddress !== requestIp.getClientIp(req)) {
-      deviceSession.ipAddress = requestIp.getClientIp(req) || "Unknown IP";
-    }
-    if (deviceSession.userAgent !== req.header("user-agent")) {
-      deviceSession.userAgent =
-        req.header("user-agent") || "Unknown User Agent";
-    }
-    await deviceSession.save();
 
     // Attach user to the request object
     req.user = user;

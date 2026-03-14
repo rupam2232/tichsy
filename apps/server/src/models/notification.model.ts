@@ -10,7 +10,7 @@ export interface Notification extends Document {
   type: "order" | "security" | "system"; // type of notification
   title: string; // Title of the notification
   message: string; // Message of the notification
-  data?: Record<string, any>; // Metadata like orderId, restaurantId, link
+  data?: Record<string, unknown>; // Metadata like orderId, restaurantId, link
   read: boolean; // Whether the notification has been read
   mergeKey?: string; // Identifier for merging similar notifications
   count: number; // Number of notifications to merge

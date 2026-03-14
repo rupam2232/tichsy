@@ -15,7 +15,7 @@ export interface Otp extends Document {
   expiresAt: Date;
   createdAt: Date;
   updatedAt?: Date;
-  isOtpCorrect(otp: string): Promise<Boolean>;
+  isOtpCorrect(otp: string): Promise<boolean>;
 }
 
 /**
@@ -75,7 +75,7 @@ otpSchema.pre("save", async function (next) {
  */
 otpSchema.methods.isOtpCorrect = async function (
   otp: Otp["otp"]
-): Promise<Boolean> {
+): Promise<boolean> {
   if (!this.otp || !otp) {
     return false;
   } else {

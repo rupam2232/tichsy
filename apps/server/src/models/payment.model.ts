@@ -36,6 +36,7 @@ const paymentSchema: Schema<Payment> = new Schema(
       ref: "Order",
       required: [true, "Order id is required"],
       immutable: true,
+      index: true,
     },
     method: {
       type: String,
@@ -114,6 +115,7 @@ const paymentSchema: Schema<Payment> = new Schema(
       immutable(doc) {
         return doc.method === "paid" || doc.method === "failed";
       },
+      index: true,
     },
     gatewaySignature: {
       type: String,

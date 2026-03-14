@@ -36,12 +36,10 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       ref: "User",
       required: [true, "Id of the user is required"],
       immutable: true,
-      index: true,
     },
     deviceId: {
       type: String,
       required: [true, "Device id is required"],
-      index: true,
     },
     deviceInfo: {
       browser: { type: String, required: true },
@@ -57,13 +55,11 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       type: String,
       default: "Unknown IP",
       required: [true, "Ip address is required"],
-      immutable: true,
     },
     userAgent: {
       type: String,
       default: "Unknown User Agent",
       required: [true, "User agent is required"],
-      immutable: true,
     },
     refreshToken: {
       type: String,
@@ -91,10 +87,6 @@ const deviceSessionSchema: Schema<DeviceSession> = new Schema(
       default: false,
       required: [true, "Revoked is required"],
     },
-    createdAt: {
-      type: Date,
-      immutable: true,
-    },
   },
   {
     timestamps: true,
@@ -106,6 +98,9 @@ deviceSessionSchema.index(
   { lastActiveAt: 1 },
   { expireAfterSeconds: 30 * 24 * 60 * 60 }
 );
+
+// Add a compound index for efficient querying of active sessions
+deviceSessionSchema.index({ userId: 1, deviceId: 1 });
 
 /**
  * Mongoose model for the DeviceSession schema.

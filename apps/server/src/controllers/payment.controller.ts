@@ -129,7 +129,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           );
         }
 
-        const existingHistory = await SubscriptionHistory.findOne({
+        const existingHistory = await SubscriptionHistory.exists({
           transactionId: paymentEntity.id,
         }).session(session);
 

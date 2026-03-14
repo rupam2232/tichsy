@@ -3,7 +3,7 @@ import { Server } from "socket.io";
 import http from "http";
 import jwt from "jsonwebtoken";
 import { accessTokenUser } from "../utils/jwt.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
 import { isValidObjectId } from "mongoose";
 import { env } from "../env.js";
@@ -60,7 +60,7 @@ export function setupSocketIO(server: http.Server) {
         if (!isValidObjectId(activeRestaurantId)) {
           return socket.disconnect();
         }
-        const restaurant = await Restaurant.findById(activeRestaurantId);
+        const restaurant = await Restaurant.findById(activeRestaurantId).lean();
         if (!restaurant) return socket.disconnect();
         if (
           !decoded ||

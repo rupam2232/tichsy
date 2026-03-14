@@ -48,7 +48,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     {
       $set: updatePayload,
     },
-    { new: true }
+    { new: true, lean: true }
   ).select("-password -__v");
 
   res
@@ -144,14 +144,14 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Otp is incorrect");
   }
 
-  const existingUser = await User.findOne({ email: newEmail });
+  const existingUser = await User.exists({ email: newEmail });
   if (existingUser) throw new ApiError(400, "Email already in use");
 
   // Success logic
   const updatedUser = await User.findByIdAndUpdate(
     req.user!._id,
     { $set: { email: newEmail } },
-    { new: true }
+    { new: true, lean: true }
   ).select("-password -__v");
 
   if (!updatedUser) throw new ApiError(404, "User not found");
@@ -248,7 +248,8 @@ export const getSessions = asyncHandler(async (req, res) => {
     revoked: false,
   })
     .sort({ lastActiveAt: -1 })
-    .limit(20);
+    .limit(20)
+    .lean();
 
   const currentSession = sessions.find(
     (session) =>
@@ -295,16 +296,14 @@ export const getSecurityEvents = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
 
-  const totalEvents = await SecurityEvent.countDocuments({
-    userId: req.user!._id,
-  });
-
-  const events = await SecurityEvent.find({
-    userId: req.user!._id,
-  })
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  const [totalEvents, events] = await Promise.all([
+    SecurityEvent.countDocuments({ userId: req.user!._id }),
+    SecurityEvent.find({ userId: req.user!._id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   res.status(200).json(
     new ApiResponse(

@@ -105,7 +105,7 @@ const orderSchema: Schema<Order> = new Schema(
       type: [foodItemSchema],
       required: [true, "Food items are required"],
       validate: {
-        validator: function (arr: any[]) {
+        validator: function (arr: FoodItem[]) {
           return Array.isArray(arr) && arr.length > 0;
         },
         message: "Order must contain at least one food item",
@@ -228,6 +228,10 @@ const orderSchema: Schema<Order> = new Schema(
  * Allows the order no. to be used by different restaurants, but only once per restaurant id.
  */
 orderSchema.index({ restaurantId: 1, orderNo: 1 }, { unique: true});
+
+orderSchema.index({ restaurantId: 1, status: 1, createdAt: -1 });
+orderSchema.index({ restaurantId: 1, isPaid: 1, status: 1, createdAt: -1 });
+orderSchema.index({ restaurantId: 1, tableId: 1 });
 
 /**
  * Mongoose model for the Order schema.

@@ -1,7 +1,7 @@
 import { isValidObjectId, Types } from "mongoose";
 import { FoodItem } from "../models/foodItem.model.js";
 import { Order } from "../models/order.model.js";
-import { Restaurant } from "../models/restaurant.models.js";
+import { Restaurant } from "../models/restaurant.model.js";
 import { Table } from "../models/table.model.js";
 import { canRestaurantRecieveOrders } from "../service/order.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -166,8 +166,12 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     const orderNoCounter = await OrderNoCounter.findOneAndUpdate(
       { restaurantId: restaurant._id },
       { $inc: { orderNo: 1 } },
-      { new: true, upsert: true, session }
+      { new: true, upsert: true, lean: true, session }
     );
+
+    if (!orderNoCounter) {
+      throw new ApiError(500, "Failed to get order number");
+    }
 
     const order = await Order.create(
       [
@@ -261,7 +265,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
       // Send in-app notifications to owner and staff
       const notificationRecipients = [
-        ...(restaurant.staffMembers?.map(sm => sm.user) || []),
+        ...(restaurant.staffMembers?.map((sm) => sm.user) || []),
       ];
 
       await Promise.all(
@@ -305,7 +309,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       // Send in-app notifications to owner and staff
       const notificationRecipients = [
         restaurant.ownerId,
-        ...(restaurant.staffMembers?.map(sm => sm.user) || []),
+        ...(restaurant.staffMembers?.map((sm) => sm.user) || []),
       ];
 
       await Promise.all(
@@ -543,7 +547,9 @@ export const getOrderById = asyncHandler(async (req, res) => {
   const orderData = order[0];
 
   if (orderData.kitchenStaff) {
-    if (orderData.kitchenStaff._id.toString() === restaurant.ownerId.toString()) {
+    if (
+      orderData.kitchenStaff._id.toString() === restaurant.ownerId.toString()
+    ) {
       orderData.kitchenStaff.role = "owner";
     } else {
       const staffMember = restaurant.staffMembers?.find(
@@ -682,7 +688,7 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  const baseMatch: any = {
+  const baseMatch: Record<string, unknown> = {
     restaurantId: restaurant._id,
     ...(req.query.isPaid ? { isPaid: req.query.isPaid === "true" } : {}),
     ...(status
@@ -731,9 +737,10 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
 
   // Only add createdAt filter if at least one date is provided
   if (fromDate || toDate) {
-    baseMatch.createdAt = {};
-    if (fromDate) baseMatch.createdAt.$gte = fromDate;
-    if (toDate) baseMatch.createdAt.$lte = toDate;
+    const createdAtFilter: { $gte?: Date; $lte?: Date } = {};
+    if (fromDate) createdAtFilter.$gte = fromDate;
+    if (toDate) createdAtFilter.$lte = toDate;
+    baseMatch.createdAt = createdAtFilter;
   }
 
   const decodedSearch = decodeURIComponent(search as string).trim();
@@ -879,9 +886,7 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
   ];
 
   // Count pipeline (up to $group, then count)
-  const groupIndex = aggregationPipeline.findIndex(
-    (stage) => !!(stage as any).$group
-  );
+  const groupIndex = aggregationPipeline.findIndex((stage) => !!stage.$group);
   const countPipeline = [
     ...aggregationPipeline.slice(0, groupIndex),
     ...(decodedSearch ? [{ $match: searchMatch }] : []),
@@ -889,9 +894,12 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
     { $count: "total" },
   ];
 
-  const countResult = await Order.aggregate(countPipeline);
+  const [countResult, orders] = await Promise.all([
+    Order.aggregate(countPipeline),
+    Order.aggregate(aggregationPipeline),
+  ]);
+
   const orderCount = countResult[0]?.total || 0;
-  const orders = await Order.aggregate(aggregationPipeline);
 
   if (!orders || orders.length === 0) {
     res.status(200).json(
@@ -1108,10 +1116,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   if (status === "cancelled" && order.isPaid) {
     // If the order is cancelled and already paid
-    throw new ApiError(
-      400,
-      "Cannot cancel an already paid order"
-    );
+    throw new ApiError(400, "Cannot cancel an already paid order");
   }
 
   if (status === "completed" && !order.isPaid) {
@@ -1131,7 +1136,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   await order.save();
   if (status === "completed" || status === "cancelled") {
-    const table = await Table.findOne({ _id: order.tableId });
+    const table = await Table.findById(order.tableId);
     if (table) {
       table.isOccupied = false; // Mark the table as not occupied
       table.currentOrderId = undefined; // Clear the current order
@@ -1370,7 +1375,7 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   order.isPaid = !order.isPaid;
   if (req.body?.markCompleted && order.isPaid && order.status !== "completed") {
     order.status = "completed"; // Automatically mark as completed if paid
-    const table = await Table.findOne({ _id: order.tableId });
+    const table = await Table.findById(order.tableId);
     if (table) {
       table.isOccupied = false; // Mark the table as not occupied
       table.currentOrderId = undefined; // Clear the current order

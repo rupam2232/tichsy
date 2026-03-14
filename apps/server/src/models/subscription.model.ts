@@ -67,6 +67,9 @@ const subscriptionSchema: Schema<Subscription> = new Schema(
   }
 );
 
+// Compound index to help query subscriptions for a user quickly
+subscriptionSchema.index({ isSubscriptionActive: 1, subscriptionEndDate: 1 });
+
 /**
  * Mongoose model for the Subscription schema.
  */

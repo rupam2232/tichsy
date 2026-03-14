@@ -88,7 +88,7 @@ const foodItemSchema: Schema<FoodItem> = new Schema(
       type: [foodVariantSchema],
       default: [],
       validate: {
-        validator: function (arr: any[]) {
+        validator: function (arr: FoodVariant[]) {
           return arr.length <= 6;
         },
         message: "You can only create maximum 6 food variants",
@@ -139,7 +139,23 @@ const foodItemSchema: Schema<FoodItem> = new Schema(
  * Compound index to ensure all food names are unique per restaurant.
  * Allows the food name to be used by different restaurants, but only once per restaurant.
  */
-foodItemSchema.index({ restaurantId: 1, foodName: 1 }, { unique: true });
+foodItemSchema.index({ restaurantId: 1, foodName: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+
+/**
+ * Compound index for efficient querying of food items.
+ * Supports filtering by restaurant, archive status, availability, and food name.
+ */
+foodItemSchema.index({ restaurantId: 1, isArchived: 1, isAvailable: -1, foodName: 1 });
+
+/**
+ * Compound index for efficient category-based filtering.
+ */
+foodItemSchema.index({ restaurantId: 1, category: 1 });
+
+/**
+ * Compound index for efficient food type-based filtering.
+ */
+foodItemSchema.index({ restaurantId: 1, foodType: 1 });
 
 /**
  * Mongoose model for the FoodItem schema.

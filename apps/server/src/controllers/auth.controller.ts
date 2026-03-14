@@ -40,7 +40,6 @@ export const signup = async (
   const session = await startSession();
   try {
     session.startTransaction();
-    session.startTransaction();
     const validatedData = signUpSchema.parse(req.body);
     const { email, password, fullName } = validatedData;
     const deviceId = req.cookies.deviceId || crypto.randomUUID();
@@ -72,69 +71,64 @@ export const signup = async (
     const ipAddressRaw = requestIp.getClientIp(req) || "";
     const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
 
-    // Create device session document for security and session management
-    await DeviceSession.create(
-      [
-        {
-          userId: user[0]._id,
-          deviceId,
-          ipAddress: ipAddressRaw || "Unknown IP",
-          userAgent: userAgentRaw || "Unknown User Agent",
-          deviceInfo,
-          refreshToken,
-        },
-      ],
-      { session }
-    );
-
-    // Create security event document for auditing
-    await SecurityEvent.create(
-      [
-        {
-          userId: user[0]._id,
-          eventType: "signup",
-          ipAddress: ipAddressRaw || "Unknown IP",
-          userAgent: userAgentRaw || "Unknown User Agent",
-          metadata: { deviceInfo },
-          isEmailSent: true,
-        },
-      ],
-      { session }
-    );
-
-    // Create a trial subscription for the new user
-    const subscription = await Subscription.create(
-      [
-        {
-          userId: user[0]._id,
-          isTrial: true,
-          plan: "starter",
-          period: "trial",
-          trialExpiresAt: calculateSubscriptionExpiryDate(7),
-          isSubscriptionActive: true,
-        },
-      ],
-      { session }
-    );
-
-    // Create subscription history for future reference
-    await SubscriptionHistory.create(
-      [
-        {
-          userId: user[0]._id,
-          amount: 0,
-          plan: subscription[0].plan,
-          period: "trial",
-          isTrial: true,
-          trialExpiresAt: subscription[0].trialExpiresAt,
-          subtotal: 0,
-          discountAmount: 0,
-          taxAmount: 0,
-          totalAmount: 0,
-        },
-      ],
-      { session }
-    );
+    await Promise.all([
+      Subscription.create(
+        [
+          {
+            userId: user[0]._id,
+            isTrial: true,
+            plan: "starter",
+            period: "trial",
+            trialExpiresAt: calculateSubscriptionExpiryDate(7),
+            isSubscriptionActive: true,
+          },
+        ],
+        { session }
+      ),
+      SubscriptionHistory.create(
+        [
+          {
+            userId: user[0]._id,
+            amount: 0,
+            plan: "starter",
+            period: "trial",
+            isTrial: true,
+            trialExpiresAt: calculateSubscriptionExpiryDate(7),
+            subtotal: 0,
+            discountAmount: 0,
+            taxAmount: 0,
+            totalAmount: 0,
+          },
+        ],
+        { session }
+      ),
+      DeviceSession.create(
+        [
+          {
+            userId: user[0]._id,
+            deviceId,
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            deviceInfo,
+            refreshToken,
+          },
+        ],
+        { session }
+      ),
+      SecurityEvent.create(
+        [
+          {
+            userId: user[0]._id,
+            eventType: "signup",
+            ipAddress: ipAddressRaw || "Unknown IP",
+            userAgent: userAgentRaw || "Unknown User Agent",
+            metadata: { deviceInfo },
+            isEmailSent: true,
+          },
+        ],
+        { session }
+      ),
+    ]);
 
     // Commit transaction to save all changes atomically
     await session.commitTransaction();
@@ -148,7 +142,7 @@ export const signup = async (
     );
 
     // Send Welcome Notification to UI
-    await createNotification({
+    createNotification({
       recipient: user[0]._id,
       type: "system",
       title: `Welcome to ${env.APP_NAME}`,
@@ -241,22 +235,36 @@ export const signin = async (
       deviceSession.lastActiveAt = new Date();
       await deviceSession.save();
     } else {
-      // If no session, create a new device session
-      await DeviceSession.create(
-        [
-          {
-            userId: user._id,
-            deviceId,
-            ipAddress: ipAddressRaw || "Unknown IP",
-            userAgent: userAgentRaw || "Unknown User Agent",
-            deviceInfo,
-            refreshToken,
-          },
-        ],
-        { session }
-      );
-      // Send new device login notification email
-      const { success } = await sendEmail(
+      await Promise.all([
+        DeviceSession.create(
+          [
+            {
+              userId: user._id,
+              deviceId,
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              deviceInfo,
+              refreshToken,
+            },
+          ],
+          { session }
+        ),
+        SecurityEvent.create(
+          [
+            {
+              userId: user._id,
+              eventType: "new_login",
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              metadata: { deviceInfo },
+              isEmailSent: true,
+            },
+          ],
+          { session }
+        ),
+      ]);
+
+      sendEmail(
         email,
         "new-login",
         newLoginDeviceTemplate(
@@ -266,23 +274,7 @@ export const signin = async (
         )
       );
 
-      // Log security event for new login
-      await SecurityEvent.create(
-        [
-          {
-            userId: user._id,
-            eventType: "new_login",
-            ipAddress: ipAddressRaw || "Unknown IP",
-            userAgent: userAgentRaw || "Unknown User Agent",
-            metadata: { deviceInfo },
-            isEmailSent: success,
-          },
-        ],
-        { session }
-      );
-
-      // Send New Login Warning Notification to UI
-      await createNotification({
+      createNotification({
         recipient: user._id,
         type: "security",
         title: "New Login Detected",
@@ -397,7 +389,7 @@ export const google = async (
         _id: user._id.toString(),
         email: user.email,
         firstName: user.firstName || "",
-      }); 
+      });
 
       // Check for existing device session for this user/device
       const deviceSession = await DeviceSession.findOne({
@@ -414,23 +406,38 @@ export const google = async (
         deviceSession.lastActiveAt = new Date();
         await deviceSession.save();
       } else {
-        // If no session, create a new device session
-        await DeviceSession.create(
-          [
-            {
-              userId: user._id,
-              deviceId,
-              ipAddress: ipAddressRaw || "Unknown IP",
-              userAgent: userAgentRaw || "Unknown User Agent",
-              deviceInfo,
-              refreshToken,
-            },
-          ],
-          { session }
-        );
+        // Parallelize independent operations
+        await Promise.all([
+          DeviceSession.create(
+            [
+              {
+                userId: user._id,
+                deviceId,
+                ipAddress: ipAddressRaw || "Unknown IP",
+                userAgent: userAgentRaw || "Unknown User Agent",
+                deviceInfo,
+                refreshToken,
+              },
+            ],
+            { session }
+          ),
+          SecurityEvent.create(
+            [
+              {
+                userId: user._id,
+                eventType: "new_login",
+                ipAddress: ipAddressRaw || "Unknown IP",
+                userAgent: userAgentRaw || "Unknown User Agent",
+                metadata: { deviceInfo },
+                isEmailSent: true,
+              },
+            ],
+            { session }
+          ),
+        ]);
 
-        // Send new device login notification email
-        const { success } = await sendEmail(
+        // Fire-and-forget side effects
+        sendEmail(
           email,
           "new-login",
           newLoginDeviceTemplate(
@@ -440,23 +447,7 @@ export const google = async (
           )
         );
 
-        // Create security event for new login
-        await SecurityEvent.create(
-          [
-            {
-              userId: user._id,
-              eventType: "new_login",
-              ipAddress: ipAddressRaw || "Unknown IP",
-              userAgent: userAgentRaw || "Unknown User Agent",
-              metadata: { deviceInfo },
-              isEmailSent: success,
-            },
-          ],
-          { session }
-        );
-
-        // Send New Login Warning Notification to UI
-        await createNotification({
+        createNotification({
           recipient: user._id,
           type: "security",
           title: "New Login Detected",
@@ -519,68 +510,64 @@ export const google = async (
         firstName: "",
       });
 
-      // Create device session for new user
-      await DeviceSession.create(
-        [
-          {
-            userId: user[0]._id,
-            deviceId,
-            ipAddress: ipAddressRaw || "Unknown IP",
-            userAgent: userAgentRaw || "Unknown User Agent",
-            deviceInfo,
-            refreshToken,
-          },
-        ],
-        { session }
-      );
-      // Create security event for signup
-      await SecurityEvent.create(
-        [
-          {
-            userId: user[0]._id,
-            eventType: "signup",
-            ipAddress: ipAddressRaw || "Unknown IP",
-            userAgent: userAgentRaw || "Unknown User Agent",
-            metadata: { deviceInfo },
-            isEmailSent: true,
-          },
-        ],
-        { session }
-      );
-
-      // Create a trial subscription for the new user
-      const subscription = await Subscription.create(
-        [
-          {
-            userId: user[0]._id,
-            isTrial: true,
-            plan: "starter",
-            period: "trial",
-            trialExpiresAt: calculateSubscriptionExpiryDate(7),
-            isSubscriptionActive: true,
-          },
-        ],
-        { session }
-      );
-
-      // Create subscription history for future reference
-      await SubscriptionHistory.create(
-        [
-          {
-            userId: user[0]._id,
-            amount: 0,
-            plan: subscription[0].plan,
-            period: "trial",
-            isTrial: true,
-            trialExpiresAt: subscription[0].trialExpiresAt,
-            subtotal: 0,
-            discountAmount: 0,
-            taxAmount: 0,
-            totalAmount: 0,
-          },
-        ],
-        { session }
-      );
+      await Promise.all([
+        Subscription.create(
+          [
+            {
+              userId: user[0]._id,
+              isTrial: true,
+              plan: "starter",
+              period: "trial",
+              trialExpiresAt: calculateSubscriptionExpiryDate(7),
+              isSubscriptionActive: true,
+            },
+          ],
+          { session }
+        ),
+        SubscriptionHistory.create(
+          [
+            {
+              userId: user[0]._id,
+              amount: 0,
+              plan: "starter",
+              period: "trial",
+              isTrial: true,
+              trialExpiresAt: calculateSubscriptionExpiryDate(7),
+              subtotal: 0,
+              discountAmount: 0,
+              taxAmount: 0,
+              totalAmount: 0,
+            },
+          ],
+          { session }
+        ),
+        DeviceSession.create(
+          [
+            {
+              userId: user[0]._id,
+              deviceId,
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              deviceInfo,
+              refreshToken,
+            },
+          ],
+          { session }
+        ),
+        SecurityEvent.create(
+          [
+            {
+              userId: user[0]._id,
+              eventType: "signup",
+              ipAddress: ipAddressRaw || "Unknown IP",
+              userAgent: userAgentRaw || "Unknown User Agent",
+              metadata: { deviceInfo },
+              isEmailSent: true,
+            },
+          ],
+          { session }
+        ),
+      ]);
 
       // Commit transaction and end session
       await session.commitTransaction();
@@ -594,7 +581,7 @@ export const google = async (
       );
 
       // Send Welcome Notification to UI
-      await createNotification({
+      createNotification({
         recipient: user[0]._id,
         type: "system",
         title: `Welcome to ${env.APP_NAME}`,
@@ -651,7 +638,15 @@ export const signout = asyncHandler(async (req: Request, res: Response) => {
       userId,
       deviceId: req.cookies.deviceId,
     },
-    { $unset: { refreshToken: 1, previousRefreshToken: 1, previousTokenExpiresAt: 1 }, $set: { lastActiveAt: new Date() } },
+    {
+      $unset: {
+        refreshToken: 1,
+        previousRefreshToken: 1,
+        previousTokenExpiresAt: 1,
+      },
+      $set: { lastActiveAt: new Date() },
+    },
+    { lean: true }
   );
 
   // Clear auth cookies
