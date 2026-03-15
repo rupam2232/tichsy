@@ -34,7 +34,12 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     const restaurant = await Restaurant.findOne({
       slug: req.params.restaurantSlug,
-    }).session(session);
+    })
+      .select(
+        "_id isArchived isCurrentlyOpen taxRate taxLabel isTaxIncludedInPrice staffMembers.user ownerId slug logoUrl"
+      )
+      .lean()
+      .session(session);
 
     if (!restaurant) {
       throw new ApiError(404, "Restaurant not found");
@@ -54,7 +59,9 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     const table = await Table.findOne({
       qrSlug: req.params.tableQrSlug,
       restaurantId: restaurant._id,
-    }).session(session);
+    })
+      .select("_id tableName qrSlug isOccupied isArchived currentOrderId")
+      .session(session);
 
     if (!table) {
       throw new ApiError(404, "Table not found please rescan the QR code");
@@ -80,14 +87,26 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       const isFoodItemValid = await FoodItem.findOne({
         _id: foodItem._id,
         restaurantId: restaurant._id,
-        isAvailable: true,
-      }).session(session);
+      })
+        .select(
+          "_id foodName foodType hasVariants variants foodType price discountedPrice isAvailable"
+        )
+        .lean()
+        .session(session);
       if (!isFoodItemValid) {
         throw new ApiError(
           400,
           `Food item with id ${foodItem._id} is not available`
         );
       }
+
+      if (!foodItem.variantName && !isFoodItemValid.isAvailable) {
+        throw new ApiError(
+          400,
+          `Food item ${isFoodItemValid.foodName} is not available`
+        );
+      }
+
       if (foodItem.variantName) {
         if (isFoodItemValid.hasVariants === false) {
           throw new ApiError(
@@ -158,10 +177,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     const totalAmount = restaurant.isTaxIncludedInPrice
       ? subtotal
       : subtotal + taxAmount; // Calculate total amount including tax if not included in price
-    const discountAmount = foodItems.reduce(
-      (acc, item) => acc + (item.price - item.finalPrice) * item.quantity,
-      0
-    );
+    const discountAmount = 0; // Item level discounts are already reflected in item.finalPrice and the subtotal. Order-level discounts (like coupons) can be added here in the future.
 
     const orderNoCounter = await OrderNoCounter.findOneAndUpdate(
       { restaurantId: restaurant._id },
@@ -183,10 +199,13 @@ export const createOrder = asyncHandler(async (req, res, next) => {
           subtotal,
           totalAmount,
           taxAmount,
+          taxRate: restaurant.taxRate,
+          taxLabel: restaurant.taxLabel,
+          isTaxIncludedInPrice: restaurant.isTaxIncludedInPrice,
           discountAmount,
           paymentMethod,
-          status: "pending", // Default status for new orders
-          isPaid: false, // Default to false
+          status: "pending",
+          isPaid: false,
           notes,
           customerName,
           customerPhone,
@@ -361,7 +380,9 @@ export const getOrderById = asyncHandler(async (req, res) => {
   if (!isValidObjectId(orderId)) {
     throw new ApiError(400, "Invalid order ID format");
   }
-  const restaurant = await Restaurant.findOne({ slug: restaurantSlug });
+  const restaurant = await Restaurant.findOne({ slug: restaurantSlug })
+    .select("_id staffMembers.user ownerId")
+    .lean();
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
@@ -385,9 +406,6 @@ export const getOrderById = asyncHandler(async (req, res) => {
               _id: 1,
               restaurantName: 1,
               slug: 1,
-              taxRate: 1,
-              isTaxIncludedInPrice: 1,
-              taxLabel: 1,
               address: 1,
             },
           },
@@ -475,6 +493,9 @@ export const getOrderById = asyncHandler(async (req, res) => {
         totalAmount: { $first: "$totalAmount" },
         discountAmount: { $first: "$discountAmount" },
         taxAmount: { $first: "$taxAmount" },
+        taxRate: { $first: "$taxRate" },
+        taxLabel: { $first: "$taxLabel" },
+        isTaxIncludedInPrice: { $first: "$isTaxIncludedInPrice" },
         isPaid: { $first: "$isPaid" },
         paymentMethod: { $first: "$paymentMethod" },
         notes: { $first: "$notes" },
@@ -605,7 +626,7 @@ export const getOrdersByIds = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid order IDs provided");
   }
 
-  const restaurant = await Restaurant.findOne({ slug: restaurantSlug });
+  const restaurant = await Restaurant.exists({ slug: restaurantSlug });
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
@@ -945,7 +966,9 @@ export const getOrderByTable = asyncHandler(async (req, res) => {
   const table = await Table.findOne({
     restaurantId: restaurant._id,
     qrSlug: req.params.tableQrSlug,
-  });
+  })
+    .select("currentOrderId _id")
+    .lean();
 
   if (!table) {
     throw new ApiError(404, "Table not found");
@@ -1136,12 +1159,15 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   await order.save();
   if (status === "completed" || status === "cancelled") {
-    const table = await Table.findById(order.tableId);
+    const table = await Table.findByIdAndUpdate(
+      order.tableId,
+      {
+        isOccupied: false,
+        currentOrderId: undefined,
+      },
+      { new: true, runValidators: true, lean: true }
+    );
     if (table) {
-      table.isOccupied = false; // Mark the table as not occupied
-      table.currentOrderId = undefined; // Clear the current order
-      await table.save({ validateBeforeSave: false });
-
       io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {
         message: "Table is now available",
         table: table,
@@ -1177,8 +1203,8 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     if (!req.body || !req.body.foodItems) {
       throw new ApiError(400, "Food items are required");
     }
-
-    const { foodItems, notes } = req.body;
+    const validatedData = createOrderSchema.parse(req.body);
+    const { foodItems, notes } = validatedData;
 
     if (!foodItems || !Array.isArray(foodItems) || foodItems.length === 0) {
       throw new ApiError(400, "Food items are required");
@@ -1226,12 +1252,23 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       const isFoodItemValid = await FoodItem.findOne({
         _id: foodItem._id,
         restaurantId: restaurant._id,
-        isAvailable: true,
-      }).session(session);
+      })
+        .select(
+          "_id foodName foodType hasVariants variants foodType price discountedPrice isAvailable"
+        )
+        .lean()
+        .session(session);
       if (!isFoodItemValid) {
         throw new ApiError(
           400,
           `Food item with id ${foodItem._id} is not available`
+        );
+      }
+
+      if (!foodItem.variantName && !isFoodItemValid.isAvailable) {
+        throw new ApiError(
+          400,
+          `Food item ${isFoodItemValid.foodName} is not available`
         );
       }
 
@@ -1269,23 +1306,39 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
         price: foodItem.variantName
           ? isFoodItemValid.variants.filter(
               (variant) => variant.variantName === foodItem.variantName
-            )[0].discountedPrice ||
-            isFoodItemValid.variants.filter(
-              (variant) => variant.variantName === foodItem.variantName
             )[0].price
           : isFoodItemValid.price,
+        finalPrice: foodItem.variantName
+          ? (isFoodItemValid.variants.find(
+              (variant) => variant.variantName === foodItem.variantName
+            )?.discountedPrice ??
+            isFoodItemValid.variants.find(
+              (variant) => variant.variantName === foodItem.variantName
+            )!.price)
+          : (isFoodItemValid.discountedPrice ?? isFoodItemValid.price),
       });
     }
     // Update the order with new food items and notes
     order.foodItems = updatedFoodItems as typeof order.foodItems;
 
     order.notes = notes || order.notes; // Update notes if provided, otherwise keep existing notes
-    await order.save({ session });
 
     const subtotal = updatedFoodItems.reduce(
-      (acc, item) => acc + item.price * item.quantity,
+      (acc, item) => acc + item.finalPrice * item.quantity,
       0
-    ); // Calculate total amount from food items
+    ); // Calculate subtotal (amount charged) from food items
+    const discountAmount = 0; // Order-level discount
+    const taxAmount = restaurant.isTaxIncludedInPrice
+      ? 0
+      : (subtotal * restaurant.taxRate) / 100;
+    const totalAmount = subtotal + taxAmount;
+
+    order.subtotal = subtotal;
+    order.discountAmount = discountAmount;
+    order.taxAmount = taxAmount;
+    order.totalAmount = totalAmount;
+
+    await order.save({ session });
 
     await Payment.updateMany(
       {
@@ -1294,13 +1347,9 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       },
       {
         subtotal,
-        totalAmount: restaurant.isTaxIncludedInPrice
-          ? subtotal
-          : subtotal + (subtotal * restaurant.taxRate) / 100, // Calculate total amount including tax if not included in price
-        taxAmount: restaurant.isTaxIncludedInPrice
-          ? 0
-          : (subtotal * restaurant.taxRate) / 100, // Calculate tax amount if not included in price
-        discountAmount: 0, // Assuming no discount for now, can be updated later
+        totalAmount,
+        discountAmount,
+        taxAmount,
         tipAmount: 0, // Assuming no tip for now, can be updated later
       },
       { session }
@@ -1375,12 +1424,15 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   order.isPaid = !order.isPaid;
   if (req.body?.markCompleted && order.isPaid && order.status !== "completed") {
     order.status = "completed"; // Automatically mark as completed if paid
-    const table = await Table.findById(order.tableId);
+    const table = await Table.findByIdAndUpdate(
+      order.tableId,
+      {
+        isOccupied: false,
+        currentOrderId: undefined,
+      },
+      { new: true, runValidators: true, lean: true }
+    );
     if (table) {
-      table.isOccupied = false; // Mark the table as not occupied
-      table.currentOrderId = undefined; // Clear the current order
-      await table.save({ validateBeforeSave: false });
-
       io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {
         message: "Table is now available",
         table: table,

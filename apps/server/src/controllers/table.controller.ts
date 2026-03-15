@@ -46,6 +46,18 @@ export const createTable = asyncHandler(async (req, res) => {
   const restaurantId = restaurant._id!.toString();
   await canCreateTable(req.subscription!, restaurantId);
 
+  const existingTable = await Table.exists({
+    restaurantId,
+    tableName: { $regex: tableName, $options: "i" },
+  });
+
+  if (existingTable) {
+    throw new ApiError(
+      400,
+      "Table with this name already exists in the restaurant"
+    );
+  }
+
   // Try to create a unique qrSlug, retry if duplicate key error
   let table;
   let attempts = 0;

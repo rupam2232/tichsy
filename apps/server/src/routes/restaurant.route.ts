@@ -71,7 +71,7 @@ router.get("/joined", verifyAuth, getJoinedRestaurants);
 router
   .route("/:slug")
   .get(verifyOptionalAuth, getRestaurantBySlug)
-  .patch(verifyAuth, updateRestaurantDetails);
+  .patch(verifyAuth, verifyRestaurantAccess, updateRestaurantDetails);
 router.patch(
   "/:slug/toggle-open-status",
   verifyAuth,

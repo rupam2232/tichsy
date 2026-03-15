@@ -291,27 +291,32 @@ const OrderDetails = ({
                           ₹{orderDetails.subtotal.toFixed(2)}
                         </TableCell>
                       </TableRow>
-                      <TableRow className="bg-muted">
-                        <TableCell colSpan={3} className="text-right">
-                          Total Discount :
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₹{orderDetails.discountAmount?.toFixed(2) || "0.00"}
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-right">
-                          Total Tax :
-                          {orderDetails.restaurant?.isTaxIncludedInPrice && (
-                            <p className="text-xs text-muted-foreground font-normal">
-                              (Included in price)
-                            </p>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₹{orderDetails.taxAmount?.toFixed(2) || "0.00"}
-                        </TableCell>
-                      </TableRow>
+                      {orderDetails.discountAmount &&
+                      orderDetails.discountAmount > 0 ? (
+                        <TableRow className="bg-muted">
+                          <TableCell colSpan={3} className="text-right">
+                            Total Discount :
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ₹{orderDetails.discountAmount.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      {orderDetails.taxAmount && orderDetails.taxAmount > 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-right">
+                            Total Tax :
+                            {orderDetails.isTaxIncludedInPrice && (
+                              <p className="text-xs text-muted-foreground font-normal">
+                                (Included in price)
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ₹{orderDetails.taxAmount?.toFixed(2) || "0.00"}
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
                       <TableRow className="bg-muted">
                         <TableCell colSpan={3} className="text-right">
                           Total Amount :

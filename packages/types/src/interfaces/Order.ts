@@ -58,9 +58,6 @@ export interface FullOrderDetailsType {
     _id: string;
     restaurantName: string;
     slug: string;
-    taxRate?: number;
-    isTaxIncludedInPrice: number;
-    taxLabel?: string;
     address?: string;
   };
   status:
@@ -74,6 +71,9 @@ export interface FullOrderDetailsType {
   totalAmount: number;
   discountAmount?: number;
   taxAmount?: number;
+  taxRate?: number;
+  isTaxIncludedInPrice: boolean;
+  taxLabel?: string;
   paymentMethod: "cash" | "online";
   isPaid: boolean;
   notes?: string;

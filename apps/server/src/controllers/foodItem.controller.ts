@@ -156,7 +156,9 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
 
   const restaurant = await Restaurant.findOne({
     slug: req.params.restaurantSlug,
-  }).lean();
+  })
+    .select("_id isArchived isCurrentlyOpen ownerId staffMembers.user")
+    .lean();
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
@@ -285,7 +287,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       })
       .skip((pageNumber - 1) * limitNumber) // Pagination logic
       .limit(limitNumber) // Limit the number of results
-      .select("-restaurantId -__v -tags -category -variants") // Exclude unnecessary fields
+      .select("-restaurantId -__v -tags -category") // Exclude unnecessary fields
       .lean();
 
     const totalPages = Math.ceil(foodItemCount / limitNumber);
@@ -319,7 +321,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     .select("-__v")
     .populate({
       path: "restaurantId",
-      select: "name slug categories ownerId staffIds",
+      select: "name slug categories ownerId staffMembers.user",
     })
     .lean();
 

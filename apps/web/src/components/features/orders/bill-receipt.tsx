@@ -203,8 +203,8 @@ const BillReceipt = ({
           {orderDetails.taxAmount ? (
             <div className="flex justify-between">
               <span>
-                {orderDetails.restaurant.taxLabel} (
-                {orderDetails.restaurant.taxRate}%)
+                {orderDetails.taxLabel} (
+                {orderDetails.taxRate}%)
               </span>
               <span>{orderDetails.taxAmount.toFixed(2)}</span>
             </div>
@@ -212,12 +212,7 @@ const BillReceipt = ({
             <></>
           )}
 
-          {orderDetails.discountAmount &&
-          orderDetails.discountAmount ===
-            orderDetails.orderedFoodItems.reduce(
-              (acc, item) => acc + (item.finalPrice - item.price),
-              0,
-            ) ? (
+          {orderDetails.discountAmount && orderDetails.discountAmount > 0 ? (
             <div className="flex justify-between">
               <span>Discount</span>
               <span>-{orderDetails.discountAmount.toFixed(2)}</span>

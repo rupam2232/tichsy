@@ -40,6 +40,8 @@ const getRestaurantProfile = (restaurant: Restaurant) => {
     taxRate: restaurant.taxRate,
     taxLabel: restaurant.taxLabel,
     isTaxIncludedInPrice: restaurant.isTaxIncludedInPrice,
+    openingTime: restaurant.openingTime,
+    closingTime: restaurant.closingTime,
   };
 };
 
@@ -170,7 +172,7 @@ export const getJoinedRestaurants = asyncHandler(async (req, res) => {
 
 export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   if (!req.params?.slug) {
-    throw new ApiError(400, "Restaurant slug is required.");
+    throw new ApiError(400, "Restaurant slug is required");
   }
   const { slug } = req.params;
 
@@ -183,14 +185,12 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   const { forMetaData = "false" } = req.query;
   const isForMetaData = forMetaData === "true";
 
-  // Fetch with minimal hidden fields first
-  const selectFields = "-__v -updatedAt";
   const restaurant = await Restaurant.findOne({ slug })
-    .select(selectFields)
+    .select("-__v -updatedAt")
     .lean();
 
   if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found.");
+    throw new ApiError(404, "Restaurant not found");
   }
 
   let userRole: string | undefined = undefined;
@@ -257,11 +257,12 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
 });
 
 export const updateRestaurantDetails = asyncHandler(async (req, res) => {
-  if (!req.params || !req.params.slug) {
-    throw new ApiError(400, "Restaurant slug is required");
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(
+      403,
+      "You are not authorized to update restaurant details"
+    );
   }
-  const { slug } = req.params;
-
   const validatedData = updateRestaurantSchema.parse(req.body);
 
   const {
@@ -284,26 +285,19 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
     }
   }
 
-  const restaurant = await Restaurant.findOne({
-    slug,
-    ownerId: req.user!._id,
-  }).select("-staffIds -__v -updatedAt");
+  const restaurant = req.restaurant;
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  if (slug !== newSlug) {
+  if (restaurant.slug !== newSlug) {
     const duplicateRestaurantSlug = await Restaurant.exists({
       slug: newSlug,
     });
     if (duplicateRestaurantSlug) {
       throw new ApiError(400, "Slug is already taken");
     }
-  }
-
-  if (restaurant.ownerId.toString() !== req.user!._id!.toString()) {
-    throw new ApiError(403, "You are not the owner of this restaurant");
   }
 
   if (restaurant.isArchived) {
@@ -337,12 +331,18 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, restaurant, "Restaurant updated successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
+        "Restaurant updated successfully"
+      )
+    );
 });
 
 export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can toggle restaurant status");
+    throw new ApiError(403, "Only the owner can toggle restaurant status");
   }
 
   const restaurant = req.restaurant;
@@ -372,7 +372,7 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        getRestaurantProfile(restaurant),
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
         `Restaurant is now ${restaurant.isCurrentlyOpen ? "open" : "closed"}`
       )
     );
@@ -380,7 +380,10 @@ export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
 
 export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can toggle restaurant archive status");
+    throw new ApiError(
+      403,
+      "Only the owner can toggle restaurant archive status"
+    );
   }
 
   const restaurant = req.restaurant;
@@ -410,7 +413,7 @@ export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        getRestaurantProfile(restaurant),
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
         `Restaurant is now ${restaurant.isArchived ? "archived" : "unarchived"}`
       )
     );
@@ -421,7 +424,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
   const { category } = validatedData;
 
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can create restaurant categories");
+    throw new ApiError(403, "Only the owner can create restaurant categories");
   }
 
   const restaurant = req.restaurant;
@@ -454,7 +457,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        getRestaurantProfile(restaurant),
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
         "Category added successfully"
       )
     );
@@ -469,7 +472,7 @@ export const removeRestaurantCategories = asyncHandler(async (req, res) => {
     throw new ApiError(400, "At least one category must be provided to remove");
   }
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can remove restaurant categories");
+    throw new ApiError(403, "Only the owner can remove restaurant categories");
   }
   const restaurant = req.restaurant;
 
@@ -494,7 +497,7 @@ export const removeRestaurantCategories = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        getRestaurantProfile(restaurant),
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
         "Categories removed successfully"
       )
     );
@@ -526,7 +529,7 @@ export const getRestaurantCategories = asyncHandler(async (req, res) => {
 
 export const setRestaurantTax = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can set restaurant tax");
+    throw new ApiError(403, "Only the owner can set restaurant tax");
   }
 
   if (typeof req.body?.isTaxIncludedInPrice !== "boolean") {
@@ -579,7 +582,7 @@ export const setRestaurantTax = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        getRestaurantProfile(restaurant),
+        { ...getRestaurantProfile(restaurant), userRole: req.restaurantRole },
         "Tax set successfully"
       )
     );
@@ -614,7 +617,7 @@ export const updateRestaurantLogo = asyncHandler(async (req, res) => {
 
   if (req.restaurantRole !== "owner") {
     if (logoLocalPath) fs.unlinkSync(logoLocalPath); // Remove the file if the user is not an owner
-    throw new ApiError(403, "Only owners can upload restaurant logos");
+    throw new ApiError(403, "Only the owner can upload restaurant logo");
   }
 
   // Check file type
@@ -677,7 +680,7 @@ export const updateRestaurantLogo = asyncHandler(async (req, res) => {
 
 export const getAllStaffOfRestaurant = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "Only owners can view their restaurant staffs");
+    throw new ApiError(403, "Only the owner can view their restaurant staffs");
   }
 
   const restaurantReq = req.restaurant;
@@ -717,7 +720,7 @@ export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
     throw new ApiError(
       403,
-      "Only owners can remove staff from their restaurant"
+      "Only the owner can remove staff from their restaurant"
     );
   }
   const restaurant = req.restaurant;
@@ -751,7 +754,7 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
 
   // Role verification handled by verifyRestaurantAccess
   if (!req.restaurantRole) {
-    throw new ApiError(403, "Unauthorized role");
+    throw new ApiError(403, "Unauthorized to view dashboard operations");
   }
 
   // --- Operations Stats (Live Data) ---
@@ -916,7 +919,7 @@ export const getAnalyticsKPIs = asyncHandler(async (req, res) => {
 
   // Role verification handled by verifyRestaurantAccess
   if (req.restaurantRole !== "owner") {
-    throw new ApiError(403, "You can't access this data");
+    throw new ApiError(403, "Unauthorized to view analytics KPIs");
   }
 
   const nowUtc = new Date();
@@ -1056,8 +1059,13 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
   const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
   const { startDate, endDate, groupBy = "day" } = req.query;
 
-  if (!req.restaurant || req.restaurantRole !== "owner")
-    throw new ApiError(403, "You can't access this data");
+  if (!req.restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(403, "Unauthorized to view analytics revenue");
+  }
 
   let queryStart: Date;
   let queryEnd: Date;
@@ -1279,8 +1287,13 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
   const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
-  if (!req.restaurant || req.restaurantRole !== "owner")
-    throw new ApiError(403, "You can't access this data");
+  if (!req.restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(403, "Unauthorized to view analytics revenue");
+  }
 
   let queryStart: Date;
   let queryEnd: Date;
@@ -1360,8 +1373,12 @@ export const getAnalyticsCategories = asyncHandler(async (req, res) => {
   const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
-  if (!req.restaurant || req.restaurantRole !== "owner") {
-    throw new ApiError(403, "You can't access this data");
+  if (!req.restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(403, "Unauthorized to view analytics categories");
   }
 
   let queryStart: Date;
@@ -1431,8 +1448,12 @@ export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
   const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
-  if (!req.restaurant || req.restaurantRole !== "owner") {
-    throw new ApiError(403, "You can't access this data");
+  if (!req.restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(403, "Unauthorized to view analytics categories");
   }
 
   let queryStart: Date;

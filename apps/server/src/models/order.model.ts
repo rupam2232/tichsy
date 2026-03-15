@@ -64,6 +64,9 @@ export interface Order extends Document {
   totalAmount: number; // Final amount to be paid (after discount, tax, tip, if any)
   discountAmount?: number; // Amount deducted due to discount (if any)
   taxAmount?: number; // Optional total tax applied (if any)
+  taxRate?: number; // Optional tax rate applied (if any)
+  taxLabel?: string; // Optional tax label (if any)
+  isTaxIncludedInPrice?: boolean; // Optional flag to check if tax is included in price
   paymentMethod?: "online" | "cash"; // Optional payment method used (e.g., cash, card, online)
   paymentAttempts?: Types.ObjectId[]; // Optional array of payment attempt IDs
   isPaid: boolean; // Whether the order is paid
@@ -150,6 +153,25 @@ const orderSchema: Schema<Order> = new Schema(
     taxAmount: {
       type: Number,
       default: 0,
+      immutable(doc) {
+        return doc.status === "completed" || doc.status === "cancelled";
+      },
+    },
+    taxRate: {
+      type: Number,
+      default: 0,
+      immutable(doc) {
+        return doc.status === "completed" || doc.status === "cancelled";
+      },
+    },
+    taxLabel: {
+      type: String,
+      immutable(doc) {
+        return doc.status === "completed" || doc.status === "cancelled";
+      },
+    },
+    isTaxIncludedInPrice: {
+      type: Boolean,
       immutable(doc) {
         return doc.status === "completed" || doc.status === "cancelled";
       },
