@@ -9,8 +9,9 @@ import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import { sendInviteSchema } from "@repo/types";
 import { env } from "../env.js";
-import { staffInviteTemplate } from "../templates/emailTemplates.js";
+import { inviteStaff } from "../templates/emailTemplates.js";
 import { checkStaffLimit } from "../service/subscription.service.js";
+import { createNotification } from "../service/notification.service.js";
 
 export const sendInvitation = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
@@ -22,9 +23,9 @@ export const sendInvitation = asyncHandler(async (req, res) => {
   const restaurant = req.restaurant!;
 
   // Check if user is already a staff member
-  const existingUser = await User.findOne({
+  const existingUser = await User.exists({
     email: email.toLowerCase(),
-  }).lean();
+  });
   if (existingUser) {
     const isAlreadyStaff = restaurant.staffMembers?.some(
       (sm) => sm.user.toString() === existingUser._id.toString()
@@ -83,13 +84,15 @@ export const sendInvitation = asyncHandler(async (req, res) => {
 
   // Send email
   try {
-    const htmlTemplate = staffInviteTemplate(
+    const template = inviteStaff(
       restaurant.restaurantName,
       invitation.role,
-      inviteLink
+      inviteLink,
+      "7 days",
+      req.user!.firstName + " " + (req.user!.lastName ?? "")
     );
 
-    await sendEmail(email, "invitation", htmlTemplate);
+    await sendEmail(email, template);
   } catch (error) {
     console.error("Failed to send invitation email", error);
   }
@@ -228,6 +231,19 @@ export const acceptInvitation = asyncHandler(async (req, res) => {
     user.restaurantIds.push(restaurant._id as Types.ObjectId);
     await user.save();
   }
+
+  createNotification({
+    recipient: restaurant.ownerId,
+    type: "system",
+    title: "Invitation Accepted",
+    message: `${user.firstName} ${user.lastName} has accepted your invitation to join ${restaurant.restaurantName}`,
+    data: {
+      restaurantId: restaurant._id,
+      restaurantName: restaurant.restaurantName,
+      imageUrl: restaurant.logoUrl,
+      restaurantSlug: restaurant.slug,
+    },
+  });
 
   res
     .status(200)

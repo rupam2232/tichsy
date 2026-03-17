@@ -12,7 +12,7 @@ import {
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { restaurantCreatedTemplate } from "../templates/emailTemplates.js";
+import { newRestaurant } from "../templates/emailTemplates.js";
 import sendEmail from "../utils/sendEmail.js";
 import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";
@@ -49,8 +49,6 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   const validatedData = createRestaurantSchema.parse(req.body);
   const { restaurantName, slug, description, address, logoUrl } = validatedData;
   const ownerId = req.user!._id;
-
-  // Owner check is dynamically determined based on the restaurant's ownerId
 
   await canCreateRestaurant(req.user!, req.subscription!);
 
@@ -92,13 +90,10 @@ export const createRestaurant = asyncHandler(async (req, res) => {
 
   sendEmail(
     req.user!.email,
-    "restaurant-created",
-    restaurantCreatedTemplate(
+    newRestaurant(
       req.user!.firstName ?? "User",
       restaurant.restaurantName,
-      restaurant.slug,
-      restaurant.description ?? "Not defined",
-      restaurant.address ?? "Not defined"
+      restaurant.slug
     )
   );
   res

@@ -11,9 +11,9 @@ import { Subscription } from "../models/subscription.model.js";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import sendEmail from "../utils/sendEmail.js";
 import {
-  newLoginDeviceTemplate,
-  passwordResetSuccessTemplate,
-  signupEmailTemplate,
+  newLoginDevice,
+  passwordUpdateSuccess,
+  welcome,
 } from "../templates/emailTemplates.js";
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -135,11 +135,7 @@ export const signup = async (
     session.endSession();
 
     // Send welcome email (non-blocking)
-    sendEmail(
-      email,
-      "signup-success",
-      signupEmailTemplate(user[0].firstName ?? "User")
-    );
+    sendEmail(email, welcome(user[0].firstName ?? "User"));
 
     // Send Welcome Notification to UI
     createNotification({
@@ -266,8 +262,7 @@ export const signin = async (
 
       sendEmail(
         email,
-        "new-login",
-        newLoginDeviceTemplate(
+        newLoginDevice(
           user.firstName ?? "User",
           `${deviceInfo.os} - ${deviceInfo.browser}`,
           deviceInfo.location
@@ -439,8 +434,7 @@ export const google = async (
         // Fire-and-forget side effects
         sendEmail(
           email,
-          "new-login",
-          newLoginDeviceTemplate(
+          newLoginDevice(
             user.firstName ?? "User",
             `${deviceInfo.os} - ${deviceInfo.browser}`,
             deviceInfo.location
@@ -574,11 +568,7 @@ export const google = async (
       session.endSession();
 
       // Send signup success email (non-blocking)
-      sendEmail(
-        email,
-        "signup-success",
-        signupEmailTemplate(user[0].firstName ?? "User")
-      );
+      sendEmail(email, welcome(user[0].firstName ?? "User"));
 
       // Send Welcome Notification to UI
       createNotification({
@@ -674,12 +664,22 @@ export const forgotPassword = asyncHandler(
     user.password = password;
     await user.save();
 
+    const userAgentRaw = req.header("user-agent") || "";
+    const ipAddressRaw = requestIp.getClientIp(req) || "";
+    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
+    await SecurityEvent.create({
+      userId: user._id,
+      eventType: "password_change",
+      ipAddress: ipAddressRaw || "Unknown IP",
+      userAgent: userAgentRaw || "Unknown User Agent",
+      isEmailSent: true,
+      metadata: {
+        deviceInfo,
+      },
+    });
+
     // Send success email (non-blocking)
-    sendEmail(
-      email,
-      "password-reset-success",
-      passwordResetSuccessTemplate(user.firstName ?? "User")
-    );
+    sendEmail(email, passwordUpdateSuccess(user.firstName ?? "User"));
 
     res
       .status(200)

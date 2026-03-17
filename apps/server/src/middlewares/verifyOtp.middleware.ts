@@ -1,35 +1,35 @@
 import { Otp } from "../models/otp.model.js";
-import { asyncHandler } from "../utils/asyncHandler.js"
-import { ApiError } from "../utils/ApiError.js"
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
 
 export const verifyOtp = asyncHandler(async (req, _, next) => {
-    if (!req.body || (!req.body.email && !req.user?.email) || !req.body.otp) {
-        throw new ApiError(400, "Email and otp is required");
-    }
-    const { otp } = req.body;
-    const email = req.body.email || req.user?.email;
+  if (!req.body || (!req.body.email && !req.user?.email) || !req.body.otp) {
+    throw new ApiError(400, "Email and otp is required");
+  }
+  const { otp } = req.body;
+  const email = req.body.email || req.user?.email;
 
-    const otpData = await Otp.findOne({ email });
+  const otpData = await Otp.findOne({ email });
 
-    if (!otpData) {
-        throw new ApiError(404, "Otp not found. Please resend a new one");
-    }
+  if (!otpData) {
+    throw new ApiError(404, "Otp not found. Please resend a new one");
+  }
 
-    if (otpData.expiresAt < new Date()) {
-        throw new ApiError(404, "Otp is expired");
-    }
+  if (otpData.expiresAt < new Date()) {
+    throw new ApiError(404, "Otp is expired");
+  }
 
-    if(req.url.split("/")[1] !== otpData.context) {
-        throw new ApiError(404, "Invalid otp");
-    }
+  if (req.url.split("/")[1] !== otpData.context) {
+    throw new ApiError(400, "Invalid otp");
+  }
 
-    const isOtpCorrect = await otpData.isOtpCorrect(otp);
+  const isOtpCorrect = await otpData.isOtpCorrect(otp);
 
-    if (!isOtpCorrect) {
-        throw new ApiError(404, "Invalid otp");
-    }
-    
-    await Otp.deleteOne({email: otpData.email});
+  if (!isOtpCorrect) {
+    throw new ApiError(403, "Invalid otp");
+  }
 
-    next();
-})
+  await Otp.deleteOne({ email: otpData.email });
+
+  next();
+});

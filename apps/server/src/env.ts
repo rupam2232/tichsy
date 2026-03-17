@@ -12,6 +12,7 @@ const envSchema = z.object({
   SERVER_NAME: z.string("Invalid server name").min(1),
   APP_NAME: z.string("Invalid app name").min(1),
   EMAIL: z.email("Invalid email"),
+  EMAIL_FROM: z.string("Invalid email from").min(1),
   EMAIL_PASSWORD: z.string("Invalid email password").min(1),
   EMAIL_SERVICE: z.string("Invalid email service").min(1),
   COOKIE_DOMAIN: z.string("Invalid cookie domain").min(1).optional(),
@@ -29,6 +30,7 @@ const envSchema = z.object({
   RAZORPAY_WEBHOOK_URL: z.url("Invalid Razorpay webhook URL"),
   JWT_SECRET_KEY: z.string("Invalid JWT secret key").min(1),
   FRONTEND_URL: z.string("Invalid frontend URL").trim().default("http://localhost:3000"),
+  RESEND_API_KEY: z.string("Invalid Resend API key").min(1),
 });
 
 export const env = envSchema.parse(process.env);

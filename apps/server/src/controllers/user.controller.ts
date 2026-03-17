@@ -15,12 +15,13 @@ import requestIp from "request-ip";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
 import {
-  emailResetSuccessTemplate,
-  passwordResetSuccessTemplate,
+  emailUpdateSuccess,
+  passwordUpdateSuccess,
 } from "../templates/emailTemplates.js";
 import { generateActionToken } from "../utils/jwt.js";
 import cloudinary from "../utils/cloudinary.js";
 import { env } from "../env.js";
+import { parseDeviceInfo } from "../utils/deviceParser.js";
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
   res
@@ -158,28 +159,30 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
 
   await Otp.deleteOne({ _id: otpRecord._id });
 
-  sendEmail(
-    newEmail,
-    "email-change-success",
-    emailResetSuccessTemplate(updatedUser.firstName ?? "User", newEmail)
-  );
-  sendEmail(
-    req.user!.email,
-    "email-change-success",
-    emailResetSuccessTemplate(updatedUser.firstName ?? "User", newEmail)
-  );
-
+  const userAgentRaw = req.header("user-agent") || "";
+  const ipAddressRaw = requestIp.getClientIp(req) || "";
+  const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
   await SecurityEvent.create({
     userId: req.user!._id,
     eventType: "email_change",
-    ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-    userAgent: req.header("user-agent") || "Unknown User Agent",
+    ipAddress: ipAddressRaw || "Unknown IP",
+    userAgent: userAgentRaw || "Unknown User Agent",
     isEmailSent: true,
     metadata: {
+      deviceInfo,
       oldEmail: req.user!.email,
       newEmail: newEmail,
     },
   });
+
+  sendEmail(
+    [req.user!.email, newEmail],
+    emailUpdateSuccess(
+      updatedUser.firstName ?? "User",
+      newEmail,
+      req.user!.email
+    )
+  );
 
   res
     .status(200)
@@ -223,19 +226,21 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   await Otp.deleteOne({ _id: otpRecord._id });
 
-  sendEmail(
-    user.email,
-    "password-reset-success",
-    passwordResetSuccessTemplate(user.firstName ?? "User")
-  );
-
+  const userAgentRaw = req.header("user-agent") || "";
+  const ipAddressRaw = requestIp.getClientIp(req) || "";
+  const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
   await SecurityEvent.create({
     userId: user._id,
     eventType: "password_change",
-    ipAddress: requestIp.getClientIp(req) || "Unknown IP",
-    userAgent: req.header("user-agent") || "Unknown User Agent",
+    ipAddress: ipAddressRaw || "Unknown IP",
+    userAgent: userAgentRaw || "Unknown User Agent",
     isEmailSent: true,
+    metadata: {
+      deviceInfo,
+    },
   });
+
+  sendEmail(user.email, passwordUpdateSuccess(user.firstName ?? "User"));
 
   res
     .status(200)

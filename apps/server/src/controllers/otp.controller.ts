@@ -5,9 +5,10 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import sendEmail from "../utils/sendEmail.js";
 import {
-  emailResetRequestTemplate,
-  passwordResetRequestTemplate,
-  verificationEmailTemplate,
+  passwordUpdateRequest,
+  signupEmailVerify,
+  verifyCurrentEmail,
+  verifyNewEmail,
 } from "../templates/emailTemplates.js";
 import { User } from "../models/user.model.js";
 import { sendOtpSchema, verifyOtpSchema } from "@repo/types";
@@ -22,8 +23,14 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!user) {
       throw new ApiError(404, "User not found with this email");
     }
-  } else if (context === "signup" || context === "change-email") {
+  } else if (context === "signup") {
     if (user) {
+      throw new ApiError(400, "Email already in use");
+    }
+  } else if (context === "change-email") {
+    if (!req.user){
+      throw new ApiError(401, "Unauthorized");
+    }else if (user) {
       throw new ApiError(400, "Email already in use");
     }
   } else if (
@@ -47,21 +54,38 @@ export const sendOtp = asyncHandler(async (req, res) => {
   const otp = generateOtp(6);
   const expires = new Date(Date.now() + 600000); // 10 minutes
 
-  const otpDoc = await Otp.findOneAndUpdate(
-    { email },
-    { $set: { otp, expiresAt: expires, context } },
-    { upsert: true, new: true, lean: true }
-  );
+  let otpDoc = await Otp.findOne({ email });
+  if (!otpDoc) {
+    otpDoc = new Otp({ email, otp, context, expires });
+  } else {
+    otpDoc.otp = otp;
+    otpDoc.expiresAt = expires;
+    otpDoc.context = context;
+  }
+
+  await otpDoc.save();
 
   if (!otpDoc) {
     throw new ApiError(500, "Otp not created");
   }
 
-  if (context === "signup" || context === "change-email") {
+  if (context === "signup") {
     const emailResponse = await sendEmail(
       email,
-      context,
-      verificationEmailTemplate(name ?? "User", otp, 10)
+      signupEmailVerify(name ?? "User", otp, "10 minutes")
+    );
+
+    if (!emailResponse || emailResponse.success === false) {
+      throw new ApiError(500, "Failed to send Otp");
+    }
+  } else if (context === "change-email") {
+    const emailResponse = await sendEmail(
+      email,
+      verifyNewEmail(
+        name ?? user?.firstName ?? "User",
+        otp,
+        "10 minutes"
+      )
     );
 
     if (!emailResponse || emailResponse.success === false) {
@@ -70,8 +94,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   } else if (context === "change-password" || context === "forgot-password") {
     const emailResponse = await sendEmail(
       email,
-      context,
-      passwordResetRequestTemplate(name ?? user?.firstName ?? "User", otp, 10)
+      passwordUpdateRequest(
+        name ?? user?.firstName ?? "User",
+        otp,
+        "10 minutes"
+      )
     );
 
     if (!emailResponse || emailResponse.success === false) {
@@ -80,8 +107,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   } else if (context === "verify-current-email") {
     const emailResponse = await sendEmail(
       email,
-      context,
-      emailResetRequestTemplate(name ?? user?.firstName ?? "User", otp, 10)
+      verifyCurrentEmail(
+        name ?? user?.firstName ?? "User",
+        otp,
+        "10 minutes"
+      )
     );
 
     if (!emailResponse || emailResponse.success === false) {
