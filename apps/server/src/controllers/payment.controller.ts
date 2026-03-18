@@ -16,11 +16,15 @@ import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
-import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
+import { calculateSubscriptionExpiryDate, extendSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
 import { createNotification } from "../service/notification.service.js";
 import { env } from "../env.js";
 import { Payments } from "razorpay/dist/types/payments.js";
+import sendEmail from "../utils/sendEmail.js";
+import { subscriptionActivateSuccess } from "../templates/emailTemplates.js";
+import { User } from "../models/user.model.js";
+import { formatInTimeZone } from "date-fns-tz";
 
 interface RazorpayWebhookBody {
   event: string;
@@ -84,10 +88,18 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           amount: expectedTotalAmount,
           action,
           taxAmount,
+          currentEndDate,
         } = paymentEntity.notes;
 
         if (!userId || !planName) {
           throw new ApiError(400, "Missing userId or plan in payment notes");
+        }
+
+        const user = await User.findById(userId)
+          .select("email firstName _id")
+          .lean();
+        if (!user) {
+          throw new ApiError(404, "User not found");
         }
 
         const period = periodNote ?? "monthly";
@@ -146,17 +158,112 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           userId: userId,
         }).session(session);
 
-        if (subscription) {
+        const daysToAdd = period === "monthly" ? 30 : 365;
+
+        // Handle downgrade: store as pending plan instead of immediate activation
+        if (action === "downgrade" && subscription) {
+          // Store the new plan as pending - will be activated when current subscription ends
+          subscription.pendingPlan = {
+            plan: plan as "medium" | "pro",
+            period: period as "monthly" | "yearly",
+            paidAt: new Date(),
+            transactionId: paymentEntity.id,
+          };
+          await subscription.save({ session });
+
+          // Create subscription history record for the scheduled downgrade
+          await SubscriptionHistory.create(
+            [
+              {
+                userId: subscription.userId,
+                plan: plan,
+                period: period,
+                amount: paymentEntity.amount / 100,
+                // For downgrades, these will be set when the plan activates
+                subscriptionStartDate: subscription.subscriptionEndDate, // Starts when current ends
+                subscriptionEndDate: extendSubscriptionExpiryDate(
+                  subscription.subscriptionEndDate,
+                  daysToAdd
+                ),
+                transactionId: paymentEntity.id,
+                paymentGateway: "Razorpay",
+                action: "downgrade",
+                isScheduled: true, // Mark as scheduled for invoice context
+                subtotal: paymentEntity.notes.subtotal
+                  ? Number(paymentEntity.notes.subtotal)
+                  : 0,
+                discountAmount: paymentEntity.notes.discountAmount
+                  ? Number(paymentEntity.notes.discountAmount)
+                  : 0,
+                discountReason: paymentEntity.notes.discountReason,
+                taxAmount: taxAmount ? Number(taxAmount) : 0,
+                totalAmount: paymentEntity.amount / 100,
+              },
+            ],
+            { session }
+          );
+
+          // Emit socket event for real-time notification
+          if (io) {
+            io.to(`user_${userId}`).emit("subscription_success", {
+              plan: plan,
+              period: period,
+              amount: paymentEntity.amount / 100,
+              currency: paymentEntity.currency,
+              productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
+              action: "downgrade",
+              scheduledActivation: subscription.subscriptionEndDate,
+            });
+          }
+
+          await createNotification({
+            recipient: userId,
+            type: "billing",
+            title: "Plan Change Scheduled",
+            message: `Your ${plan} plan has been scheduled. It will activate when your current subscription ends.`,
+            data: {
+              paymentId: paymentEntity.id,
+              plan,
+              period,
+              scheduledActivation: subscription.subscriptionEndDate,
+            },
+          });
+
+          // Send email for scheduled plan change
+          sendEmail(
+            user.email,
+            subscriptionActivateSuccess({
+              USER_NAME: user.firstName,
+              PLAN_NAME: `${plan} (Scheduled)`,
+              AMOUNT: (paymentEntity.amount / 100).toString(),
+              PERIOD: period,
+              TRANSACTION_ID: paymentEntity.id,
+              TRANSACTION_DATE: formatInTimeZone(
+                new Date(),
+                user.timezone || "Asia/Kolkata",
+                "dd MMMM yyyy"
+              ),
+            })
+          );
+        } else if (subscription) {
           subscription.isSubscriptionActive = true;
           subscription.plan = plan;
           subscription.period = period;
-          subscription.isTrial = false;
-          subscription.trialExpiresAt = undefined;
-          subscription.previousPlan = subscription.plan;
-          subscription.subscriptionStartDate = new Date();
-          subscription.subscriptionEndDate = calculateSubscriptionExpiryDate(
-            period === "monthly" ? 30 : 365
-          );
+
+          // For renewals: extend from current end date instead of starting fresh
+          if (action === "renew" && currentEndDate) {
+            const baseDate = new Date(currentEndDate);
+            subscription.subscriptionEndDate = extendSubscriptionExpiryDate(
+              baseDate,
+              daysToAdd
+            );
+            // Keep the original start date for renewals
+          } else {
+            // New subscription or upgrade: start from now
+            subscription.subscriptionStartDate = new Date();
+            subscription.subscriptionEndDate = calculateSubscriptionExpiryDate(daysToAdd);
+          }
+
           await subscription.save({ session });
         } else {
           const [newSubscription] = await Subscription.create(
@@ -166,12 +273,8 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
                 isSubscriptionActive: true,
                 plan: plan,
                 period: period,
-                isTrial: false,
-                trialExpiresAt: undefined,
                 subscriptionStartDate: new Date(),
-                subscriptionEndDate: calculateSubscriptionExpiryDate(
-                  period === "monthly" ? 30 : 365
-                ),
+                subscriptionEndDate: calculateSubscriptionExpiryDate(daysToAdd),
               },
             ],
             { session }
@@ -183,14 +286,14 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           throw new ApiError(500, "Failed to create or update subscription");
         }
 
-        await SubscriptionHistory.create(
+        if (action !== "downgrade") {
+          await SubscriptionHistory.create(
           [
             {
               userId: subscription.userId,
               plan: subscription.plan,
               period: period,
               amount: paymentEntity.amount / 100,
-              isTrial: false,
               subscriptionStartDate: subscription.subscriptionStartDate,
               subscriptionEndDate: subscription.subscriptionEndDate,
               transactionId: paymentEntity.id,
@@ -209,30 +312,51 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
           ],
           { session }
         );
+        } 
 
-        // Emit socket event for real-time notification
-        if (io) {
-          io.to(`user_${userId}`).emit("subscription_success", {
-            plan: plan,
-            period: period,
-            amount: paymentEntity.amount / 100,
-            currency: paymentEntity.currency,
-            productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
-            action: action || "create",
+        if (action !== "downgrade") {
+          // Emit socket event for real-time notification
+          if (io) {
+            io.to(`user_${userId}`).emit("subscription_success", {
+              plan: plan,
+              period: period,
+              amount: paymentEntity.amount / 100,
+              currency: paymentEntity.currency,
+              productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
+              action: action || "create",
+            });
+          }
+
+          await createNotification({
+            recipient: userId,
+            type: "billing",
+            title: action === "renew" ? "Subscription Renewed" : "Subscription Activated",
+            message: action === "renew"
+              ? `Your ${plan} plan has been successfully renewed.`
+              : `Your ${plan} plan has been successfully activated.`,
+            data: {
+              paymentId: paymentEntity.id,
+              plan,
+              period,
+            },
           });
-        }
 
-        await createNotification({
-          recipient: userId,
-          type: "system",
-          title: "Subscription Activated",
-          message: `Your ${plan} plan has been successfully activated.`,
-          data: {
-            paymentId: paymentEntity.id,
-            plan,
-            period,
-          },
-        });
+          sendEmail(
+            user.email,
+            subscriptionActivateSuccess({
+              USER_NAME: user.firstName,
+              PLAN_NAME: plan,
+              AMOUNT: (paymentEntity.amount / 100).toString(),
+              PERIOD: period,
+              TRANSACTION_ID: paymentEntity.id,
+              TRANSACTION_DATE: formatInTimeZone(
+                new Date(),
+                user.timezone || "Asia/Kolkata",
+                "dd MMMM yyyy"
+              ),
+            })
+          );
+        }
       } else if (paymentEntity.notes?.paymentType === "order") {
         const paymentDoc = await Payment.findOne({
           gatewayOrderId: paymentEntity.order_id,

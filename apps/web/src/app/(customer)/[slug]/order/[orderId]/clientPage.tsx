@@ -366,8 +366,8 @@ const CustomerOrderDetailsClientPage = () => {
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
                 Tax{" "}
-                {order.restaurant.taxRate
-                  ? `(${order.restaurant.taxRate}%)`
+                {order.taxRate
+                  ? `(${order.taxRate}%)`
                   : ""}
               </span>
               <span>+₹{order.taxAmount.toFixed(2)}</span>

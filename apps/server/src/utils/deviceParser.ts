@@ -6,6 +6,7 @@ export interface DeviceInfo {
   os: string;
   type: "desktop" | "mobile" | "tablet" | "app";
   location: string;
+  timezone: string;
 }
 
 /**
@@ -28,12 +29,14 @@ export const parseDeviceInfo = (
 
   // 2. Parse GeoLocation
   let location = "Unknown Location";
+  let timezone = "Asia/Kolkata"; // Default fallback
   if (isLocalhost) {
     location = "Local Development";
   } else {
     const geo = geoip.lookup(ipAddress);
     if (geo) {
       location = `${geo.city || "Unknown City"}, ${geo.country || "Unknown Country"}`;
+      timezone = geo.timezone || "Asia/Kolkata";
     }
   }
 
@@ -75,5 +78,6 @@ export const parseDeviceInfo = (
     os,
     type,
     location,
+    timezone,
   };
 };

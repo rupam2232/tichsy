@@ -10,9 +10,9 @@ import {
   IconBell,
   IconShieldCheck,
   IconReceipt,
-  IconDeviceDesktop,
   IconDotsVertical,
   IconTrash,
+  IconCreditCard,
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
@@ -70,6 +70,14 @@ export function NotificationItem({
       notification.title.toLowerCase().includes("login")
     ) {
       router.push(`/settings/sessions`);
+    } else if (
+      notification.type === "system" &&
+      notification.title.toLowerCase().includes("invitation") &&
+      notification.data?.restaurantSlug
+    ) {
+      router.push(`/restaurant/${notification.data?.restaurantSlug}/staffs`);
+    } else if (notification.type === "billing") {
+      router.push(`/billing`);
     }
 
     if (onClick) onClick();
@@ -99,7 +107,9 @@ export function NotificationItem({
       case "security":
         return <IconShieldCheck className="h-5 w-5 text-blue-500" />;
       case "system":
-        return <IconDeviceDesktop className="h-5 w-5 text-gray-500" />;
+        return <IconBell className="h-5 w-5 text-green-500" />;
+      case "billing":
+        return <IconCreditCard className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />;
       default:
         return <IconBell className="h-5 w-5 text-gray-500" />;
     }

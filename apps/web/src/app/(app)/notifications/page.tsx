@@ -3,12 +3,11 @@ import ClientPage from "./clientPage";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: `Notifications - Tichsy`,
-    description: `Notification page of Tichsy. View and Manage your notifications.`,
-  };
-}
+export const metadata: Metadata = {
+  title: "Notifications - Tichsy",
+  description:
+    "Notification page of Tichsy. View and Manage your notifications.",
+};
 
 export default function page() {
   return (

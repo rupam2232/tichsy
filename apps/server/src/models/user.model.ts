@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
  */
 export interface User extends Document {
   _id: Types.ObjectId;
-  firstName?: string;
+  firstName: string;
   lastName?: string;
   email: string;
   password?: string;
@@ -16,12 +16,8 @@ export interface User extends Document {
   restaurantIds?: Types.ObjectId[];
   oauthProvider?: string;
   oauthId?: string;
-  isArchived?: boolean; // Whether the user (staff) is archived
-  archivedAt?: Date; // When the user was archived
-  archivedReason?: string; // Reason for archiving
   isPasswordCorrect(password: string): Promise<boolean>;
-  createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
-  updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
+  timezone: string;
 }
 
 /**
@@ -29,8 +25,15 @@ export interface User extends Document {
  */
 const userSchema: Schema<User> = new Schema(
   {
-    firstName: String,
-    lastName: String,
+    firstName: {
+      type: String,
+      required: [true, "First name is required"],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+    },
     email: {
       type: String,
       required: [true, "Email is required"],
@@ -60,12 +63,6 @@ const userSchema: Schema<User> = new Schema(
         return !!doc.oauthProvider;
       },
     },
-    isArchived: {
-      type: Boolean,
-      default: false,
-    },
-    archivedAt: Date,
-    archivedReason: String,
     oauthId: {
       type: String,
       unique: true,
@@ -77,9 +74,9 @@ const userSchema: Schema<User> = new Schema(
         return !!doc.oauthProvider;
       },
     },
-    createdAt: {
-      type: Date,
-      immutable: true,
+    timezone: {
+      type: String,
+      default: "Asia/Kolkata",
     },
   },
   {

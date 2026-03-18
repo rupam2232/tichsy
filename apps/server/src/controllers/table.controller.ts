@@ -46,9 +46,10 @@ export const createTable = asyncHandler(async (req, res) => {
   const restaurantId = restaurant._id!.toString();
   await canCreateTable(req.subscription!, restaurantId);
 
+  const escapedName = tableName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const existingTable = await Table.exists({
     restaurantId,
-    tableName: { $regex: tableName, $options: "i" },
+    tableName: { $regex: `^${escapedName}$`, $options: "i" },
   });
 
   if (existingTable) {
@@ -148,6 +149,20 @@ export const updateTable = asyncHandler(async (req, res) => {
 
   if (table.isArchived) {
     throw new ApiError(403, "Cannot make changes in a archived table");
+  }
+
+  const escapedName = tableName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const existingTable = await Table.exists({
+    restaurantId: restaurant._id,
+    tableName: { $regex: `^${escapedName}$`, $options: "i" },
+    _id: { $ne: table._id },
+  });
+
+  if (existingTable) {
+    throw new ApiError(
+      400,
+      "Another table with this name already exists in the restaurant"
+    );
   }
 
   table.tableName = tableName;

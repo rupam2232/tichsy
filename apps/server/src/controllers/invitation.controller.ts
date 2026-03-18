@@ -84,13 +84,13 @@ export const sendInvitation = asyncHandler(async (req, res) => {
 
   // Send email
   try {
-    const template = inviteStaff(
-      restaurant.restaurantName,
-      invitation.role,
-      inviteLink,
-      "7 days",
-      req.user!.firstName + " " + (req.user!.lastName ?? "")
-    );
+    const template = inviteStaff({
+      RESTAURANT_NAME: restaurant.restaurantName,
+      ROLE: invitation.role,
+      INVITATION_LINK: inviteLink,
+      EXPIRY_DATE: "7 days",
+      INVITER_NAME: req.user!.firstName + " " + (req.user!.lastName ?? ""),
+    });
 
     await sendEmail(email, template);
   } catch (error) {

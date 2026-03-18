@@ -11,6 +11,7 @@ import {
 import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
+  isSubscriptionExpired,
 } from "../config/subscriptionPlans.js";
 import { env } from "../env.js";
 
@@ -42,62 +43,55 @@ export async function canToggleOpeningStatus(restaurant: RestaurantType) {
     userId: restaurant.ownerId,
   });
 
-  if (!subscription || subscription.isSubscriptionActive === false) {
+  if (!subscription) {
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
-      "The owner of this restaurant does not have an active subscription. Please renew the subscription to toggle the opening status"
+      "No subscription found. Please contact support."
     );
   }
 
-  if (
-    subscription.subscriptionEndDate &&
-    subscription.subscriptionEndDate < new Date()
-  ) {
+  // Starter plan is always active - no expiration check needed
+  if (subscription.plan === "starter") {
+    return;
+  }
+
+  // Check expiration for paid plans only (medium/pro)
+  // Grace period is applied - user gets extra days after subscriptionEndDate
+  if (isSubscriptionExpired(subscription.subscriptionEndDate)) {
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
-    subscription.isSubscriptionActive = false;
-    subscription.isTrial = false;
-    subscription.plan = undefined;
+    // Downgrade to starter
+    subscription.isSubscriptionActive = true;
+    subscription.plan = "starter";
+    subscription.period = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;
     subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
-      "Your subscription has expired. Please renew the subscription to toggle the opening status"
+      "Your subscription has expired. You've been downgraded to the Starter plan."
     );
   }
-  if (
-    subscription.isTrial &&
-    subscription.trialExpiresAt &&
-    subscription.trialExpiresAt < new Date()
-  ) {
-    restaurant.isCurrentlyOpen = false;
-    restaurant.save({ validateBeforeSave: false });
-    subscription.isSubscriptionActive = false;
-    subscription.isTrial = false;
-    subscription.plan = undefined;
+
+  // Edge case: no plan set - set to starter
+  if (!subscription.plan) {
+    subscription.isSubscriptionActive = true;
+    subscription.plan = "starter";
+    subscription.period = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;
     subscription.save({ validateBeforeSave: false });
-    throw new ApiError(
-      403,
-      "Your trial period has expired. Please subscribe to continue using the service"
-    );
+    return;
   }
-  if (!subscription.trialExpiresAt && !subscription.subscriptionEndDate) {
+
+  if (!subscription.isSubscriptionActive) {
     restaurant.isCurrentlyOpen = false;
     restaurant.save({ validateBeforeSave: false });
-    subscription.isSubscriptionActive = false;
-    subscription.isTrial = false;
-    subscription.plan = undefined;
-    subscription.subscriptionStartDate = undefined;
-    subscription.subscriptionEndDate = undefined;
-    subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
-      "Your subscription is not active. Please subscribe to continue using the service"
+      "Your subscription is not active. Please contact support."
     );
   }
 }

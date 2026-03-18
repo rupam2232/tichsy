@@ -101,6 +101,7 @@ export function SignupForm({
       confirmPassword: "",
       otp: "",
       fullName: "",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   });
 
@@ -111,7 +112,8 @@ export function SignupForm({
     }
     setGoogleSignupLoading(true);
     try {
-      const response = await axios.post("/auth/google", { idToken });
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await axios.post("/auth/google", { idToken, timezone });
       dispatch(signIn(response.data.data));
       toast.success(response.data.message || "Sign up successful!");
       if (

@@ -26,15 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@repo/ui/components/tabs";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@repo/ui/components/input-group";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
-import { Search, X } from "lucide-react";
-import { useDebounceCallback } from "usehooks-ts";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import {
   Empty,
@@ -44,17 +36,24 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@repo/ui/components/empty";
+import SearchInput from "@/components/shared/search-input";
 
 interface MenuPageProps {
   initialFoodItems: AllFoodItems | null;
   initialCategories: string[];
   slug: string;
+  tab: string;
+  search: string;
+  // searchParams: { [key: string]: string | undefined };
 }
 
 const MenuPage = ({
   initialFoodItems,
   initialCategories,
   slug,
+  tab,
+  search,
+  // searchParams,
 }: MenuPageProps) => {
   const [allFoodItems, setAllFoodItems] = useState<AllFoodItems | null>(
     initialFoodItems,
@@ -64,16 +63,10 @@ const MenuPage = ({
   const [isPageLoading, setIsPageLoading] =
     useState<boolean>(!initialFoodItems);
   const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "all";
-  const [tabName, setTabName] = useState<string>(initialTab);
   const [tabPages, setTabPages] = useState<{ [key: string]: number }>({
     all: 1,
   });
-  const [searchInput, setSearchInput] = useState<string>(
-    searchParams.get("search") || "",
-  );
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const observer = useRef<IntersectionObserver>(null);
@@ -81,8 +74,8 @@ const MenuPage = ({
     (state: RootState) => state.restaurantsSlice.activeRestaurant,
   );
 
-  const debouncedSearchInput = useDebounceCallback(setSearchInput, 300);
-  const currentPage = tabPages[tabName] || 1;
+  // const debouncedSearchInput = useDebounceCallback(setSearchInput, 300);
+  const currentPage = tabPages[tab] || 1;
   const pathname = usePathname();
 
   // Flag to prevent double fetching on mount if initial data matches
@@ -98,7 +91,7 @@ const MenuPage = ({
       toast.error("Restaurant slug is required to fetch food items");
       return;
     }
-    if (tabName === "search" && searchInput.trim() === "") return;
+    if (tab === "search" && search.trim() === "") return;
 
     try {
       if (currentPage === 1) {
@@ -106,8 +99,8 @@ const MenuPage = ({
         const response = await axios.get(`/food-item/${slug}`, {
           params: {
             limit: 20,
-            tab: tabName !== "search" ? tabName : "",
-            search: searchInput.trim(),
+            tab: tab !== "search" ? tab : "",
+            search: search.trim(),
             includeArchived: "true",
           },
         });
@@ -118,8 +111,8 @@ const MenuPage = ({
           params: {
             page: currentPage,
             limit: 20,
-            tab: tabName !== "search" ? tabName : "",
-            search: searchInput.trim(),
+            tab: tab !== "search" ? tab : "",
+            search: search.trim(),
             includeArchived: "true",
           },
         });
@@ -154,9 +147,9 @@ const MenuPage = ({
     slug,
     router,
     dispatch,
-    tabName,
+    tab,
     currentPage,
-    searchInput,
+    search,
     pathname,
     initialFoodItems,
   ]);
@@ -192,6 +185,7 @@ const MenuPage = ({
 
   useEffect(() => {
     fetchRestaurantCategories();
+    isFirstRender.current = false;
   }, [fetchRestaurantCategories]);
 
   useEffect(() => {
@@ -212,14 +206,14 @@ const MenuPage = ({
             if (isPageChanging) return;
             setTabPages((prev) => ({
               ...prev,
-              [tabName]: (prev[tabName] || 1) + 1,
+              [tab]: (prev[tab] || 1) + 1,
             }));
           }
         }
       });
       if (node) observer.current.observe(node);
     },
-    [allFoodItems, currentPage, tabName, isPageChanging],
+    [allFoodItems, currentPage, tab, isPageChanging],
   );
 
   useEffect(() => {
@@ -227,60 +221,29 @@ const MenuPage = ({
     setAllFoodItems(null);
     setTabPages((prev) => ({
       ...prev,
-      [tabName]: 1,
+      [tab]: 1,
     }));
-  }, [tabName]);
+  }, [tab]);
 
-  useEffect(() => {
-    const currentParams = new URLSearchParams(searchParams.toString());
-
-    if (tabName === "all") {
-      currentParams.delete("tab");
-    } else {
-      currentParams.set("tab", tabName);
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", value);
+    if (search) {
+      params.delete("search");
     }
-
-    if (tabName !== "search") {
-      currentParams.delete("search");
-      if (searchInput) setSearchInput("");
-      if (searchInputRef.current) {
-        searchInputRef.current.value = "";
-      }
-    } else {
-      if (searchInput) {
-        currentParams.set("search", searchInput);
-      } else {
-        currentParams.delete("search");
-      }
-    }
-
-    const newSearchParamsString = currentParams.toString();
-    const oldSearchParamsString = searchParams.toString();
-
-    if (newSearchParamsString !== oldSearchParamsString) {
-      // Use window.history.replaceState to update URL without triggering a server-side refresh/refetch
-      window.history.replaceState(
-        null,
-        "",
-        `${pathname}${newSearchParamsString ? `?${newSearchParamsString}` : ""}`,
-      );
-    }
-  }, [tabName, searchInput, pathname, searchParams]);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   return (
     <section className="p-4 @container/main">
       <Tabs
         defaultValue="all"
-        value={tabName}
+        value={tab}
         onValueChange={(value) => {
-          if (searchInputRef.current) {
-            searchInputRef.current.value = "";
-          }
-          setSearchInput("");
-          setTabName(value);
+          handleTabChange(value);
         }}
       >
-        {(tabName !== "all" ||
+        {(tab !== "all" ||
           (allFoodItems &&
             Array.isArray(allFoodItems.foodItems) &&
             allFoodItems.foodItems.length > 0)) && (
@@ -290,94 +253,40 @@ const MenuPage = ({
                 <TabsTrigger
                   value="all"
                   className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                  onClick={() => setTabName("all")}
                 >
                   All
                 </TabsTrigger>
                 <TabsTrigger
                   value="available"
                   className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                  onClick={() => setTabName("available")}
                 >
                   Available
                 </TabsTrigger>
                 <TabsTrigger
                   value="unavailable"
                   className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                  onClick={() => setTabName("unavailable")}
                 >
                   Unavailable
                 </TabsTrigger>
-                {restaurantCategories.map((tab, label) => (
+                {restaurantCategories.map((tab, index) => (
                   <TabsTrigger
-                    key={label}
+                    key={index}
                     value={tab}
                     className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
-                    onClick={() => setTabName(tab)}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab}
                   </TabsTrigger>
                 ))}
               </TabsList>
               <ScrollBar orientation="horizontal" className="h-2" />
             </ScrollArea>
-            <InputGroup className="w-full sm:w-auto sm:min-w-[300px] border-zinc-400 has-[[data-slot=input-group-control]:focus-visible]:border-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-foreground has-[[data-slot=input-group-control]:focus-visible]:ring-1">
-              <InputGroupInput
-                placeholder="Search food items by name, category, tags..."
-                type="search"
-                onChange={(e) => {
-                  debouncedSearchInput(e.target.value);
-                  if (e.target.value.trim() === "") {
-                    setTabName("all");
-                    setSearchInput("");
-                  } else {
-                    setTabName("search");
-                  }
-                }}
-                ref={searchInputRef}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (searchInputRef.current?.value.trim() === "") {
-                      toast.error("Search input cannot be empty");
-                      return;
-                    }
-                    debouncedSearchInput.cancel();
-                    setTabName("search");
-                    setSearchInput(searchInputRef.current?.value || "");
-                  }
-                }}
-              />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  className={cn(
-                    "hover:opacity-100 hover:bg-accent h-6 w-6",
-                    searchInputRef.current &&
-                      searchInputRef.current.value !== ""
-                      ? ""
-                      : "hidden",
-                  )}
-                  onClick={() => {
-                    if (searchInputRef.current) {
-                      searchInputRef.current.value = "";
-                      setSearchInput("");
-                      setTabName("all");
-                    }
-                  }}
-                >
-                  <X />
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
+            <SearchInput placeholder="Search food items by name, category, tags..." />
 
             {activeRestaurant?.userRole === "owner" && (
               <div className="flex justify-end">
                 <CreateUpdateFoodItem
                   setAllFoodItems={setAllFoodItems}
-                  setTabName={setTabName}
+                  setTabName={handleTabChange}
                   formLoading={isPageLoading}
                   setFormLoading={setIsPageLoading}
                   restaurantSlug={slug}
@@ -388,7 +297,7 @@ const MenuPage = ({
             )}
           </div>
         )}
-        <TabsContent value={tabName} className="mt-2">
+        <TabsContent value={tab} className="mt-2">
           {isPageLoading ? (
             <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @3xl/main:grid-cols-4 @5xl/main:grid-cols-5">
               {Array.from({ length: 5 }).map((_, index) => (
@@ -524,23 +433,22 @@ const MenuPage = ({
                 </EmptyMedia>
                 <EmptyTitle>No food items found</EmptyTitle>
                 <EmptyDescription>
-                  {tabName === "all"
+                  {tab === "all"
                     ? "This restaurant has no food items in menu. Get started by adding first food item in menu"
-                    : tabName === "search"
+                    : tab === "search"
                       ? "No food items found with this search"
                       : "No food items found with this filter"}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                {activeRestaurant?.userRole === "owner" &&
-                  tabName === "all" && (
-                    <CreateUpdateFoodItem
-                      setAllFoodItems={setAllFoodItems}
-                      formLoading={isPageLoading}
-                      setFormLoading={setIsPageLoading}
-                      restaurantSlug={slug}
-                    />
-                  )}
+                {activeRestaurant?.userRole === "owner" && tab === "all" && (
+                  <CreateUpdateFoodItem
+                    setAllFoodItems={setAllFoodItems}
+                    formLoading={isPageLoading}
+                    setFormLoading={setIsPageLoading}
+                    restaurantSlug={slug}
+                  />
+                )}
               </EmptyContent>
             </Empty>
           )}

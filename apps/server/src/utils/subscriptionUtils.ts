@@ -1,4 +1,4 @@
-import { addDays, set } from "date-fns";
+import { addDays, set, isAfter } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 
 /**
@@ -17,6 +17,41 @@ export const calculateSubscriptionExpiryDate = (
   const nowInServerTime = new Date();
   const nowInTimeZone = toZonedTime(nowInServerTime, timeZone);
   const endDateInTimeZone = addDays(nowInTimeZone, daysToAdd);
+
+  // Set to end of the day in the given timezone
+  const endOfDayInTimeZone = set(endDateInTimeZone, {
+    hours: 23,
+    minutes: 59,
+    seconds: 0,
+    milliseconds: 0,
+  });
+
+  // Return converted back to UTC
+  return fromZonedTime(endOfDayInTimeZone, timeZone);
+};
+
+/**
+ * Calculates subscription expiry by extending from a base date.
+ * Used for renewals where days are added to the existing end date.
+ * If the base date is in the past, uses current date instead.
+ *
+ * @param baseDate - The date to extend from (usually current subscription end date).
+ * @param daysToAdd - Number of days to add.
+ * @param timeZone - Timezone to use for calculation. Default is Asia/Kolkata (IST).
+ * @returns The calculated Date object in UTC.
+ */
+export const extendSubscriptionExpiryDate = (
+  baseDate: Date | undefined,
+  daysToAdd: number,
+  timeZone: string = "Asia/Kolkata"
+): Date => {
+  const now = new Date();
+
+  // If no base date or base date is in the past, start from now
+  const effectiveBase = baseDate && isAfter(baseDate, now) ? baseDate : now;
+
+  const baseInTimeZone = toZonedTime(effectiveBase, timeZone);
+  const endDateInTimeZone = addDays(baseInTimeZone, daysToAdd);
 
   // Set to end of the day in the given timezone
   const endOfDayInTimeZone = set(endDateInTimeZone, {

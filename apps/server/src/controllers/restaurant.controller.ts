@@ -53,12 +53,13 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   await canCreateRestaurant(req.user!, req.subscription!);
 
   // Check if the restaurant already exists
+  const escapedName = restaurantName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const existingRestaurant = await Restaurant.exists({
     $or: [
       { slug },
       {
-        restaurantName: { $regex: new RegExp(`^${restaurantName}$`, "i") },
-        ownerId: { $ne: ownerId },
+        restaurantName: { $regex: new RegExp(`^${escapedName}$`, "i") },
+        ownerId,
       },
     ],
   });
@@ -90,11 +91,11 @@ export const createRestaurant = asyncHandler(async (req, res) => {
 
   sendEmail(
     req.user!.email,
-    newRestaurant(
-      req.user!.firstName ?? "User",
-      restaurant.restaurantName,
-      restaurant.slug
-    )
+    newRestaurant({
+      USER_NAME: req.user!.firstName,
+      RESTAURANT_NAME: restaurant.restaurantName,
+      RESTAURANT_SLUG: restaurant.slug,
+    })
   );
   res
     .status(201)
@@ -212,6 +213,9 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
     if (!userRole) {
       throw new ApiError(403, "You do not have access to this restaurant");
     }
+    if (restaurant.isArchived && userRole !== "owner") {
+      throw new ApiError(403, "Archived restaurants cannot be accessed");
+    }
   }
 
   // Data Stripping Logic
@@ -303,8 +307,9 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
   }
 
   if (restaurant.restaurantName !== restaurantName) {
+    const escapedName = restaurantName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const duplicateRestaurantName = await Restaurant.exists({
-      restaurantName,
+      restaurantName: { $regex: new RegExp(`^${escapedName}$`, "i") },
       ownerId: req.user!._id,
       _id: { $ne: restaurant._id },
     });
@@ -741,7 +746,8 @@ export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {
 });
 
 export const getDashboardOperations = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
   const restaurant = req.restaurant;
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
@@ -907,7 +913,8 @@ export const getDashboardOperations = asyncHandler(async (req, res) => {
 });
 
 export const getAnalyticsKPIs = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
 
   const restaurant = req.restaurant;
   if (!restaurant) throw new ApiError(404, "Restaurant not found");
@@ -1051,7 +1058,8 @@ export const getAnalyticsKPIs = asyncHandler(async (req, res) => {
 });
 
 export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
   const { startDate, endDate, groupBy = "day" } = req.query;
 
   if (!req.restaurant) {
@@ -1279,7 +1287,8 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
 });
 
 export const getAnalyticsTrending = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
   if (!req.restaurant) {
@@ -1365,7 +1374,8 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
 });
 
 export const getAnalyticsCategories = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
   if (!req.restaurant) {
@@ -1440,7 +1450,8 @@ export const getAnalyticsCategories = asyncHandler(async (req, res) => {
 });
 
 export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
-  const timeZone = (req.query.timezone as string) || "Asia/Kolkata";
+  const timeZone =
+    (req.query.timezone as string) || req.user?.timezone || "Asia/Kolkata";
   const { startDate, endDate } = req.query;
 
   if (!req.restaurant) {

@@ -250,15 +250,6 @@ const CreateRestaurantDialog = ({
     try {
       setformLoading(true);
       const response = await axios.post("/restaurant/create", data);
-      if (
-        !response.data.success ||
-        !response.data.data ||
-        !Array.isArray(response.data.data) ||
-        response.data.data.length === 0
-      ) {
-        toast.error(response.data.message || "Failed to create restaurant");
-        return;
-      }
       setOwnersRestaurant((prev) => [...prev, response.data.data]);
       dispatch(
         addRestaurant({

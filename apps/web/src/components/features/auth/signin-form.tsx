@@ -66,7 +66,8 @@ export function SigninForm({
     }
     setGoogleLoginLoading(true);
     try {
-      const response = await axios.post("/auth/google", { idToken });
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await axios.post("/auth/google", { idToken, timezone });
       dispatch(signIn(response.data.data));
       form.reset();
       toast.success(response.data.message || "Sign in successful!");

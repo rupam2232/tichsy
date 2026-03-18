@@ -21,16 +21,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function page({
-  params,
-  searchParams,
-}: {
+export default async function page(props: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const { slug } = await params;
-  const { tab = "all", search = "" } = await searchParams;
-
+  // const { params, searchParams } = props;
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  const slug = params.slug;
+  const { tab = "all", search = "" } = searchParams;
   let initialFoodItems = null;
   let initialCategories = [];
 
@@ -39,10 +38,15 @@ export default async function page({
     const [categoriesResponse, foodItemsResponse] = await Promise.all([
       serverAxios.get(`/restaurant/${slug}/categories`),
       serverAxios.get(
-        `/food-item/${slug}?${tab !== "search" ? `tab=${tab}` : ""}${
-          search ? `&search=${search}` : ""
-        }&includeArchived=true`,
-      ),
+        `/food-item/${slug}`,
+      ), {
+        params: {
+          limit: 20,
+          tab: tab !== "search" ? tab : "",
+          search: search,
+          includeArchived: "true",
+        }
+      }
     ]);
 
     if (categoriesResponse.data.success) {
@@ -59,7 +63,10 @@ export default async function page({
     <ClientPage
       initialFoodItems={initialFoodItems}
       initialCategories={initialCategories}
+      tab={tab}
+      search={search}
       slug={slug}
+      // searchParams={searchParams}
     />
   );
 }

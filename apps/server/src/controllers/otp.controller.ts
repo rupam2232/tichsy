@@ -28,9 +28,9 @@ export const sendOtp = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Email already in use");
     }
   } else if (context === "change-email") {
-    if (!req.user){
+    if (!req.user) {
       throw new ApiError(401, "Unauthorized");
-    }else if (user) {
+    } else if (user) {
       throw new ApiError(400, "Email already in use");
     }
   } else if (
@@ -72,7 +72,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   if (context === "signup") {
     const emailResponse = await sendEmail(
       email,
-      signupEmailVerify(name ?? "User", otp, "10 minutes")
+      signupEmailVerify({
+        USER_NAME: name,
+        OTP_CODE: otp,
+        OTP_EXPIRY: "10 minutes",
+      })
     );
 
     if (!emailResponse || emailResponse.success === false) {
@@ -81,11 +85,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   } else if (context === "change-email") {
     const emailResponse = await sendEmail(
       email,
-      verifyNewEmail(
-        name ?? user?.firstName ?? "User",
-        otp,
-        "10 minutes"
-      )
+      verifyNewEmail({
+        USER_NAME: name ?? user?.firstName,
+        OTP_CODE: otp,
+        OTP_EXPIRY: "10 minutes",
+      })
     );
 
     if (!emailResponse || emailResponse.success === false) {
@@ -94,11 +98,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   } else if (context === "change-password" || context === "forgot-password") {
     const emailResponse = await sendEmail(
       email,
-      passwordUpdateRequest(
-        name ?? user?.firstName ?? "User",
-        otp,
-        "10 minutes"
-      )
+      passwordUpdateRequest({
+        USER_NAME: name ?? user?.firstName,
+        OTP_CODE: otp,
+        OTP_EXPIRY: "10 minutes",
+      })
     );
 
     if (!emailResponse || emailResponse.success === false) {
@@ -107,11 +111,11 @@ export const sendOtp = asyncHandler(async (req, res) => {
   } else if (context === "verify-current-email") {
     const emailResponse = await sendEmail(
       email,
-      verifyCurrentEmail(
-        name ?? user?.firstName ?? "User",
-        otp,
-        "10 minutes"
-      )
+      verifyCurrentEmail({
+        USER_NAME: name ?? user?.firstName,
+        OTP_CODE: otp,
+        OTP_EXPIRY: "10 minutes",
+      })
     );
 
     if (!emailResponse || emailResponse.success === false) {

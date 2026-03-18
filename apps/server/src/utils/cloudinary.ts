@@ -17,7 +17,7 @@ class cloudinaryOptions {
       }
       const response = await this.cloudinary.uploader.upload(localPath, {
         resource_type: "auto",
-        asset_folder: `${env.MAIN_MEDIA_FOLDER_NAME}/${folder}`,
+        asset_folder: `${env.APP_NAME}/${folder}`,
       });
       // Remove the local file after uploading
       fs.unlinkSync(localPath);

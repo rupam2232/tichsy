@@ -55,12 +55,12 @@ export default function SelectTable() {
     try {
       if (page === 1) {
         setIsPageLoading(true);
-        const response = await axios.get(`/table/${slug}?includeArchived=true`);
+        const response = await axios.get(`/table/${slug}?limit=20&includeArchived=true`);
         setAllTables(response.data.data);
       } else {
         setIsPageChanging(true);
         const response = await axios.get(
-          `/table/${slug}?page=${page}&includeArchived=true`,
+          `/table/${slug}?page=${page}&limit=20&includeArchived=true`,
         );
         setAllTables((prev) => ({
           ...response.data.data,
@@ -90,7 +90,7 @@ export default function SelectTable() {
 
   useEffect(() => {
     fetchAllTables();
-  }, [slug, fetchAllTables, page]);
+  }, [slug, fetchAllTables]);
 
   const lastElementRef = useCallback((node: HTMLDivElement | null) => {
     if (observer.current) observer.current.disconnect();
@@ -103,8 +103,7 @@ export default function SelectTable() {
       }
     });
     if (node) observer.current.observe(node);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allTables, page, isPageChanging]);
 
   return (
     <section className="@container/main">
@@ -214,7 +213,7 @@ export default function SelectTable() {
           {isPageChanging &&
             Array.from({ length: 5 }).map((_, index) => (
               <div key={index} className="flex items-center justify-center">
-                <Card className="flex items-center justify-center h-20 w-20 bg-muted text-muted-foreground animate-pulse"></Card>
+                <Card className="flex items-center justify-center h-[100px] w-full bg-muted text-muted-foreground animate-pulse"></Card>
               </div>
             ))}
         </div>

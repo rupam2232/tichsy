@@ -25,14 +25,21 @@ export interface CurrentPlan {
   status: "active" | "inactive" | "past_due" | "cancelled";
 }
 
+// Plan hierarchy for determining upgrade/downgrade
+export const PlanHierarchy: Record<string, number> = {
+  starter: 1,
+  medium: 2,
+  pro: 3,
+};
+
 export const plans: Plan[] = [
   {
     id: "starter",
     title: "Starter",
     description: "Perfect for new ventures & cozy cafes",
     currency: "₹",
-    monthlyPrice: "299",
-    yearlyPrice: "2999",
+    monthlyPrice: "Free forever",
+    yearlyPrice: "Free forever",
     buttonText: "Start today for free",
     features: [
       {

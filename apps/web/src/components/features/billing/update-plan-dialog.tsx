@@ -6,7 +6,7 @@ import { Badge } from "@repo/ui/components/badge";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/radio-group";
 import { Toggle } from "@repo/ui/components/toggle";
 import { Label } from "@repo/ui/components/label";
-import { type Plan } from "@/lib/billingsdk-config";
+import { type Plan, PlanHierarchy } from "@/lib/billingsdk-config";
 import { cn } from "@repo/ui/lib/utils";
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Circle } from "lucide-react";
 
 export interface UpdatePlanDialogProps {
@@ -26,6 +26,7 @@ export interface UpdatePlanDialogProps {
   className?: string;
   title?: string;
   currentPlanStatus: string;
+  hasPendingPlan?: boolean;
 }
 
 const easing = [0.4, 0, 0.2, 1] as const;
@@ -38,12 +39,28 @@ export function UpdatePlanDialog({
   title,
   triggerText,
   currentPlanStatus,
+  hasPendingPlan,
 }: UpdatePlanDialogProps) {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | undefined>(
     undefined,
   );
   const [isOpen, setIsOpen] = useState(false);
+
+  // Filter plans: exclude starter (free plan) only
+  // Show all paid plans - backend handles downgrades as scheduled (pending) activations
+  // If user has a pending plan, also exclude current plan (can't renew while pending plan exists)
+  const availablePlans = useMemo(() => {
+    return plans.filter((plan) => {
+      // Always exclude starter plan (free forever, auto-downgrade target)
+      if (plan.id === "starter") return false;
+
+      // If user has pending plan, exclude current plan (cannot renew)
+      if (hasPendingPlan && plan.id === currentPlan?.id) return false;
+
+      return true;
+    });
+  }, [plans, hasPendingPlan, currentPlan?.id]);
 
   const getCurrentPrice = useCallback(
     (plan: Plan) => (isYearly ? `${plan.yearlyPrice}` : `${plan.monthlyPrice}`),
@@ -98,7 +115,7 @@ export function UpdatePlanDialog({
           </div>
         </DialogHeader>
         <div className="-mx-4 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 sm:-mx-6 sm:px-6 custom-scrollbar">
-          {plans.length === 0 ? (
+          {availablePlans.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-center">
               <p className="text-muted-foreground text-sm">
                 No plans available
@@ -107,7 +124,7 @@ export function UpdatePlanDialog({
           ) : (
             <RadioGroup value={selectedPlan} onValueChange={handlePlanChange}>
               <div className="space-y-2.5 pr-0.5 pb-2 sm:space-y-3">
-                {plans.map((plan, index) => (
+                {availablePlans.map((plan, index) => (
                   <motion.div
                     key={plan.id}
                     layout
@@ -244,7 +261,6 @@ export function UpdatePlanDialog({
                           >
                             <Button
                               className="w-full touch-manipulation text-sm font-medium"
-                              disabled={selectedPlan === currentPlan?.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onPlanChange(
@@ -254,11 +270,28 @@ export function UpdatePlanDialog({
                                 handleOpenChange(false);
                               }}
                             >
-                              {selectedPlan === currentPlan?.id
-                                ? "Current Plan"
-                                : currentPlanStatus === "active"
-                                  ? `Upgrade to ${plan.title}`
-                                  : "Continue"}
+                              {(() => {
+                                const currentLevel = PlanHierarchy[currentPlan?.id] || 0;
+                                const selectedLevel = PlanHierarchy[plan.id] || 0;
+
+                                // Same plan - renewal
+                                if (selectedPlan === currentPlan?.id && currentPlanStatus === "active") {
+                                  return `Renew ${plan.title}`;
+                                }
+
+                                // No active plan
+                                if (currentPlanStatus !== "active") {
+                                  return "Continue";
+                                }
+
+                                // Lower plan - scheduled downgrade
+                                if (selectedLevel < currentLevel) {
+                                  return `Schedule ${plan.title}`;
+                                }
+
+                                // Higher plan - upgrade
+                                return `Upgrade to ${plan.title}`;
+                              })()}
                             </Button>
                           </motion.div>
                         </motion.div>

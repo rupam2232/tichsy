@@ -4,9 +4,13 @@ export interface CurrentSubscription {
   isOverLimit: boolean;
   plan?: "starter" | "medium" | "pro";
   isSubscriptionActive: boolean;
-  trialExpiresAt?: string;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
-  isTrial?: boolean;
-  period?: "monthly" | "yearly" | "trial";
+  period?: "monthly" | "yearly";
+  pendingPlan?: {
+    plan: "medium" | "pro";
+    period: "monthly" | "yearly";
+    paidAt: string;
+    transactionId: string;
+  };
 }

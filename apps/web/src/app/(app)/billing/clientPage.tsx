@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { addDays, isBefore, isAfter } from "date-fns";
 import { RootState, AppDispatch } from "@/store/store";
 import { fetchSubscriptionDetails } from "@/store/subscriptionSlice";
 import { SubscriptionManagement } from "@/components/features/billing/subscription-management";
@@ -39,15 +40,7 @@ const ClientPage = () => {
       return;
     }
 
-    // Logic to prevent downgrading if needed, or check validity
-    if (
-      currentSubscription?.plan === planId &&
-      currentSubscription?.period === period &&
-      currentSubscription?.isSubscriptionActive
-    ) {
-      toast.info("You are already subscribed to this plan");
-      return;
-    }
+    // Allow same plan selection for renewals (different period or same period)
     router.push(`/billing/checkout?plan=${planId}&period=${period}`);
   };
 
@@ -73,19 +66,42 @@ const ClientPage = () => {
     });
   };
 
+  // Check if subscription is in grace period
+  const isInGracePeriod = () => {
+    if (!currentSubscription?.subscriptionEndDate) return false;
+    const subscriptionEnd = new Date(currentSubscription.subscriptionEndDate);
+    const graceEnd = addDays(subscriptionEnd, 1); // 1 day grace period
+    return isAfter(new Date(), subscriptionEnd) && isBefore(new Date(), graceEnd);
+  };
+
+  // Calculate days until subscription expiry
+  const getDaysUntilExpiry = () => {
+    if (!currentSubscription?.subscriptionEndDate) return null;
+    const endDate = new Date(currentSubscription.subscriptionEndDate);
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   const currentPlanData: CurrentPlan = {
     plan: activePlan!,
-    type:
-      currentSubscription?.period === "yearly"
-        ? "yearly"
-        : currentSubscription?.period === "monthly"
-          ? "monthly"
-          : "custom",
+    type: currentSubscription?.period ?? "custom",
     price: activePlan?.monthlyPrice || "-",
     startDate: formatDate(currentSubscription?.subscriptionStartDate),
     endDate: formatDate(currentSubscription?.subscriptionEndDate),
     status: currentSubscription?.isSubscriptionActive ? "active" : "inactive",
   };
+
+  // Determine button text based on subscription status
+  const isActivePaidPlan =
+    currentPlanData.status === "active" &&
+    currentSubscription?.plan !== "starter";
+  const triggerButtonText = isActivePaidPlan
+    ? "Renew or Upgrade"
+    : currentPlanData.status === "active"
+      ? "Upgrade Plan"
+      : "Purchase Plan";
 
   return (
     <section className="p-4 sm:p-6 w-full max-w-2xl mx-auto">
@@ -95,16 +111,18 @@ const ClientPage = () => {
           currentPlan: currentPlanData.plan,
           plans: plans,
           onPlanChange: handleUpdatePlan,
-          triggerText:
-            currentPlanData.status === "active"
-              ? "Upgrade Plan"
-              : "Purchase Plan",
+          triggerText: triggerButtonText,
           currentPlanStatus: currentPlanData.status,
-          title:
-            currentPlanData.status === "active"
+          title: isActivePaidPlan
+            ? "Renew or Upgrade Plan"
+            : currentPlanData.status === "active"
               ? "Upgrade Plan"
               : "Purchase Plan",
+          hasPendingPlan: !!currentSubscription?.pendingPlan,
         }}
+        isInGracePeriod={isInGracePeriod()}
+        pendingPlan={currentSubscription?.pendingPlan}
+        daysUntilExpiry={getDaysUntilExpiry()}
         className="animate-in fade-in slide-in-from-top-4 duration-500"
       />
       <SubscriptionHistoryList />

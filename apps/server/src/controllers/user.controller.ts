@@ -177,11 +177,11 @@ export const verifyEmailChange = asyncHandler(async (req, res) => {
 
   sendEmail(
     [req.user!.email, newEmail],
-    emailUpdateSuccess(
-      updatedUser.firstName ?? "User",
-      newEmail,
-      req.user!.email
-    )
+    emailUpdateSuccess({
+      USER_NAME: updatedUser.firstName,
+      NEW_EMAIL: newEmail,
+      OLD_EMAIL: req.user!.email,
+    })
   );
 
   res
@@ -240,7 +240,7 @@ export const changePassword = asyncHandler(async (req, res) => {
     },
   });
 
-  sendEmail(user.email, passwordUpdateSuccess(user.firstName ?? "User"));
+  sendEmail(user.email, passwordUpdateSuccess({ USER_NAME: user.firstName }));
 
   res
     .status(200)

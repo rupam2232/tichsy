@@ -22,12 +22,14 @@ interface SubscriptionHistoryItem {
   createdAt: string;
   amount: number;
   plan: string;
-  period: string;
+  period?: string;
   transactionId: string;
   status?: string;
   paymentGateway?: string;
   totalAmount?: number;
-  isTrial?: boolean;
+  action?: string;
+  isScheduled?: boolean;
+  subscriptionStartDate?: string;
 }
 
 export function SubscriptionHistoryList() {
@@ -54,13 +56,21 @@ export function SubscriptionHistoryList() {
                 })
               : "-",
             amount: `₹${(item.totalAmount || item.amount).toFixed(2)}`,
-            status: item.isTrial ? "trial" : "paid",
-            description: item.isTrial
-              ? "Trial Plan"
-              : item.plan
-                ? `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan - ${item.period ?? "monthly"}`
-                : "",
+            status: item.amount === 0 ? "free" : "paid",
+            description: item.plan
+              ? item.amount === 0
+                ? `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan (Free)`
+                : `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan - ${item.period ?? "monthly"}`
+              : "",
             invoiceUrl: "",
+            isScheduled: item.isScheduled,
+            activationDate: item.subscriptionStartDate
+              ? new Date(item.subscriptionStartDate).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : undefined,
           }),
         );
 

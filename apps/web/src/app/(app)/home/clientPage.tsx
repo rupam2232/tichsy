@@ -19,7 +19,7 @@ import {
   setAllRestaurants,
   setActiveRestaurant,
 } from "@/store/restaurantSlice";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Avatar,
   AvatarFallback,
@@ -40,7 +40,7 @@ import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { cn } from "@repo/ui/lib/utils";
 
-export default function ClientPage() {
+export default function ClientPage({from}: {from?: string}) {
   const user = useSelector((state: RootState) => state.auth.user);
   const [isOwnedLoading, setIsOwnedLoading] = useState<boolean>(true);
   const [ownedRestaurants, setOwnedRestaurants] = useState<
@@ -62,8 +62,6 @@ export default function ClientPage() {
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const from = searchParams.get("from");
 
   const fetchOwnedRestaurants = useCallback(async () => {
     if (!hasMoreOwned && ownedPage !== 1) return;

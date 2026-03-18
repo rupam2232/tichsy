@@ -88,9 +88,10 @@ export const createFoodItem = asyncHandler(async (req, res) => {
     await checkVariantLimit(variants.length, req.subscription!);
   }
   // Check if the food item already exists
+  const escapedFoodName = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const existingFoodItem = await FoodItem.exists({
     restaurantId: restaurant._id,
-    foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
+    foodName: { $regex: `^${escapedFoodName}$`, $options: "i" },
   });
 
   if (existingFoodItem) {
@@ -552,9 +553,10 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
   }
   if (foodName !== foodItem.foodName) {
     // Check if the food item with the same name already exists in the restaurant
+    const escapedFoodName = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const existingFoodItem = await FoodItem.exists({
       restaurantId: restaurant._id,
-      foodName: { $regex: foodName, $options: "i" }, // Case-insensitive search
+      foodName: { $regex: `^${escapedFoodName}$`, $options: "i" },
       _id: { $ne: foodItem._id }, // Exclude the current food item from the check
     });
 

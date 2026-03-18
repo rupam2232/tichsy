@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ),
-  title: "Tichsy – QR Menu Ordering & POS for Restaurants",
+  title: "Tichsy | QR Menu Ordering & POS for Restaurants",
   description:
     "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
   keywords: [

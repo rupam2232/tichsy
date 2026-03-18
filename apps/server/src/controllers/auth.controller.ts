@@ -18,7 +18,6 @@ import {
 import { OAuth2Client } from "google-auth-library";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { getCookieOptions } from "../utils/cookieOptions.js";
-import { calculateSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
 import { signUpSchema, signInSchema, forgotPasswordSchema } from "@repo/types";
 import { env } from "../env.js";
 import crypto from "crypto";
@@ -41,7 +40,7 @@ export const signup = async (
   try {
     session.startTransaction();
     const validatedData = signUpSchema.parse(req.body);
-    const { email, password, fullName } = validatedData;
+    const { email, password, fullName, timezone: bodyTimezone } = validatedData;
     const deviceId = req.cookies.deviceId || crypto.randomUUID();
 
     // Prevent duplicate users
@@ -55,31 +54,40 @@ export const signup = async (
     const [firstName, ...lastNameParts] = fullName.split(" ");
     const lastName = lastNameParts.join(" ");
 
+    const userAgentRaw = req.header("user-agent") || "";
+    const ipAddressRaw = requestIp.getClientIp(req) || "";
+    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
+
     // Create user document
-    const user = await User.create([{ email, password, firstName, lastName }], {
-      session,
-    });
+    const user = await User.create(
+      [
+        {
+          email,
+          password,
+          firstName,
+          lastName,
+          timezone: bodyTimezone || deviceInfo.timezone,
+        },
+      ],
+      {
+        session,
+      }
+    );
 
     // Generate JWT tokens for authentication
     const refreshToken = generateRefreshToken(user[0]._id.toString());
     const accessToken = generateAccessToken({
       _id: user[0]._id.toString(),
       email: user[0].email,
+      firstName: user[0].firstName,
     });
-
-    const userAgentRaw = req.header("user-agent") || "";
-    const ipAddressRaw = requestIp.getClientIp(req) || "";
-    const deviceInfo = parseDeviceInfo(userAgentRaw, ipAddressRaw);
 
     await Promise.all([
       Subscription.create(
         [
           {
             userId: user[0]._id,
-            isTrial: true,
             plan: "starter",
-            period: "trial",
-            trialExpiresAt: calculateSubscriptionExpiryDate(7),
             isSubscriptionActive: true,
           },
         ],
@@ -91,9 +99,7 @@ export const signup = async (
             userId: user[0]._id,
             amount: 0,
             plan: "starter",
-            period: "trial",
-            isTrial: true,
-            trialExpiresAt: calculateSubscriptionExpiryDate(7),
+            action: "create",
             subtotal: 0,
             discountAmount: 0,
             taxAmount: 0,
@@ -135,13 +141,13 @@ export const signup = async (
     session.endSession();
 
     // Send welcome email (non-blocking)
-    sendEmail(email, welcome(user[0].firstName ?? "User"));
+    sendEmail(email, welcome({ USER_NAME: user[0].firstName }));
 
     // Send Welcome Notification to UI
     createNotification({
       recipient: user[0]._id,
       type: "system",
-      title: `Welcome to ${env.APP_NAME}`,
+      title: "Welcome to Tichsy",
       message:
         "Your account has been successfully created. We're glad to have you. Explore the features and enjoy the platform",
     });
@@ -166,7 +172,7 @@ export const signup = async (
           {
             _id: user[0]._id,
             email: user[0].email,
-            firstName: user[0].firstName || "",
+            firstName: user[0].firstName,
             lastName: user[0].lastName || "",
             avatar: user[0].avatar || "",
           },
@@ -213,7 +219,7 @@ export const signin = async (
     const accessToken = generateAccessToken({
       _id: user._id.toString(),
       email: user.email,
-      firstName: user.firstName || "",
+      firstName: user.firstName,
     });
 
     // Check for existing device session for this user/device
@@ -262,11 +268,11 @@ export const signin = async (
 
       sendEmail(
         email,
-        newLoginDevice(
-          user.firstName ?? "User",
-          `${deviceInfo.os} - ${deviceInfo.browser}`,
-          deviceInfo.location
-        )
+        newLoginDevice({
+          USER_NAME: user.firstName,
+          DEVICE: `${deviceInfo.os} - ${deviceInfo.browser}`,
+          LOCATION: deviceInfo.location,
+        })
       );
 
       createNotification({
@@ -301,7 +307,7 @@ export const signin = async (
           {
             _id: user._id,
             email: user.email,
-            firstName: user.firstName || "",
+            firstName: user.firstName,
             lastName: user.lastName || "",
             avatar: user.avatar || "",
           },
@@ -383,7 +389,7 @@ export const google = async (
       const accessToken = generateAccessToken({
         _id: user._id.toString(),
         email: user.email,
-        firstName: user.firstName || "",
+        firstName: user.firstName,
       });
 
       // Check for existing device session for this user/device
@@ -434,11 +440,11 @@ export const google = async (
         // Fire-and-forget side effects
         sendEmail(
           email,
-          newLoginDevice(
-            user.firstName ?? "User",
-            `${deviceInfo.os} - ${deviceInfo.browser}`,
-            deviceInfo.location
-          )
+          newLoginDevice({
+            USER_NAME: user.firstName,
+            DEVICE: `${deviceInfo.os} - ${deviceInfo.browser}`,
+            LOCATION: deviceInfo.location,
+          })
         );
 
         createNotification({
@@ -473,7 +479,7 @@ export const google = async (
             {
               _id: user._id,
               email: user.email,
-              firstName: user.firstName || "",
+              firstName: user.firstName,
               lastName: user.lastName || "",
               avatar: user.avatar || "",
             },
@@ -491,6 +497,7 @@ export const google = async (
             oauthProvider: "google",
             oauthId: googleId,
             avatar: picture || undefined,
+            timezone: req.body?.timezone || deviceInfo.timezone,
           },
         ],
         { session }
@@ -501,7 +508,7 @@ export const google = async (
       const accessToken = generateAccessToken({
         _id: user[0]._id.toString(),
         email: user[0].email,
-        firstName: "",
+        firstName: user[0].firstName,
       });
 
       await Promise.all([
@@ -509,10 +516,7 @@ export const google = async (
           [
             {
               userId: user[0]._id,
-              isTrial: true,
               plan: "starter",
-              period: "trial",
-              trialExpiresAt: calculateSubscriptionExpiryDate(7),
               isSubscriptionActive: true,
             },
           ],
@@ -524,9 +528,7 @@ export const google = async (
               userId: user[0]._id,
               amount: 0,
               plan: "starter",
-              period: "trial",
-              isTrial: true,
-              trialExpiresAt: calculateSubscriptionExpiryDate(7),
+              action: "create",
               subtotal: 0,
               discountAmount: 0,
               taxAmount: 0,
@@ -568,13 +570,13 @@ export const google = async (
       session.endSession();
 
       // Send signup success email (non-blocking)
-      sendEmail(email, welcome(user[0].firstName ?? "User"));
+      sendEmail(email, welcome({ USER_NAME: user[0].firstName }));
 
       // Send Welcome Notification to UI
       createNotification({
         recipient: user[0]._id,
         type: "system",
-        title: `Welcome to ${env.APP_NAME}`,
+        title: "Welcome to Tichsy",
         message:
           "Your account has been successfully created. We're glad to have you. Explore the features and enjoy the platform",
       });
@@ -599,7 +601,7 @@ export const google = async (
             {
               _id: user[0]._id,
               email: user[0].email,
-              firstName: user[0].firstName || "",
+              firstName: user[0].firstName,
               lastName: user[0].lastName || "",
               avatar: user[0].avatar || "",
             },
@@ -679,7 +681,7 @@ export const forgotPassword = asyncHandler(
     });
 
     // Send success email (non-blocking)
-    sendEmail(email, passwordUpdateSuccess(user.firstName ?? "User"));
+    sendEmail(email, passwordUpdateSuccess({ USER_NAME: user.firstName }));
 
     res
       .status(200)

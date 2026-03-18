@@ -75,6 +75,7 @@ export const verifyAuth = asyncHandler(
       const newAccessToken = generateAccessToken({
         _id: user.id,
         email: user.email,
+        firstName: user.firstName,
       });
       res.cookie("accessToken", newAccessToken, {
         ...options,

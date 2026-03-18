@@ -9,6 +9,7 @@ import {
 } from "@react-pdf/renderer";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import path from "path";
+import { formatInTimeZone } from "date-fns-tz";
 
 const fontPath = path.join(
   process.cwd(),
@@ -147,12 +148,7 @@ const styles = StyleSheet.create({
 export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
   const formatDate = (date: Date | undefined) => {
     return date
-      ? new Date(date).toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          timeZone: user.timeZone,
-        })
+      ? formatInTimeZone(date, user.timeZone || "Asia/Kolkata", "dd MMMM yyyy")
       : "-";
   };
 
@@ -170,7 +166,7 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Waiiter</Text>
+            <Text style={styles.title}>Tichsy</Text>
             <Text style={styles.subtitle}>Payment Receipt</Text>
           </View>
           <View style={[styles.statusBadge, styles.statusPaid]}>
@@ -286,6 +282,28 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
             </Text>
           </View>
         </View>
+
+        {/* Scheduled Activation Notice */}
+        {subscription.isScheduled && (
+          <View
+            style={{
+              marginTop: 20,
+              padding: 12,
+              backgroundColor: "#EFF6FF",
+              borderRadius: 4,
+              borderLeftWidth: 4,
+              borderLeftColor: "#3B82F6",
+            }}
+          >
+            <Text style={{ fontSize: 10, color: "#1E40AF", marginBottom: 4, fontWeight: "bold" }}>
+              SCHEDULED PLAN CHANGE
+            </Text>
+            <Text style={{ fontSize: 9, color: "#1E3A8A" }}>
+              This subscription will activate on {formatDate(subscription.subscriptionStartDate)}.
+              You will continue to enjoy your current plan features until then.
+            </Text>
+          </View>
+        )}
 
         {/* Footer */}
         <View

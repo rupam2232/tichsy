@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { plans } from "@/lib/billingsdk-config";
 import axios from "@/utils/axiosInstance";
@@ -42,13 +42,17 @@ interface PreviewData {
   discountReason: string;
   taxAmount: number;
   totalAmount: number;
-  action: "create" | "upgrade";
+  action: "create" | "upgrade" | "renew" | "downgrade";
+  scheduledActivationDate?: string;
 }
 
-export default function ClientPage() {
-  const searchParams = useSearchParams();
-  const planId = searchParams.get("plan");
-  const period = searchParams.get("period") as "monthly" | "yearly";
+export default function ClientPage({
+  searchParams,
+}: {
+  searchParams: { plan: string; period: string };
+}) {
+  const planId = searchParams.plan;
+  const period = searchParams.period as "monthly" | "yearly";
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
@@ -62,6 +66,15 @@ export default function ClientPage() {
   useEffect(() => {
     if (!planId || !period || !selectedPlan) {
       toast.error("Invalid checkout parameters");
+      router.push("/billing");
+      return;
+    }
+
+    // Only allow medium and pro plans - reject starter (free plan) and invalid plans
+    if (planId !== "medium" && planId !== "pro") {
+      toast.error(
+        "Invalid plan selected. Only Medium and Pro plans are available for purchase.",
+      );
       router.push("/billing");
       return;
     }
@@ -164,7 +177,7 @@ export default function ClientPage() {
           ...data.notes,
         },
         theme: {
-          color: "#72e3ad",
+          color: "#15ab6d",
           backdrop_color: "rgba(0, 0, 0, 0.5)",
         },
         prefill: {
@@ -216,7 +229,13 @@ export default function ClientPage() {
         </Button>
         <div>
           <h1 className="md:text-3xl font-bold tracking-tight">
-            Review your subscription
+            {previewData?.action === "renew"
+              ? "Renew your subscription"
+              : previewData?.action === "upgrade"
+                ? "Upgrade your subscription"
+                : previewData?.action === "downgrade"
+                  ? "Schedule plan change"
+                  : "Review your subscription"}
           </h1>
         </div>
       </div>
@@ -315,6 +334,26 @@ export default function ClientPage() {
                     ₹{previewData?.totalAmount.toFixed(2)}
                   </span>
                 </div>
+
+                {previewData?.action === "renew" && (
+                  <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+                    This renewal will add {period === "yearly" ? "365" : "30"}{" "}
+                    days to your current subscription end date.
+                  </p>
+                )}
+
+                {previewData?.action === "downgrade" && (
+                  <div className="text-xs bg-blue-500/10 border border-blue-500/30 p-3 rounded-md">
+                    <p className="text-blue-900 dark:text-blue-100 font-medium mb-1">
+                      📅 Scheduled Plan Change
+                    </p>
+                    <p className="text-blue-800 dark:text-blue-200">
+                      This plan will activate when your current subscription
+                      ends. You&apos;ll continue enjoying your current plan
+                      features until then.
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   className="w-full font-bold shadow-lg shadow-primary/20 group"

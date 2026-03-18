@@ -2,6 +2,7 @@ import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { env } from "../env.js";
+import { isSubscriptionExpired } from "../config/subscriptionPlans.js";
 const isProduction = env.NODE_ENV === "production";
 
 /**
@@ -13,75 +14,56 @@ export const isSubscriptionActive = asyncHandler(async (req, _, next) => {
   if (!isProduction) return next();
   const targetUserId = req.restaurant ? req.restaurant.ownerId : req.user!._id;
   const subscription = await Subscription.findOne({ userId: targetUserId });
-  if (!subscription || subscription.isSubscriptionActive === false)
+
+  if (!subscription) {
     throw new ApiError(
       403,
-      "No active subscription found. Please subscribe to continue using the service"
+      "No subscription found. Please contact support."
     );
-  if (
-    subscription.subscriptionEndDate &&
-    subscription.subscriptionEndDate < new Date()
-  ) {
-    subscription.isSubscriptionActive = false;
-    subscription.isTrial = false;
-    subscription.trialExpiresAt = undefined;
-    subscription.plan = undefined;
+  }
+
+  // Starter plan is always active - no expiration check needed
+  if (subscription.plan === "starter") {
+    subscription.isSubscriptionActive = true;
+    req.subscription = subscription;
+    return next();
+  }
+
+  // Check expiration for paid plans only (medium/pro)
+  // Grace period is applied - user gets extra days after subscriptionEndDate
+  if (isSubscriptionExpired(subscription.subscriptionEndDate)) {
+    // Downgrade to starter instead of disabling
+    subscription.isSubscriptionActive = true;
+    subscription.plan = "starter";
+    subscription.period = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;
-    subscription.save({ validateBeforeSave: false });
+    await subscription.save({ validateBeforeSave: false });
     throw new ApiError(
       403,
-      "Your subscription has expired. Please renew to continue using the service"
+      "Your subscription has expired. You've been downgraded to the Starter plan. Upgrade to restore full access."
     );
   }
-  if (subscription.isTrial && !subscription.trialExpiresAt) {
-    if (
-      subscription.subscriptionEndDate &&
-      subscription.subscriptionEndDate > new Date()
-    ) {
-      subscription.isTrial = false;
-      subscription.save({ validateBeforeSave: false });
-    } else {
-      subscription.isTrial = false;
-      subscription.isSubscriptionActive = false;
-      subscription.plan = undefined;
-      subscription.subscriptionStartDate = undefined;
-      subscription.subscriptionEndDate = undefined;
-      subscription.save({ validateBeforeSave: false });
-      throw new ApiError(
-        403,
-        "Your subscription is not active. Please subscribe to continue using the service"
-      );
-    }
-  }
-  if (
-    subscription.isTrial &&
-    subscription.trialExpiresAt &&
-    subscription.trialExpiresAt < new Date()
-  ) {
-    subscription.isSubscriptionActive = false;
-    subscription.isTrial = false;
-    subscription.trialExpiresAt = undefined;
-    subscription.plan = undefined;
+
+  // Edge case: no plan set - set to starter
+  if (!subscription.plan) {
+    subscription.isSubscriptionActive = true;
+    subscription.plan = "starter";
+    subscription.period = undefined;
     subscription.subscriptionStartDate = undefined;
     subscription.subscriptionEndDate = undefined;
-    subscription.save({ validateBeforeSave: false });
+    await subscription.save({ validateBeforeSave: false });
+    req.subscription = subscription;
+    return next();
+  }
+
+  if (!subscription.isSubscriptionActive) {
     throw new ApiError(
       403,
-      "Your trial period has expired. Please subscribe to continue using the service"
+      "Your subscription is not active. Please contact support."
     );
   }
-  if (!subscription.trialExpiresAt && !subscription.subscriptionEndDate) {
-    subscription.isSubscriptionActive = false;
-    subscription.plan = undefined;
-    subscription.subscriptionStartDate = undefined;
-    subscription.subscriptionEndDate = undefined;
-    subscription.save({ validateBeforeSave: false });
-    throw new ApiError(
-      403,
-      "Your subscription is not active. Please subscribe to continue using the service"
-    );
-  }
+
   req.subscription = subscription;
   next();
 });

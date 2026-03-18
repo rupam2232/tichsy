@@ -39,7 +39,7 @@ type CreateUpdateFoodItemProps = {
   setAllFoodItems: React.Dispatch<React.SetStateAction<AllFoodItems | null>>; // Optional prop to update all food items after creation or update
   categories?: string[]; // Optional prop to pass categories for the restaurant
   setCategories?: React.Dispatch<React.SetStateAction<string[]>>; // Optional prop to update categories after creation or update
-  setTabName?: React.Dispatch<React.SetStateAction<string>>; // Optional prop to set the current tab name
+  setTabName?: (tabName: string) => void; // Optional prop to set the current tab name
 };
 
 const CreateUpdateFoodItem = ({
@@ -484,7 +484,7 @@ const CreateUpdateFoodItem = ({
       ) : (
         <DialogTrigger type="button">
           <Plus />
-          New Food Item
+          New Item
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-md" aria-describedby={undefined}>

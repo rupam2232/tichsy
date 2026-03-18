@@ -3,9 +3,8 @@ import SettingsSidebar from "@/components/settings/SettingsSidebar";
 import SettingsMobileNav from "@/components/settings/SettingsMobileNav";
 
 export const metadata: Metadata = {
-  title: `Settings - Tichsy`,
-  description:
-    "Manage your profile, security preferences, and active sessions.",
+  title: "Settings - Tichsy",
+  description: "Manage your profile, security preferences, and more.",
 };
 
 export default function SettingsLayout({

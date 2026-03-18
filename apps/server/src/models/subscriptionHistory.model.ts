@@ -3,20 +3,19 @@ import { Schema, model, Document, Types } from "mongoose";
 
 /**
  * TypeScript interface for a Subscription history document.
- * Represents a user's subscription history details, including plan, trial, and dates.
+ * Represents a user's subscription history details, including plan and dates.
  */
 export interface SubscriptionHistory extends Document {
   userId: Types.ObjectId; // Reference to the User
   plan?: "starter" | "medium" | "pro"; // Subscription plan name
-  period: "monthly" | "yearly" | "trial";
+  period?: "monthly" | "yearly"; // Billing period (optional, undefined for free Starter)
   amount: number; // Payment that user has made
-  isTrial: boolean; // Whether the subscription is a trial
-  trialExpiresAt?: Date; // When the trial expires
   subscriptionStartDate?: Date; // When the subscription starts
   subscriptionEndDate?: Date; // When the subscription ends
   transactionId?: string; // UPI/Card transaction reference (if any)
   paymentGateway?: string; // Payment gateway used (e.g., "Razorpay", "Stripe")
   action?: "create" | "renew" | "upgrade" | "downgrade";
+  isScheduled?: boolean; // True if the subscription will activate in the future (for downgrades)
   subtotal?: number; // Base plan price
   discountAmount?: number; // Total discount (proration + coupons)
   discountReason?: string; // "upgrade", "coupon:CODE", etc.
@@ -45,24 +44,13 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
     },
     period: {
       type: String,
-      enum: ["monthly", "yearly", "trial"],
-      default: "monthly",
+      enum: ["monthly", "yearly"],
       immutable: true,
     },
     amount: {
       type: Number,
       default: 0,
       required: [true, "Amount is required"],
-      immutable: true,
-    },
-    isTrial: {
-      type: Boolean,
-      default: false,
-      required: [true, "isTrial field is required"],
-      immutable: true,
-    },
-    trialExpiresAt: {
-      type: Date,
       immutable: true,
     },
     subscriptionStartDate: {
@@ -86,6 +74,11 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
       type: String,
       enum: ["create", "renew", "upgrade", "downgrade"],
       default: "create",
+      immutable: true,
+    },
+    isScheduled: {
+      type: Boolean,
+      default: false,
       immutable: true,
     },
     subtotal: {

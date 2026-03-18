@@ -22,6 +22,7 @@ export const signUpSchema = z.object({
     .string("Full name must be a string")
     .min(1, "Full name is required")
     .trim(),
+  timezone: z.string().optional(),
 })
 .superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {

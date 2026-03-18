@@ -7,7 +7,7 @@ import { Schema, model, Document, Types } from "mongoose";
  */
 export interface Notification extends Document {
   recipient: Types.ObjectId; // Reference to the User
-  type: "order" | "security" | "system"; // type of notification
+  type: "order" | "security" | "system" | "billing"; // type of notification
   title: string; // Title of the notification
   message: string; // Message of the notification
   data?: Record<string, unknown>; // Metadata like orderId, restaurantId, link
@@ -31,7 +31,7 @@ const notificationSchema = new Schema<Notification>(
     },
     type: {
       type: String,
-      enum: ["order", "security", "system"],
+      enum: ["order", "security", "system", "billing"],
       required: true,
     },
     title: {
