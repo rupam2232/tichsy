@@ -9,6 +9,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]),
   GOOGLE_CLIENT_ID: z.string("Invalid Google client ID").min(1),
   GOOGLE_CLIENT_SECRET: z.string("Invalid Google client secret").min(1),
+  APP_LOGO_URL: z.url("Invalid app logo URL"),
   APP_NAME: z.string("Invalid app name").min(1),
   COOKIE_DOMAIN: z.string("Invalid cookie domain").min(1).optional(),
   ACCESS_TOKEN_EXPIRY: z.string("Invalid access token expiry").transform(Number),

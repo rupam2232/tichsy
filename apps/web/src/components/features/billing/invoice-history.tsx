@@ -131,7 +131,7 @@ export function InvoiceHistory({
                       {inv.isScheduled && (
                         <div className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
                           <Clock className="h-3 w-3" />
-                          <span>Activates on {inv.activationDate}</span>
+                          <span>Activation date: {inv.activationDate}</span>
                         </div>
                       )}
                     </div>
@@ -151,7 +151,7 @@ export function InvoiceHistory({
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       className="h-8 text-xs"
                       onClick={() =>
@@ -166,7 +166,7 @@ export function InvoiceHistory({
                       aria-label={`Download invoice ${inv.id}`}
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Download
+                      <span className="sr-only">Download</span>
                     </Button>
                   </TableCell>
                 </TableRow>

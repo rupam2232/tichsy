@@ -11,7 +11,6 @@ export interface Subscription extends Document {
   subscriptionStartDate?: Date; // When the subscription starts (paid plans only)
   subscriptionEndDate?: Date; // When the subscription ends (paid plans only)
   period?: "monthly" | "yearly"; // Billing period (only for paid plans, undefined for Starter)
-  isOverLimit?: boolean; // Whether the subscription is over the limit
   isSubscriptionActive?: boolean; // Whether the subscription is currently active
   pendingPlan?: {
     plan: "medium" | "pro"; // The plan to activate when current subscription ends
@@ -19,8 +18,6 @@ export interface Subscription extends Document {
     paidAt: Date; // When the user paid for this pending plan
     transactionId: string; // Payment transaction ID for reference
   };
-  createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
-  updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
 }
 
 /**
@@ -45,10 +42,6 @@ const subscriptionSchema: Schema<Subscription> = new Schema(
     },
     subscriptionStartDate: Date,
     subscriptionEndDate: Date,
-    isOverLimit: {
-      type: Boolean,
-      default: false,
-    },
     isSubscriptionActive: Boolean,
     pendingPlan: {
       plan: {

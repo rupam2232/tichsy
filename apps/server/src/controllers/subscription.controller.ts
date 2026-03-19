@@ -12,6 +12,7 @@ import { razorpay } from "../utils/razorpay.js";
 import { createSubscriptionSchema } from "@repo/types";
 import { generateSubscriptionReceiptPdf } from "../utils/generateSubscriptionReceiptPdf.js";
 import { isValidObjectId } from "mongoose";
+import { calculateScheduledStartDate } from "../utils/subscriptionUtils.js";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
   const subscription = await Subscription.findOne({
@@ -96,12 +97,11 @@ export const createSubscription = asyncHandler(async (req, res) => {
     const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
     const newLevel = SubscriptionPlanHierarchy[plan] || 0;
 
-    // If user has a pending plan, they cannot renew their current plan
-    // This prevents confusion - they should either cancel pending plan or proceed with it
-    if (existingSubscription.pendingPlan && newLevel === currentLevel) {
+    // Block all plan changes if user already has a pending plan scheduled
+    if (existingSubscription.pendingPlan) {
       throw new ApiError(
         400,
-        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan}. You cannot renew your current plan until that change is processed. Please wait for your subscription to end or contact support to cancel the scheduled change.`
+        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan} (${existingSubscription.pendingPlan.period}). You cannot make additional plan changes until the scheduled change is activated.`
       );
     }
 
@@ -221,18 +221,19 @@ export const previewSubscription = asyncHandler(async (req, res) => {
     const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
     const newLevel = SubscriptionPlanHierarchy[plan] || 0;
 
-    // If user has a pending plan, they cannot renew their current plan
-    if (existingSubscription.pendingPlan && newLevel === currentLevel) {
+    // Block all plan changes if user already has a pending plan scheduled
+    if (existingSubscription.pendingPlan) {
       throw new ApiError(
         400,
-        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan}. You cannot renew your current plan until that change is processed.`
+        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan} (${existingSubscription.pendingPlan.period}). You cannot make additional plan changes until the scheduled change is activated.`
       );
     }
 
     // Downgrade: schedule for when current subscription ends
     if (newLevel < currentLevel) {
       action = "downgrade";
-      scheduledActivationDate = existingSubscription.subscriptionEndDate.toISOString();
+      // Calculate start date as beginning of the day after current subscription ends
+      scheduledActivationDate = calculateScheduledStartDate(existingSubscription.subscriptionEndDate).toISOString();
       // No proration for downgrades - user pays full price
     }
     // Renewal: same plan, possibly different period

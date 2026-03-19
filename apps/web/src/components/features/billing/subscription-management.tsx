@@ -61,23 +61,14 @@ export function SubscriptionManagement({
             </div>
           )}
 
-          {/* Pending plan alert */}
-          {/* {pendingPlan && (
-            <div className="border-blue-500/50 bg-blue-500/5 flex gap-3 rounded-lg border p-3 sm:p-4">
-              <Clock className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
-              <div className="text-sm text-blue-800 dark:text-blue-200">
-                You have scheduled a plan change to <strong>{pendingPlan.plan}</strong> ({pendingPlan.period}). It will activate when your current subscription ends.
-              </div>
-            </div>
-          )} */}
-
           {/* Expiry warning for Paid users */}
           {currentPlan.status === "active" &&
             currentPlan.plan.id !== "starter" &&
             daysUntilExpiry !== undefined &&
             daysUntilExpiry !== null &&
             daysUntilExpiry <= 7 &&
-            daysUntilExpiry > 0 && (
+            daysUntilExpiry > 0 && 
+            (
               <div className="border-orange-500/50 bg-orange-500/5 flex gap-3 rounded-lg border p-3 sm:p-4">
                 <Clock className="h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400 mt-0.5" />
                 <div className="text-sm text-orange-800 dark:text-orange-200">
@@ -164,24 +155,6 @@ export function SubscriptionManagement({
                 </div>
               </div>
             </div>
-
-            {/* Additional info about grace period and downgrade */}
-            {currentPlan.status === "active" &&
-              currentPlan.plan.id !== "starter" && (
-                <div className="text-muted-foreground mt-4 rounded-lg border border-dashed border-border/50 bg-muted/20 p-3 text-xs sm:text-sm">
-                  <p className="leading-relaxed">
-                    📌 If you don&apos;t renew after the end date, you&apos;ll have a{" "}
-                    <strong>1-day grace period</strong> to keep your premium
-                    features active. After that, your plan will automatically
-                    downgrade to the free <strong>Starter</strong> plan.
-                  </p>
-                  {!pendingPlan && (
-                    <p className="mt-2 leading-relaxed">
-                      💡 You can schedule a plan change to a different tier. The new plan will activate automatically when your current subscription ends.
-                    </p>
-                  )}
-                </div>
-              )}
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -192,7 +165,7 @@ export function SubscriptionManagement({
                   Plan Change Scheduled
                 </h4>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  You have already scheduled a plan change to <strong>{pendingPlan.plan}</strong> ({pendingPlan.period}).
+                  You have already scheduled a plan change to <strong>{pendingPlan.plan.charAt(0).toUpperCase() + pendingPlan.plan.slice(1)}</strong> ({pendingPlan.period}).
                   This change will take effect automatically when your current subscription ends.
                   You cannot make additional plan changes until the scheduled change is activated.
                 </p>

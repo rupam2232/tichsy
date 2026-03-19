@@ -16,7 +16,7 @@ import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
-import { calculateSubscriptionExpiryDate, extendSubscriptionExpiryDate } from "../utils/subscriptionUtils.js";
+import { calculateSubscriptionExpiryDate, extendSubscriptionExpiryDate, calculateScheduledStartDate } from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
 import { createNotification } from "../service/notification.service.js";
 import { env } from "../env.js";
@@ -104,10 +104,24 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
 
         const period = periodNote ?? "monthly";
         if (period !== "monthly" && period !== "yearly") {
+          razorpay.payments.refund(paymentEntity.id, {
+            amount: paymentEntity.amount,
+            speed: "normal",
+            notes: {
+              reason: "Payment received for invalid period - refund initiated",
+            },
+          });
           throw new ApiError(400, "Invalid period selected");
         }
         const plan = planName as SubscriptionPlan;
         if (!SUBSCRIPTION_PLANS[plan]) {
+          razorpay.payments.refund(paymentEntity.id, {
+            amount: paymentEntity.amount,
+            speed: "normal",
+            notes: {
+              reason: "Payment received for invalid plan - refund initiated",
+            },
+          });
           throw new ApiError(400, "Invalid plan selected");
         }
 
@@ -130,9 +144,9 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
         if (paymentEntity.amount !== expectedAmountPaise) {
           razorpay.payments.refund(paymentEntity.id, {
             amount: paymentEntity.amount,
-            speed: "optimum",
+            speed: "normal",
             notes: {
-              reason: "Payment amount does not match the plan selected",
+              reason: "Payment amount does not match expected amount - refund initiated",
             },
           });
           throw new ApiError(
@@ -179,8 +193,8 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
                 plan: plan,
                 period: period,
                 amount: paymentEntity.amount / 100,
-                // For downgrades, these will be set when the plan activates
-                subscriptionStartDate: subscription.subscriptionEndDate, // Starts when current ends
+                // For downgrades, start date is the beginning of the day after current subscription ends
+                subscriptionStartDate: calculateScheduledStartDate(subscription.subscriptionEndDate!),
                 subscriptionEndDate: extendSubscriptionExpiryDate(
                   subscription.subscriptionEndDate,
                   daysToAdd
@@ -212,7 +226,7 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
               currency: paymentEntity.currency,
               productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
               action: "downgrade",
-              scheduledActivation: subscription.subscriptionEndDate,
+              scheduledActivation: calculateScheduledStartDate(subscription.subscriptionEndDate!),
             });
           }
 
@@ -220,12 +234,12 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
             recipient: userId,
             type: "billing",
             title: "Plan Change Scheduled",
-            message: `Your ${plan} plan has been scheduled. It will activate when your current subscription ends.`,
+            message: `Your ${plan} plan has been scheduled to activate when your current subscription ends.`,
             data: {
               paymentId: paymentEntity.id,
               plan,
               period,
-              scheduledActivation: subscription.subscriptionEndDate,
+              scheduledActivation: calculateScheduledStartDate(subscription.subscriptionEndDate!),
             },
           });
 

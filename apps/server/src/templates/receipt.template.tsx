@@ -6,10 +6,13 @@ import {
   View,
   StyleSheet,
   Font,
+  Image,
 } from "@react-pdf/renderer";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import path from "path";
 import { formatInTimeZone } from "date-fns-tz";
+import { subDays } from "date-fns";
+import { env } from "../env.js";
 
 const fontPath = path.join(
   process.cwd(),
@@ -42,15 +45,13 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   header: {
-    marginBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   logo: {
-    width: 100,
+    width: 40,
     height: 40,
-    backgroundColor: "#000000", // Placeholder for actual logo
     borderRadius: 4,
   },
   title: {
@@ -140,8 +141,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   statusPaid: {
-    backgroundColor: "#DEF7EC",
-    color: "#03543F",
+    backgroundColor: "#15ab6d",
+    color: "#FFFFFF",
   },
 });
 
@@ -152,11 +153,24 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
       : "-";
   };
 
+  // Calculate previous subscription end date (day before activation)
+  const getPreviousSubEndDate = (activationDate: Date | undefined) => {
+    if (!activationDate) return undefined;
+    return subDays(new Date(activationDate), 1);
+  };
+
   const formatCurrency = (amount: number | undefined) => {
     return (
-      <Text style={{ fontFamily: "NotoSans" }}>
-        {`₹${(amount || 0).toFixed(2)}`}
-      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Text style={{ fontFamily: "NotoSans" }}>₹</Text>
+        <Text>{(amount || 0).toFixed(2)}</Text>
+      </View>
     );
   };
 
@@ -165,8 +179,11 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Tichsy</Text>
+          <View style={{ flexDirection: "column", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Image src={env.APP_LOGO_URL} style={styles.logo} />
+              <Text style={styles.title}>Tichsy</Text>
+            </View>
             <Text style={styles.subtitle}>Payment Receipt</Text>
           </View>
           <View style={[styles.statusBadge, styles.statusPaid]}>
@@ -196,18 +213,49 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
               justifyContent: "flex-end",
             }}
           >
-            <View style={{ marginBottom: 8 }}>
+            <View
+              style={{
+                marginBottom: 8,
+                alignItems: "flex-end",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+              }}
+            >
               <Text style={styles.label}>TRANSACTION ID</Text>
               <Text style={styles.value}>
                 {subscription.transactionId || "-"}
               </Text>
             </View>
-            <View>
+            <View
+              style={{
+                alignItems: "flex-end",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+              }}
+            >
               <Text style={styles.label}>DATE</Text>
               <Text style={styles.value}>
                 {formatDate(subscription.createdAt)}
               </Text>
             </View>
+            {subscription.isScheduled && (
+              <View
+                style={{
+                  marginTop: 8,
+                  alignItems: "flex-end",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Text style={styles.label}>ACTIVATION DATE</Text>
+                <Text style={[styles.value]}>
+                  {formatDate(subscription.subscriptionStartDate)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -239,9 +287,9 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
               <Text style={styles.textBase}>{subscription.period}</Text>
             </View>
             <View style={styles.col3}>
-              <Text style={styles.textBase}>
+              <View style={styles.textBase}>
                 {formatCurrency(subscription.subtotal)}
-              </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -250,9 +298,9 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
             <Text style={styles.textSm}>Subtotal</Text>
-            <Text style={styles.textSm}>
+            <View style={styles.textSm}>
               {formatCurrency(subscription.subtotal)}
-            </Text>
+            </View>
           </View>
 
           {subscription.discountAmount && subscription.discountAmount > 0 ? (
@@ -260,26 +308,26 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
               <Text style={[styles.textSm, { color: "#10B981" }]}>
                 Discount ({subscription.discountReason})
               </Text>
-              <Text style={[styles.textSm, { color: "#10B981" }]}>
+              <View style={[styles.textSm, { color: "#10B981" }]}>
                 -{formatCurrency(subscription.discountAmount)}
-              </Text>
+              </View>
             </View>
           ) : null}
 
           <View style={styles.summaryRow}>
             <Text style={styles.textSm}>Processing Fees (Tax incl.)</Text>
-            <Text style={styles.textSm}>
+            <View style={styles.textSm}>
               {formatCurrency(subscription.taxAmount)}
-            </Text>
+            </View>
           </View>
 
           <View style={styles.totalRow}>
             <Text style={[styles.textBase, styles.textBold]}>TOTAL</Text>
-            <Text style={[styles.textBase, styles.textBold]}>
+            <View style={[styles.textBase, styles.textBold]}>
               {formatCurrency(
                 subscription.totalAmount || (subscription.amount as number)
               )}
-            </Text>
+            </View>
           </View>
         </View>
 
@@ -295,13 +343,15 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
               borderLeftColor: "#3B82F6",
             }}
           >
-            <Text style={{ fontSize: 10, color: "#1E40AF", marginBottom: 4, fontWeight: "bold" }}>
-              SCHEDULED PLAN CHANGE
-            </Text>
-            <Text style={{ fontSize: 9, color: "#1E3A8A" }}>
-              This subscription will activate on {formatDate(subscription.subscriptionStartDate)}.
-              You will continue to enjoy your current plan features until then.
-            </Text>
+            <View>
+              <Text style={{ fontSize: 8, color: "#3B82F6" }}>
+                This plan activates after the previous subscription ends on{" "}
+                {formatDate(
+                  getPreviousSubEndDate(subscription.subscriptionStartDate)
+                )}
+                .
+              </Text>
+            </View>
           </View>
         )}
 
@@ -316,7 +366,7 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
         >
           <Text style={{ fontSize: 10, color: "#9CA3AF", textAlign: "center" }}>
             This is a computer-generated receipt and does not require a physical
-            signature. Waiiter Inc.
+            signature.
           </Text>
         </View>
       </Page>

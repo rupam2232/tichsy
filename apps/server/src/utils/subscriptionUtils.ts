@@ -1,5 +1,30 @@
-import { addDays, set, isAfter } from "date-fns";
+import { addDays, set, isAfter, startOfDay, differenceInCalendarDays } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
+
+const DEFAULT_TIMEZONE = "Asia/Kolkata";
+
+/**
+ * Calculates how many calendar days until the subscription ends.
+ * Uses the provided timezone for accurate calendar day comparison.
+ *
+ * @param subscriptionEndDate - The subscription end date (stored in UTC).
+ * @param timeZone - User's timezone for calendar day calculation.
+ * @returns Number of days until expiry (3 = expires in 3 days, 0 = expires today, -1 = expired yesterday).
+ */
+export const getDaysUntilExpiry = (
+  subscriptionEndDate: Date,
+  timeZone: string = DEFAULT_TIMEZONE
+): number => {
+  const now = new Date();
+  const nowInTz = toZonedTime(now, timeZone);
+  const endDateInTz = toZonedTime(subscriptionEndDate, timeZone);
+
+  // Compare calendar days (ignoring time)
+  const todayStart = startOfDay(nowInTz);
+  const endDayStart = startOfDay(endDateInTz);
+
+  return differenceInCalendarDays(endDayStart, todayStart);
+};
 
 /**
  * Calculates a subscription or trial expiry date.
@@ -63,4 +88,32 @@ export const extendSubscriptionExpiryDate = (
 
   // Return converted back to UTC
   return fromZonedTime(endOfDayInTimeZone, timeZone);
+};
+
+/**
+ * Calculates the start date for a scheduled subscription.
+ * Takes the current subscription's end date and returns the start of the next day.
+ *
+ * Example: If current subscription ends at 2026-03-19 23:59:00 IST,
+ * the new subscription should start at 2026-03-20 00:00:00 IST.
+ *
+ * @param currentEndDate - The end date of the current subscription.
+ * @param timeZone - Timezone to use for calculation. Default is Asia/Kolkata (IST).
+ * @returns The start date (beginning of next day) in UTC.
+ */
+export const calculateScheduledStartDate = (
+  currentEndDate: Date,
+  timeZone: string = "Asia/Kolkata"
+): Date => {
+  // Convert end date to the given timezone
+  const endDateInTimeZone = toZonedTime(currentEndDate, timeZone);
+
+  // Add one day to get to the next day
+  const nextDay = addDays(endDateInTimeZone, 1);
+
+  // Set to start of day (00:00:00) in the given timezone
+  const startOfNextDay = startOfDay(nextDay);
+
+  // Return converted back to UTC
+  return fromZonedTime(startOfNextDay, timeZone);
 };

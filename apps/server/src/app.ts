@@ -56,6 +56,7 @@ app.use(
       }
     },
     credentials: true, // Allow cookies and credentials in CORS requests
+    exposedHeaders: ["content-disposition"],
   })
 );
 

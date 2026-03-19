@@ -170,22 +170,19 @@ export default function ClientPage({
         currency: data.currency,
         name: `Tichsy ${selectedPlan?.title}`,
         description: selectedPlan?.description,
-        image: process.env.NEXT_PUBLIC_APP_URL + "/favicon.ico",
+        image: process.env.NEXT_PUBLIC_APP_URL + "/light-icon.svg",
         order_id: data.id,
         handler: (response: unknown) => verifyPayment(response, data.id),
         notes: {
           ...data.notes,
-        },
-        theme: {
-          color: "#15ab6d",
-          backdrop_color: "rgba(0, 0, 0, 0.5)",
         },
         prefill: {
           email: user.email || "",
           contact: "+919977665544",
           name: user.firstName + " " + user.lastName || "",
         },
-        readonly: { email: true },
+        message: `Paying for ${selectedPlan?.title} plan (${period})`,
+        readonly: { email: true, name: true },
         hidden: { contact: true },
         modal: {
           backdropclose: true,
