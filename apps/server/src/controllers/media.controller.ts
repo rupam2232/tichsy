@@ -14,6 +14,10 @@ import {
   restaurantLogoDeleteSchema,
   restaurantLogoUploadSchema,
 } from "@repo/types";
+import {
+  checkImageLimit,
+  getMaxImagesPerFoodItem,
+} from "../service/foodItem.service.js";
 
 export const restaurantLogoUpload = asyncHandler(async (req, res) => {
   const logoLocalPath = req.file?.path;
@@ -144,11 +148,18 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
   if (!imageLocalPaths || imageLocalPaths.length === 0) {
     throw new ApiError(400, "At least one image file is required");
   }
-  if (imageLocalPaths.length > 5) {
+
+  // Get max images allowed based on subscription
+  const maxImages = getMaxImagesPerFoodItem(req.subscription);
+
+  if (imageLocalPaths.length > maxImages) {
     imageLocalPaths.forEach((file: Express.Multer.File) => {
-      fs.unlinkSync(file.path); // Remove the files if more than 5 images are uploaded
+      fs.unlinkSync(file.path); // Remove the files if exceeding plan limit
     });
-    throw new ApiError(400, "You can only upload a maximum of 5 images");
+    throw new ApiError(
+      400,
+      `Your plan allows uploading max ${maxImages} images at once`
+    );
   }
 
   let foodItem: FoodItemType | null = null;
@@ -182,22 +193,18 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
       throw new ApiError(403, "You do not own this restaurant");
     }
 
-    // Check if the food item already has 5 images
-    if (foodItem.imageUrls && foodItem.imageUrls.length >= 5) {
+    // Check image limit based on subscription plan
+    try {
+      checkImageLimit(
+        foodItem.imageUrls?.length || 0,
+        imageLocalPaths.length,
+        req.subscription
+      );
+    } catch (error) {
       imageLocalPaths.forEach((file: Express.Multer.File) => {
-        fs.unlinkSync(file.path); // Remove the files if the food item already has 5 images
+        fs.unlinkSync(file.path); // Remove the files if limit exceeded
       });
-      throw new ApiError(400, "Food item already has 5 images");
-    }
-
-    if (
-      foodItem.imageUrls &&
-      foodItem.imageUrls.length + imageLocalPaths.length > 5
-    ) {
-      imageLocalPaths.forEach((file: Express.Multer.File) => {
-        fs.unlinkSync(file.path); // Remove the files if the total exceeds 5 images
-      });
-      throw new ApiError(400, "Total images for food item cannot exceed 5");
+      throw error;
     }
   }
 

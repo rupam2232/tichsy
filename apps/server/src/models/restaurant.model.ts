@@ -3,7 +3,6 @@ import { Schema, model, Document, Types } from "mongoose";
 
 /**
  * TypeScript interface for a Restaurant document.
- * Represents a restaurant's core information and settings.
  */
 export interface Restaurant extends Document {
   _id: Types.ObjectId;
@@ -13,11 +12,6 @@ export interface Restaurant extends Document {
   description?: string; // Optional description of the restaurant
   isCurrentlyOpen: boolean; // Whether the restaurant is currently open
   ownerId: Types.ObjectId; // Reference to the User who owns the restaurant
-  staffMembers?: {
-    user: Types.ObjectId;
-    role: string;
-    joinedAt: Date;
-  }[]; // Optional array of staff members with their roles
   categories: string[]; // Optional array of categories/cuisines
   openingTime?: string; // Optional opening time (e.g., "09:00")
   closingTime?: string; // Optional closing time (e.g., "22:00")
@@ -69,25 +63,6 @@ const restaurantSchema: Schema<Restaurant> = new Schema(
       required: [true, "Id of the owner is required"],
       index: true,
     },
-    staffMembers: [
-      {
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-          index: true,
-        },
-        role: {
-          type: String,
-          required: true,
-          default: "staff",
-        },
-        joinedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
     categories: {
       type: [String],
       default: [],

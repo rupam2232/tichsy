@@ -5,8 +5,8 @@ import {
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { type Restaurant as RestaurantType } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { Subscription } from "../models/subscription.model.js";
-import { Coupon } from "../models/coupon.model.js";
 import { Invitation } from "../models/invitation.model.js";
 import { env } from "../env.js";
 const isProduction = env.NODE_ENV === "production";
@@ -17,9 +17,12 @@ export async function checkStaffLimit(
   isInvitee: boolean = false
 ) {
   if (!isProduction) return;
-  const activeStaffCount = restaurant.staffMembers
-    ? restaurant.staffMembers.length
-    : 0;
+
+  // Count active (non-archived) staff members from RestaurantMember collection
+  const activeStaffCount = await RestaurantMember.countDocuments({
+    restaurantId: restaurant._id,
+    isArchived: false,
+  });
 
   const pendingInvitesCount = await Invitation.countDocuments({
     restaurantId: restaurant._id,
@@ -46,28 +49,5 @@ export async function checkStaffLimit(
         `Your plan allows to add max ${maxStaff} staff members per restaurant. Upgrade to add more`
       );
     }
-  }
-}
-
-export async function checkCouponLimit(restaurantId: string, user: User) {
-  if (!isProduction) return;
-  const subscription = await Subscription.findOne({ userId: user._id }).lean();
-  const plan =
-    (subscription?.plan as SubscriptionPlan) || ("starter" as SubscriptionPlan);
-
-  const maxActiveCoupons =
-    SUBSCRIPTION_PLANS[plan].maxActiveCouponsPerRestaurant;
-
-  const count = await Coupon.countDocuments({
-    restaurantId,
-    isActive: true,
-    isArchived: { $ne: true },
-  });
-
-  if (count >= maxActiveCoupons) {
-    throw new ApiError(
-      403,
-      `Plan limit reached: ${maxActiveCoupons} active coupons.`
-    );
   }
 }

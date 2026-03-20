@@ -6,7 +6,7 @@ import { Badge } from "@repo/ui/components/badge";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/radio-group";
 import { Toggle } from "@repo/ui/components/toggle";
 import { Label } from "@repo/ui/components/label";
-import { type Plan, PlanHierarchy } from "@/lib/billingsdk-config";
+import { type Plan, PlanHierarchy } from "@/lib/billing-config";
 import { cn } from "@repo/ui/lib/utils";
 import {
   Dialog,

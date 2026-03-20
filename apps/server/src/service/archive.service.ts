@@ -1,4 +1,5 @@
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { FoodItem } from "../models/foodItem.model.js";
 import { Table } from "../models/table.model.js";
 import {
@@ -13,6 +14,8 @@ import { Types } from "mongoose";
  * - Restaurants: Keep oldest, archive newest.
  * - Tables: Keep oldest, archive newest (per restaurant).
  * - FoodItems: Keep oldest, archive newest (per restaurant).
+ * - FoodItems with excess images/variants: Archive until user reduces.
+ * - Staff: Keep oldest, archive newest (per restaurant).
  */
 export async function archiveExcessResources(
   userId: string | Types.ObjectId,
@@ -62,7 +65,7 @@ export async function archiveExcessResources(
       }
     }
 
-    // 3. Archive Excess Food Items
+    // 3. Archive Excess Food Items (by count)
     const foodItems = await FoodItem.find({
       restaurantId: restaurant._id,
       isArchived: { $ne: true },
@@ -75,6 +78,70 @@ export async function archiveExcessResources(
         item.archivedAt = new Date();
         item.archivedReason = `Downgrade to ${newPlan} plan`;
         await item.save();
+      }
+    }
+
+    // 4. Archive Food Items with excess images or variants
+    const activeFoodItems = await FoodItem.find({
+      restaurantId: restaurant._id,
+      isArchived: { $ne: true },
+    });
+
+    for (const item of activeFoodItems) {
+      const hasExcessImages =
+        (item.imageUrls?.length || 0) > limits.maxImagesPerFoodItem;
+      const hasExcessVariants =
+        (item.variants?.length || 0) > limits.maxVariantsPerFoodItem;
+
+      if (hasExcessImages || hasExcessVariants) {
+        const reasons: string[] = [];
+        if (hasExcessImages) {
+          reasons.push(
+            `${item.imageUrls?.length} images exceeds limit of ${limits.maxImagesPerFoodItem}`
+          );
+        }
+        if (hasExcessVariants) {
+          reasons.push(
+            `${item.variants?.length} variants exceeds limit of ${limits.maxVariantsPerFoodItem}`
+          );
+        }
+
+        item.isArchived = true;
+        item.archivedAt = new Date();
+        item.archivedReason = `Downgrade to ${newPlan} plan: ${reasons.join(", ")}. Remove excess to unarchive.`;
+        await item.save();
+      }
+    }
+
+    // 5. Archive Excess Staff Members (using RestaurantMember model)
+    const activeStaffCount = await RestaurantMember.countDocuments({
+      restaurantId: restaurant._id,
+      isArchived: false,
+    });
+
+    if (activeStaffCount > limits.maxStaffPerRestaurant) {
+      // Find active staff sorted by joinedAt (oldest first) to archive newest ones
+      const staffToArchive = await RestaurantMember.find({
+        restaurantId: restaurant._id,
+        isArchived: false,
+      })
+        .sort({ joinedAt: 1 }) // Oldest first
+        .skip(limits.maxStaffPerRestaurant) // Skip the ones we keep
+        .select("_id");
+
+      if (staffToArchive.length > 0) {
+        await RestaurantMember.updateMany(
+          {
+            _id: { $in: staffToArchive.map((s) => s._id) },
+          },
+          {
+            $set: {
+              isArchived: true,
+              archivedAt: new Date(),
+              archivedReason: `Downgrade to ${newPlan} plan`,
+            },
+          }
+        );
       }
     }
   }

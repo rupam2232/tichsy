@@ -10,7 +10,7 @@ import { RootState, AppDispatch } from "@/store/store";
 import { fetchSubscriptionDetails } from "@/store/subscriptionSlice";
 import { SubscriptionManagement } from "@/components/features/billing/subscription-management";
 import { SubscriptionHistoryList } from "@/components/features/billing/subscription-history-list";
-import { plans, type CurrentPlan } from "@/lib/billingsdk-config";
+import { plans, type CurrentPlan } from "@/lib/billing-config";
 
 const ClientPage = () => {
   const { currentSubscription, loading } = useSelector(

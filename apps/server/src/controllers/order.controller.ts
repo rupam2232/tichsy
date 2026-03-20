@@ -2,6 +2,7 @@ import { isValidObjectId, Types } from "mongoose";
 import { FoodItem } from "../models/foodItem.model.js";
 import { Order } from "../models/order.model.js";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { Table } from "../models/table.model.js";
 import { canRestaurantRecieveOrders } from "../service/order.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -36,7 +37,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       slug: req.params.restaurantSlug,
     })
       .select(
-        "_id isArchived isCurrentlyOpen taxRate taxLabel isTaxIncludedInPrice staffMembers.user ownerId slug logoUrl"
+        "_id isArchived isCurrentlyOpen taxRate taxLabel isTaxIncludedInPrice ownerId slug logoUrl"
       )
       .lean()
       .session(session);
@@ -282,10 +283,15 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         message: "A new order has been placed",
       });
 
-      // Send in-app notifications to owner and staff
-      const notificationRecipients = [
-        ...(restaurant.staffMembers?.map((sm) => sm.user) || []),
-      ];
+      // Send in-app notifications to staff (owner already gets ownerId in second block)
+      const staffMembers = await RestaurantMember.find({
+        restaurantId: restaurant._id,
+        isArchived: false,
+      })
+        .select("userId")
+        .lean();
+
+      const notificationRecipients = staffMembers.map((sm) => sm.userId);
 
       await Promise.all(
         notificationRecipients.map((recipientId) =>
@@ -326,9 +332,16 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       });
 
       // Send in-app notifications to owner and staff
+      const staffMembers = await RestaurantMember.find({
+        restaurantId: restaurant._id,
+        isArchived: false,
+      })
+        .select("userId")
+        .lean();
+
       const notificationRecipients = [
         restaurant.ownerId,
-        ...(restaurant.staffMembers?.map((sm) => sm.user) || []),
+        ...staffMembers.map((sm) => sm.userId),
       ];
 
       await Promise.all(
@@ -381,7 +394,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid order ID format");
   }
   const restaurant = await Restaurant.findOne({ slug: restaurantSlug })
-    .select("_id staffMembers.user ownerId")
+    .select("_id ownerId")
     .lean();
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
@@ -573,10 +586,14 @@ export const getOrderById = asyncHandler(async (req, res) => {
     ) {
       orderData.kitchenStaff.role = "owner";
     } else {
-      const staffMember = restaurant.staffMembers?.find(
-        (sm) => sm.user.toString() === orderData.kitchenStaff._id.toString()
-      );
-      orderData.kitchenStaff.role = staffMember ? staffMember.role : "staff";
+      // Look up staff role from RestaurantMember collection
+      const membership = await RestaurantMember.findOne({
+        userId: orderData.kitchenStaff._id,
+        restaurantId: restaurant._id,
+      })
+        .select("role")
+        .lean();
+      orderData.kitchenStaff.role = membership ? membership.role : "staff";
     }
   }
 

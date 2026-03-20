@@ -4,6 +4,7 @@ import http from "http";
 import jwt from "jsonwebtoken";
 import { accessTokenUser } from "../utils/jwt.js";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { DeviceSession } from "../models/deviceSession.model.js";
 import { isValidObjectId } from "mongoose";
 import { env } from "../env.js";
@@ -60,7 +61,9 @@ export function setupSocketIO(server: http.Server) {
         if (!isValidObjectId(activeRestaurantId)) {
           return socket.disconnect();
         }
-        const restaurant = await Restaurant.findById(activeRestaurantId).lean();
+        const restaurant = await Restaurant.findById(activeRestaurantId)
+          .select("_id ownerId")
+          .lean();
         if (!restaurant) return socket.disconnect();
         if (
           !decoded ||
@@ -71,12 +74,21 @@ export function setupSocketIO(server: http.Server) {
           return socket.disconnect();
         }
 
-        if (
-          decoded._id !== restaurant.ownerId.toString() &&
-          !restaurant.staffMembers?.some(
-            (staff) => staff.user.toString() === decoded._id
-          )
-        ) {
+        // Check if user is owner
+        if (decoded._id === restaurant.ownerId.toString()) {
+          socket.join(`restaurant_${activeRestaurantId}`);
+          console.log(`User joined ${activeRestaurantId} room`);
+          return;
+        }
+
+        // Check if user is an active staff member
+        const membership = await RestaurantMember.exists({
+          userId: decoded._id,
+          restaurantId: restaurant._id,
+          isArchived: false,
+        });
+
+        if (!membership) {
           return socket.disconnect();
         }
 

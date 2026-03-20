@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { plans } from "@/lib/billingsdk-config";
+import { plans } from "@/lib/billing-config";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
 import {

@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import cloudinary from "../utils/cloudinary.js";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { Types } from "mongoose";
 import {
   canAddCategory,
@@ -24,6 +25,30 @@ import {
   addCategorySchema,
 } from "@repo/types";
 import { FoodItem } from "../models/foodItem.model.js";
+import {
+  isDateWithinAnalyticsHistoryLimit,
+  SUBSCRIPTION_PLANS,
+  type SubscriptionPlan,
+} from "../config/subscriptionPlans.js";
+import type { Subscription as SubscriptionType } from "../models/subscription.model.js";
+
+/**
+ * Validates that the requested analytics date range is within the subscription plan's allowed history.
+ * Throws ApiError 403 if the startDate is older than allowed.
+ */
+function validateAnalyticsDateRange(
+  startDate: Date,
+  subscription: SubscriptionType | null | undefined
+): void {
+  const plan = (subscription?.plan as SubscriptionPlan) || "starter";
+  if (!isDateWithinAnalyticsHistoryLimit(startDate, plan)) {
+    const allowedDays = SUBSCRIPTION_PLANS[plan].analyticsHistoryDays;
+    throw new ApiError(
+      403,
+      `Your plan allows analytics data for the last ${allowedDays} days. Upgrade to access older data.`
+    );
+  }
+}
 
 const getRestaurantProfile = (restaurant: Restaurant) => {
   return {
@@ -139,15 +164,25 @@ export const getJoinedRestaurants = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit as string) || 20;
   const skip = (page - 1) * limit;
 
+  // Get restaurant IDs where user is a non-archived member
+  const memberships = await RestaurantMember.find({
+    userId: req.user!._id,
+    isArchived: false,
+  })
+    .select("restaurantId")
+    .lean();
+
+  const restaurantIds = memberships.map((m) => m.restaurantId);
+
   const [restaurants, totalCount] = await Promise.all([
-    Restaurant.find({ "staffMembers.user": req.user!._id })
+    Restaurant.find({ _id: { $in: restaurantIds } })
       .select(
         "_id restaurantName slug description address logoUrl isCurrentlyOpen isArchived"
       )
       .skip(skip)
       .limit(limit)
       .lean(),
-    Restaurant.countDocuments({ "staffMembers.user": req.user!._id }),
+    Restaurant.countDocuments({ _id: { $in: restaurantIds } }),
   ]);
 
   const hasNextPage = skip + restaurants.length < totalCount;
@@ -190,17 +225,22 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
   }
 
   let userRole: string | undefined = undefined;
+  let isArchivedStaff = false;
 
   // Determine user context role if provided an auth token
   if (req.user) {
     if (restaurant.ownerId.toString() === req.user.id) {
       userRole = "owner";
     } else {
-      const staffMember = restaurant.staffMembers?.find(
-        (sm) => sm.user.toString() === req.user!.id
-      );
-      if (staffMember) {
-        userRole = staffMember.role;
+      // Check RestaurantMember collection for staff/manager role
+      const membership = await RestaurantMember.findOne({
+        userId: req.user._id,
+        restaurantId: restaurant._id,
+      }).lean();
+
+      if (membership) {
+        userRole = membership.role;
+        isArchivedStaff = membership.isArchived === true;
       }
     }
   }
@@ -213,6 +253,12 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
     if (!userRole) {
       throw new ApiError(403, "You do not have access to this restaurant");
     }
+    if (isArchivedStaff) {
+      throw new ApiError(
+        403,
+        "Your staff access has been archived. Please contact the restaurant owner."
+      );
+    }
     if (restaurant.isArchived && userRole !== "owner") {
       throw new ApiError(403, "Archived restaurants cannot be accessed");
     }
@@ -220,12 +266,11 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
 
   // Data Stripping Logic
   // If the request isn't coming from an owner, aggressively strip all non-minimal data
-  let responsePayload = { ...restaurant, userRole };
+  let responsePayload: Record<string, unknown> = { ...restaurant, userRole };
 
   if (userRole !== "owner") {
-    // Exclude full data scope (e.g staffMembers, sensitive tokens, unneeded fields)
+    // Exclude full data scope (e.g sensitive tokens, unneeded fields)
     const {
-      staffMembers,
       ownerId,
       taxRate,
       taxLabel,
@@ -236,7 +281,6 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
       ...minimalInfo
     } = responsePayload;
 
-    void staffMembers;
     void ownerId;
     void taxRate;
     void taxLabel;
@@ -245,7 +289,7 @@ export const getRestaurantBySlug = asyncHandler(async (req, res) => {
     void archivedAt;
     void archivedReason;
 
-    responsePayload = minimalInfo as typeof responsePayload;
+    responsePayload = minimalInfo;
   }
 
   res
@@ -683,26 +727,46 @@ export const getAllStaffOfRestaurant = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Only the owner can view their restaurant staffs");
   }
 
-  const restaurantReq = req.restaurant;
-  if (!restaurantReq) {
+  const restaurant = req.restaurant;
+  if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
-  const restaurant = await restaurantReq.populate({
-    path: "staffMembers.user",
-    select: "_id firstName lastName email avatar",
-    options: { lean: true },
-  });
+
+  // Query RestaurantMember collection and populate user details
+  const staffMembers = await RestaurantMember.find({
+    restaurantId: restaurant._id,
+  })
+    .populate<{
+      userId: {
+        _id: Types.ObjectId;
+        firstName: string;
+        lastName: string;
+        email: string;
+        avatar?: string;
+      };
+    }>({
+      path: "userId",
+      select: "_id firstName lastName email avatar",
+    })
+    .sort({ joinedAt: 1 })
+    .lean();
 
   res.status(200).json(
     new ApiResponse(
       200,
       {
-        staffs:
-          restaurant.staffMembers?.map((sm) => ({
-            ...sm.user,
-            role: sm.role,
-            joinedAt: sm.joinedAt,
-          })) || [],
+        staffs: staffMembers.map((sm) => ({
+          _id: sm.userId._id,
+          firstName: sm.userId.firstName,
+          lastName: sm.userId.lastName,
+          email: sm.userId.email,
+          avatar: sm.userId.avatar,
+          role: sm.role,
+          joinedAt: sm.joinedAt,
+          isArchived: sm.isArchived,
+          archivedAt: sm.archivedAt,
+          archivedReason: sm.archivedReason,
+        })),
         restaurantName: restaurant.restaurantName,
         slug: restaurant.slug,
         _id: restaurant._id,
@@ -727,18 +791,16 @@ export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
-  if (
-    !restaurant.staffMembers?.some(
-      (sm) => sm.user.toString() === req.body.staffId
-    )
-  ) {
+
+  // Find and delete the staff member from RestaurantMember collection
+  const deletedMember = await RestaurantMember.findOneAndDelete({
+    userId: req.body.staffId,
+    restaurantId: restaurant._id,
+  });
+
+  if (!deletedMember) {
     throw new ApiError(400, "Staff member not found in this restaurant");
   }
-
-  restaurant.staffMembers = restaurant.staffMembers.filter(
-    (sm) => sm.user.toString() !== req.body.staffId
-  );
-  await restaurant.save();
 
   res
     .status(200)
@@ -1091,6 +1153,11 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
     queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
   }
 
+  // Validate date range based on subscription plan
+  if (startDate) {
+    validateAnalyticsDateRange(queryStart, req.subscription);
+  }
+
   let formatString = "%Y-%m-%d";
   if (groupBy === "week") {
     // We will leave this in case it's used elsewhere, but week-sliding is preferred now
@@ -1321,6 +1388,11 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
     queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
   }
 
+  // Validate date range based on subscription plan
+  if (startDate) {
+    validateAnalyticsDateRange(queryStart, req.subscription);
+  }
+
   const topFoodItems = await Order.aggregate([
     {
       $match: {
@@ -1407,6 +1479,11 @@ export const getAnalyticsCategories = asyncHandler(async (req, res) => {
     queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
   }
 
+  // Validate date range based on subscription plan
+  if (startDate) {
+    validateAnalyticsDateRange(queryStart, req.subscription);
+  }
+
   const categoryBreakdown = await Order.aggregate([
     {
       $match: {
@@ -1482,6 +1559,11 @@ export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     queryStart = fromZonedTime(startOfDay(sevenDaysAgo), timeZone);
     queryEnd = fromZonedTime(endOfDay(nowInTZ), timeZone);
+  }
+
+  // Validate date range based on subscription plan
+  if (startDate) {
+    validateAnalyticsDateRange(queryStart, req.subscription);
   }
 
   const topTables = await Order.aggregate([

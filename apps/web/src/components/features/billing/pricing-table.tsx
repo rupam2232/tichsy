@@ -15,6 +15,7 @@ export interface PlanProps {
   features: string[];
   isFeatured?: boolean;
   isCustom?: boolean;
+  buttonText: string;
 }
 
 export interface PricingTableSixProps {
@@ -35,7 +36,7 @@ const getDiscountPercent = (plan: PlanProps) => {
 };
 
 export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true);
 
   return (
     <section className="px-4 py-16 sm:px-6 lg:px-8">
@@ -91,13 +92,16 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                   />
                 )}
                 <span className="relative z-10">Yearly</span>
+                <span className="bg-background text-foreground inline-block rounded-full px-2 py-1 text-xs whitespace-nowrap shadow-sm shadow-foreground/20 relative z-10 ml-2">
+                  Save 10%
+                </span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7 max-w-5xl mx-auto">
+        <div className="grid gap-6 lg:grid-cols-3 lg:gap-7 max-w-5xl mx-auto">
           {plans.map((plan, index) => (
             <div
               key={plan.id}
@@ -134,7 +138,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                       </motion.div>
                     )}
                 </div>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-accent-foreground text-sm">
                   {plan.description}
                 </p>
               </div>
@@ -174,13 +178,11 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
               <div className="mb-8">
                 <Button
                   asChild
-                  className="bg-foreground text-background hover:bg-foreground/90 border-primary-foreground h-12 w-full rounded-xl border font-medium transition-all duration-200 hover:cursor-pointer"
+                  className="bg-foreground text-background hover:bg-foreground/90 border-primary-foreground h-12 w-full sm:w-50 lg:w-full rounded-xl border font-medium transition-all duration-200 hover:cursor-pointer"
                   aria-label={`Start ${plan.title} plan${(isYearly ? plan.yearlyPrice : plan.monthlyPrice) === 0 ? " — free" : ""}`}
                   onClick={() => onPlanSelect?.(plan.id)}
                 >
-                  <Link href="/billing">
-                    {plan.isCustom ? "Contact team" : "Get started"}
-                  </Link>
+                  <Link href="/billing">{plan.buttonText}</Link>
                 </Button>
               </div>
 

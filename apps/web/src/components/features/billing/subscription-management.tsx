@@ -10,7 +10,7 @@ import {
 import { Badge } from "@repo/ui/components/badge";
 import { Separator } from "@repo/ui/components/separator";
 import { Calendar, Circle, CreditCard, AlertCircle, Clock } from "lucide-react";
-import { CurrentPlan } from "@/lib/billingsdk-config";
+import { CurrentPlan } from "@/lib/billing-config";
 import { cn } from "@repo/ui/lib/utils";
 import {
   UpdatePlanDialog,
@@ -56,7 +56,9 @@ export function SubscriptionManagement({
             <div className="border-yellow-500/50 bg-yellow-500/5 flex gap-3 rounded-lg border p-3 sm:p-4">
               <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
               <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                Your subscription has ended but you&apos;re still within the grace period. You can renew your plan or it will be downgraded to starter after the grace period ends.
+                Your subscription has ended but you&apos;re still within the
+                grace period. You can renew your plan or it will be downgraded
+                to starter after the grace period ends.
               </div>
             </div>
           )}
@@ -67,12 +69,15 @@ export function SubscriptionManagement({
             daysUntilExpiry !== undefined &&
             daysUntilExpiry !== null &&
             daysUntilExpiry <= 7 &&
-            daysUntilExpiry > 0 && 
-            (
+            daysUntilExpiry > 0 && (
               <div className="border-orange-500/50 bg-orange-500/5 flex gap-3 rounded-lg border p-3 sm:p-4">
                 <Clock className="h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400 mt-0.5" />
                 <div className="text-sm text-orange-800 dark:text-orange-200">
-                  Your subscription expires in <strong>{daysUntilExpiry} {daysUntilExpiry === 1 ? 'day' : 'days'}</strong>. Renew now to maintain your premium features.
+                  Your subscription expires in{" "}
+                  <strong>
+                    {daysUntilExpiry} {daysUntilExpiry === 1 ? "day" : "days"}
+                  </strong>
+                  . Renew now to maintain your premium features.
                 </div>
               </div>
             )}
@@ -165,9 +170,15 @@ export function SubscriptionManagement({
                   Plan Change Scheduled
                 </h4>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  You have already scheduled a plan change to <strong>{pendingPlan.plan.charAt(0).toUpperCase() + pendingPlan.plan.slice(1)}</strong> ({pendingPlan.period}).
-                  This change will take effect automatically when your current subscription ends.
-                  You cannot make additional plan changes until the scheduled change is activated.
+                  You have already scheduled a plan change to{" "}
+                  <strong>
+                    {pendingPlan.plan.charAt(0).toUpperCase() +
+                      pendingPlan.plan.slice(1)}
+                  </strong>{" "}
+                  ({pendingPlan.period}). This change will take effect
+                  automatically when your current subscription ends. You cannot
+                  make additional plan changes until the scheduled change is
+                  activated.
                 </p>
               </div>
             ) : (

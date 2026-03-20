@@ -101,29 +101,39 @@ router
 router.post("/:slug/tax", verifyAuth, verifyRestaurantAccess, setRestaurantTax);
 
 router.get("/:slug/dashboard/operations", verifyAuth, verifyRestaurantAccess, getDashboardOperations);
-router.get("/:slug/dashboard/analytics/kpis", verifyAuth, verifyRestaurantAccess, getAnalyticsKPIs);
+router.get(
+  "/:slug/dashboard/analytics/kpis",
+  verifyAuth,
+  verifyRestaurantAccess,
+  isSubscriptionActive,
+  getAnalyticsKPIs
+);
 router.get(
   "/:slug/dashboard/analytics/revenue",
   verifyAuth,
   verifyRestaurantAccess,
+  isSubscriptionActive,
   getAnalyticsRevenue
 );
 router.get(
   "/:slug/dashboard/analytics/trending",
   verifyAuth,
   verifyRestaurantAccess,
+  isSubscriptionActive,
   getAnalyticsTrending
 );
 router.get(
   "/:slug/dashboard/analytics/categories",
   verifyAuth,
   verifyRestaurantAccess,
+  isSubscriptionActive,
   getAnalyticsCategories
 );
 router.get(
   "/:slug/dashboard/analytics/top-tables",
   verifyAuth,
   verifyRestaurantAccess,
+  isSubscriptionActive,
   getAnalyticsTopTables
 );
 

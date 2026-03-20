@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Types } from "mongoose";
 import { Invitation } from "../models/invitation.model.js";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { User } from "../models/user.model.js";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
@@ -27,10 +28,12 @@ export const sendInvitation = asyncHandler(async (req, res) => {
     email: email.toLowerCase(),
   });
   if (existingUser) {
-    const isAlreadyStaff = restaurant.staffMembers?.some(
-      (sm) => sm.user.toString() === existingUser._id.toString()
-    );
-    if (isAlreadyStaff) {
+    // Check if user is already a member via RestaurantMember collection
+    const existingMembership = await RestaurantMember.exists({
+      userId: existingUser._id,
+      restaurantId: restaurant._id,
+    });
+    if (existingMembership) {
       throw new ApiError(
         400,
         "User is already a staff member in this restaurant"
@@ -205,20 +208,27 @@ export const acceptInvitation = asyncHandler(async (req, res) => {
   // We pass true here because the user hitting this endpoint is the invitee, not the owner
   await checkStaffLimit(restaurant, restaurant.ownerId, true);
 
-  const isAlreadyStaff = restaurant.staffMembers?.some(
-    (sm) => sm.user.toString() === user._id.toString()
-  );
+  // Check if already a member using RestaurantMember collection
+  const existingMembership = await RestaurantMember.findOne({
+    userId: user._id,
+    restaurantId: restaurant._id,
+  });
 
-  if (!isAlreadyStaff) {
-    if (!restaurant.staffMembers) {
-      restaurant.staffMembers = [];
-    }
-    restaurant.staffMembers!.push({
-      user: user._id,
-      role: invitation.role,
+  if (!existingMembership) {
+    // Create new RestaurantMember document
+    await RestaurantMember.create({
+      userId: user._id,
+      restaurantId: restaurant._id,
+      role: invitation.role as "manager" | "staff",
       joinedAt: new Date(),
     });
-    await restaurant.save();
+  } else if (existingMembership.isArchived) {
+    // If archived, unarchive them with the new role
+    existingMembership.isArchived = false;
+    existingMembership.archivedAt = undefined;
+    existingMembership.archivedReason = undefined;
+    existingMembership.role = invitation.role as "manager" | "staff";
+    await existingMembership.save();
   }
 
   invitation.status = "accepted";

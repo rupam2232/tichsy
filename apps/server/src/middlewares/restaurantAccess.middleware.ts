@@ -1,11 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 /**
  * Middleware to verify user's access to a specific restaurant.
- * Populates req.restaurant and req.restaurantRole ("owner", "staff", etc.).
+ * Populates req.restaurant and req.restaurantRole ("owner", "manager", "staff").
+ *
+ * Permission hierarchy:
+ * - Owner: Full access (identified via Restaurant.ownerId)
+ * - Manager/Staff: Limited access (stored in RestaurantMember collection)
  */
 export const verifyRestaurantAccess = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -41,14 +46,25 @@ export const verifyRestaurantAccess = asyncHandler(
     let contextRole: string | null = null;
     const userIdStr = req.user._id.toString();
 
+    // Check if user is the owner first (most common case for authenticated requests)
     if (restaurant.ownerId.toString() === userIdStr) {
       contextRole = "owner";
     } else {
-      const staffMember = restaurant.staffMembers?.find(
-        (sm) => sm.user.toString() === userIdStr
-      );
-      if (staffMember) {
-        contextRole = staffMember.role;
+      // Check RestaurantMember collection for staff/manager role
+      const membership = await RestaurantMember.findOne({
+        userId: req.user._id,
+        restaurantId: restaurant._id,
+      }).lean();
+
+      if (membership) {
+        // Check if staff is archived
+        if (membership.isArchived) {
+          throw new ApiError(
+            403,
+            "Your staff access has been archived. Please contact the restaurant owner."
+          );
+        }
+        contextRole = membership.role;
       }
     }
 

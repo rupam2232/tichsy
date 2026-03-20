@@ -3,6 +3,7 @@ import type { FoodVariant as FoodVariantType } from "../models/foodItem.model.js
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import {
   canCreateFoodItem,
   canUnarchiveFoodItem,
@@ -10,7 +11,7 @@ import {
 } from "../service/foodItem.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
-import { isValidObjectId, FilterQuery } from "mongoose";
+import { isValidObjectId, FilterQuery, Types } from "mongoose";
 import { foodItemSchema } from "@repo/types";
 
 function hasDuplicates(arr: string[]): boolean {
@@ -158,7 +159,7 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findOne({
     slug: req.params.restaurantSlug,
   })
-    .select("_id isArchived isCurrentlyOpen ownerId staffMembers.user")
+    .select("_id isArchived isCurrentlyOpen ownerId")
     .lean();
 
   if (!restaurant) {
@@ -174,9 +175,17 @@ export const getFoodItemsOfRestaurant = asyncHandler(async (req, res) => {
       throw new ApiError(403, "This restaurant is closed");
     }
     const isOwner = restaurant.ownerId?.toString() === user._id!.toString();
-    const isStaff = restaurant.staffMembers?.some(
-      (sm) => sm.user.toString() === user._id!.toString()
-    );
+
+    // Check if user is a staff member via RestaurantMember collection
+    let isStaff = false;
+    if (!isOwner) {
+      const membership = await RestaurantMember.exists({
+        userId: user._id,
+        restaurantId: restaurant._id,
+        isArchived: false,
+      });
+      isStaff = !!membership;
+    }
 
     if (!isOwner && !isStaff) {
       throw new ApiError(403, "This restaurant is closed");
@@ -322,7 +331,7 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
     .select("-__v")
     .populate({
       path: "restaurantId",
-      select: "name slug categories ownerId staffMembers.user",
+      select: "name slug categories ownerId",
     })
     .lean();
 
@@ -349,12 +358,19 @@ export const getFoodItemById = asyncHandler(async (req, res) => {
       const restaurantDetails = foodItem.restaurantId as unknown as Restaurant;
       const isOwner =
         restaurantDetails.ownerId.toString() === user._id!.toString();
-      const isStaff = restaurantDetails.staffMembers?.some(
-        (sm) => sm.user.toString() === user._id!.toString()
-      );
 
-      if (isOwner || isStaff) {
+      if (isOwner) {
         isUserPartofRestaurant = true;
+      } else {
+        // Check RestaurantMember collection for staff access
+        const membership = await RestaurantMember.exists({
+          userId: user._id,
+          restaurantId: restaurantDetails._id,
+          isArchived: false,
+        });
+        if (membership) {
+          isUserPartofRestaurant = true;
+        }
       }
     }
 
@@ -551,6 +567,12 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
       throw new ApiError(400, "All variant names must be unique.");
     }
   }
+
+  // Check variant limit based on subscription
+  if (hasVariants) {
+    await checkVariantLimit(variants.length, req.subscription!);
+  }
+
   if (foodName !== foodItem.foodName) {
     // Check if the food item with the same name already exists in the restaurant
     const escapedFoodName = foodName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -680,7 +702,7 @@ export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
 
   // If unarchiving, check subscription limits
   if (foodItem.isArchived) {
-    await canUnarchiveFoodItem(restaurant.id, req.subscription);
+    await canUnarchiveFoodItem(restaurant.id, foodItem.id, req.subscription);
     foodItem.isArchived = false;
     foodItem.archivedAt = undefined;
     foodItem.archivedReason = undefined;

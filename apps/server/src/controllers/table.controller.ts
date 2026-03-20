@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { Restaurant } from "../models/restaurant.model.js";
+import { RestaurantMember } from "../models/restaurantMember.model.js";
 import { Table } from "../models/table.model.js";
 import { canCreateTable, canUnarchiveTable } from "../service/table.service.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -319,12 +320,19 @@ export const getTableBySlug = asyncHandler(async (req, res) => {
   if (req.user) {
     // If user is authenticated, check if they are the owner or staff of the restaurant
     const isOwner = restaurant.ownerId.toString() === req.user._id!.toString();
-    const isStaff = restaurant.staffMembers?.some(
-      (sm) => sm.user.toString() === req.user!._id!.toString()
-    );
 
-    if (isOwner || isStaff) {
+    if (isOwner) {
       isUserPartofRestaurant = true;
+    } else {
+      // Check RestaurantMember collection for staff access
+      const membership = await RestaurantMember.exists({
+        userId: req.user._id,
+        restaurantId: restaurant._id,
+        isArchived: false,
+      });
+      if (membership) {
+        isUserPartofRestaurant = true;
+      }
     }
   }
 
