@@ -6,10 +6,4 @@ export interface CurrentSubscription {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   period?: "monthly" | "yearly";
-  pendingPlan?: {
-    plan: "medium" | "pro";
-    period: "monthly" | "yearly";
-    paidAt: string;
-    transactionId: string;
-  };
 }

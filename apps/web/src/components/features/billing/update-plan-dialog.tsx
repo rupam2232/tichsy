@@ -26,7 +26,7 @@ export interface UpdatePlanDialogProps {
   className?: string;
   title?: string;
   currentPlanStatus: string;
-  hasPendingPlan?: boolean;
+  isInGracePeriod?: boolean;
 }
 
 const easing = [0.4, 0, 0.2, 1] as const;
@@ -39,7 +39,7 @@ export function UpdatePlanDialog({
   title,
   triggerText,
   currentPlanStatus,
-  hasPendingPlan,
+  isInGracePeriod,
 }: UpdatePlanDialogProps) {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | undefined>(
@@ -47,20 +47,28 @@ export function UpdatePlanDialog({
   );
   const [isOpen, setIsOpen] = useState(false);
 
-  // Filter plans: exclude starter (free plan) only
-  // Show all paid plans - backend handles downgrades as scheduled (pending) activations
-  // If user has a pending plan, also exclude current plan (can't renew while pending plan exists)
+  // Filter plans: exclude starter and lower plans (downgrades blocked during active subscription)
+  // During grace period, show all paid plans (user can purchase any plan)
   const availablePlans = useMemo(() => {
+    const currentLevel = PlanHierarchy[currentPlan?.id] || 0;
+    const hasActivePaidSubscription =
+      currentPlanStatus === "active" &&
+      currentPlan?.id !== "starter" &&
+      !isInGracePeriod;
+
     return plans.filter((plan) => {
       // Always exclude starter plan (free forever, auto-downgrade target)
       if (plan.id === "starter") return false;
 
-      // If user has pending plan, exclude current plan (cannot renew)
-      if (hasPendingPlan && plan.id === currentPlan?.id) return false;
+      // If user has active paid subscription (not in grace period), exclude lower plans
+      if (hasActivePaidSubscription) {
+        const planLevel = PlanHierarchy[plan.id] || 0;
+        if (planLevel < currentLevel) return false;
+      }
 
       return true;
     });
-  }, [plans, hasPendingPlan, currentPlan?.id]);
+  }, [plans, currentPlan?.id, currentPlanStatus, isInGracePeriod]);
 
   const getCurrentPrice = useCallback(
     (plan: Plan) => (isYearly ? `${plan.yearlyPrice}` : `${plan.monthlyPrice}`),
@@ -271,22 +279,14 @@ export function UpdatePlanDialog({
                               }}
                             >
                               {(() => {
-                                const currentLevel = PlanHierarchy[currentPlan?.id] || 0;
-                                const selectedLevel = PlanHierarchy[plan.id] || 0;
-
                                 // Same plan - renewal
                                 if (selectedPlan === currentPlan?.id && currentPlanStatus === "active") {
                                   return `Renew ${plan.title}`;
                                 }
 
-                                // No active plan
-                                if (currentPlanStatus !== "active") {
+                                // No active plan or starter plan
+                                if (currentPlanStatus !== "active" || currentPlan?.id === "starter") {
                                   return "Continue";
-                                }
-
-                                // Lower plan - scheduled downgrade
-                                if (selectedLevel < currentLevel) {
-                                  return `Schedule ${plan.title}`;
                                 }
 
                                 // Higher plan - upgrade

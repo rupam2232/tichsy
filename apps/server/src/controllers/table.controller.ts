@@ -8,6 +8,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Order } from "../models/order.model.js";
 import { tableSchema } from "@repo/types";
+import { blockIfExceedsStarterLimitsInGracePeriod } from "../utils/gracePeriod.js";
 
 export const createTable = asyncHandler(async (req, res) => {
   if (!req.body || !req.body.tableName) {
@@ -46,6 +47,7 @@ export const createTable = asyncHandler(async (req, res) => {
 
   const restaurantId = restaurant._id!.toString();
   await canCreateTable(req.subscription!, restaurantId);
+  await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'table', restaurantId);
 
   const escapedName = tableName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const existingTable = await Table.exists({

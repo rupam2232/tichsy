@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   LockKeyhole,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import {
@@ -42,8 +43,7 @@ interface PreviewData {
   discountReason: string;
   taxAmount: number;
   totalAmount: number;
-  action: "create" | "upgrade" | "renew" | "downgrade";
-  scheduledActivationDate?: string;
+  action: "create" | "upgrade" | "renew";
 }
 
 export default function ClientPage({
@@ -59,6 +59,7 @@ export default function ClientPage({
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [resourceLimitError, setResourceLimitError] = useState<string | null>(null);
 
   const selectedPlan = plans.find((p) => p.id === planId);
   const isMobile = useIsMobile();
@@ -82,6 +83,7 @@ export default function ClientPage({
     const fetchPreview = async () => {
       try {
         setLoading(true);
+        setResourceLimitError(null);
         const response = await axios.post("/subscription/preview", {
           plan: planId,
           period: period,
@@ -95,11 +97,14 @@ export default function ClientPage({
           router.push("/signin?redirect=/billing/checkout");
           return;
         }
-        toast.error(
-          axiosError.response?.data.message ||
-            "Failed to calculate pricing. Please try again.",
-        );
-        router.push("/billing");
+        const errorMessage = axiosError.response?.data.message || "";
+        // Check if this is a resource limit error
+        if (errorMessage.includes("exceeds") || errorMessage.includes("Archive")) {
+          setResourceLimitError(errorMessage);
+        } else {
+          toast.error(errorMessage || "Failed to calculate pricing. Please try again.");
+          router.push("/billing");
+        }
       } finally {
         setLoading(false);
       }
@@ -217,6 +222,50 @@ export default function ClientPage({
     );
   }
 
+  // Show resource limit error
+  if (resourceLimitError) {
+    return (
+      <section className="container max-w-2xl mx-auto py-8 px-4 sm:px-6">
+        <div className="mb-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ChevronLeft />
+            Back to Plans
+          </Button>
+        </div>
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Resource Limits Exceeded
+            </CardTitle>
+            <CardDescription>
+              You cannot purchase the {selectedPlan.title} plan with your current resource usage.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
+              <pre className="text-sm text-destructive whitespace-pre-wrap font-sans">
+                {resourceLimitError}
+              </pre>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              To purchase this plan, please archive your excess resources first. You can archive
+              individual items (tables, food items, staff) or archive entire restaurants.
+            </p>
+          </CardContent>
+          <CardFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => router.push("/billing")}>
+              Back to Billing
+            </Button>
+            <Button onClick={() => router.push("/home")}>
+              Go to Restaurants
+            </Button>
+          </CardFooter>
+        </Card>
+      </section>
+    );
+  }
+
   return (
     <section className="container max-w-5xl mx-auto py-8 px-4 sm:px-6">
       <div className="mb-6 flex md:flex-col gap-2 items-center md:items-start">
@@ -230,9 +279,7 @@ export default function ClientPage({
               ? "Renew your subscription"
               : previewData?.action === "upgrade"
                 ? "Upgrade your subscription"
-                : previewData?.action === "downgrade"
-                  ? "Schedule plan change"
-                  : "Review your subscription"}
+                : "Review your subscription"}
           </h1>
         </div>
       </div>
@@ -337,19 +384,6 @@ export default function ClientPage({
                     This renewal will add {period === "yearly" ? "365" : "30"}{" "}
                     days to your current subscription end date.
                   </p>
-                )}
-
-                {previewData?.action === "downgrade" && (
-                  <div className="text-xs bg-blue-500/10 border border-blue-500/30 p-3 rounded-md">
-                    <p className="text-blue-900 dark:text-blue-100 font-medium mb-1">
-                      📅 Scheduled Plan Change
-                    </p>
-                    <p className="text-blue-800 dark:text-blue-200">
-                      This plan will activate when your current subscription
-                      ends. You&apos;ll continue enjoying your current plan
-                      features until then.
-                    </p>
-                  </div>
                 )}
 
                 <Button

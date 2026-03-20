@@ -4,10 +4,7 @@ import { archiveExcessResources } from "../service/archive.service.js";
 import { GRACE_PERIOD_DAYS } from "../config/subscriptionPlans.js";
 import { subDays, addDays } from "date-fns";
 import { createNotification } from "../service/notification.service.js";
-import {
-  calculateSubscriptionExpiryDate,
-  getDaysUntilExpiry,
-} from "../utils/subscriptionUtils.js";
+import { getDaysUntilExpiry } from "../utils/subscriptionUtils.js";
 import { Types } from "mongoose";
 
 const DEFAULT_TIMEZONE = "Asia/Kolkata";
@@ -117,86 +114,21 @@ const initNotificationCron = () => {
 
 /**
  * Action Cron - Runs twice daily at midnight and noon IST
- * Handles pending plan activations and automatic downgrades.
+ * Handles automatic downgrades for expired subscriptions.
  */
 const initActionCron = () => {
   cron.schedule(
-    "0 0,12 * * *", // Midnight and noon
+    "0 0,12 * * *",
     async () => {
       console.log("Running Subscription Action Cron...");
       try {
         const now = new Date();
-
-        // 1. Activate ALL pending plans where subscription has ended
-        const subscriptionsWithPendingPlan = await Subscription.find({
-          isSubscriptionActive: true,
-          plan: { $in: ["medium", "pro"] },
-          subscriptionEndDate: { $lte: now },
-          pendingPlan: { $exists: true, $ne: null },
-        }).populate<{ userId: { _id: string; timezone?: string } }>(
-          "userId",
-          "timezone"
-        );
-
-        console.log(
-          `Found ${subscriptionsWithPendingPlan.length} subscriptions with pending plans to activate.`
-        );
-
-        for (const sub of subscriptionsWithPendingPlan) {
-          if (sub.pendingPlan) {
-            const { plan: pendingPlan, period: pendingPeriod } = sub.pendingPlan;
-
-            const userTimezone = isPopulatedUser(sub.userId)
-              ? sub.userId.timezone || DEFAULT_TIMEZONE
-              : DEFAULT_TIMEZONE;
-            const userId = isPopulatedUser(sub.userId)
-              ? sub.userId._id
-              : (sub.userId as Types.ObjectId).toString();
-
-            // Activate pending plan
-            sub.plan = pendingPlan;
-            sub.period = pendingPeriod;
-            sub.subscriptionStartDate = now;
-
-            const daysToAdd = pendingPeriod === "yearly" ? 365 : 30;
-            sub.subscriptionEndDate = calculateSubscriptionExpiryDate(
-              daysToAdd,
-              userTimezone
-            );
-
-            // Clear pending plan
-            sub.pendingPlan = undefined;
-
-            await sub.save({ validateBeforeSave: false });
-
-            // Send notification about plan change
-            await createNotification({
-              recipient: userId,
-              type: "billing",
-              title: "Plan Changed",
-              message: `Your plan has been successfully changed to ${pendingPlan}. Your new subscription is now active.`,
-              data: {
-                plan: pendingPlan,
-                period: pendingPeriod,
-                startDate: now,
-                endDate: sub.subscriptionEndDate,
-              },
-            });
-
-            console.log(
-              `Activated pending ${pendingPlan} plan for user: ${userId}`
-            );
-          }
-        }
-
-        // 2. Downgrade expired subscriptions (past grace period, no pending plan)
         const graceExpiredDate = subDays(now, GRACE_PERIOD_DAYS);
 
         const expiredSubscriptions = await Subscription.find({
           isSubscriptionActive: true,
           plan: { $in: ["medium", "pro"] },
           subscriptionEndDate: { $lte: graceExpiredDate },
-          $or: [{ pendingPlan: { $exists: false } }, { pendingPlan: null }],
         });
 
         console.log(
@@ -210,10 +142,8 @@ const initActionCron = () => {
           sub.period = undefined;
           sub.subscriptionEndDate = undefined;
           sub.subscriptionStartDate = undefined;
-          sub.pendingPlan = undefined;
           await sub.save({ validateBeforeSave: false });
 
-          // Send downgrade notification
           await createNotification({
             recipient: sub.userId,
             type: "billing",
@@ -225,7 +155,6 @@ const initActionCron = () => {
             },
           });
 
-          // Trigger archiving logic to enforce starter plan limits
           await archiveExcessResources(sub.userId, "starter");
 
           console.log(

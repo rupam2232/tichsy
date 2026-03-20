@@ -6,23 +6,22 @@ import { Schema, model, Document, Types } from "mongoose";
  * Represents a user's subscription history details, including plan and dates.
  */
 export interface SubscriptionHistory extends Document {
-  userId: Types.ObjectId; // Reference to the User
-  plan?: "starter" | "medium" | "pro"; // Subscription plan name
-  period?: "monthly" | "yearly"; // Billing period (optional, undefined for free Starter)
-  amount: number; // Payment that user has made
-  subscriptionStartDate?: Date; // When the subscription starts
-  subscriptionEndDate?: Date; // When the subscription ends
-  transactionId?: string; // UPI/Card transaction reference (if any)
-  paymentGateway?: string; // Payment gateway used (e.g., "Razorpay", "Stripe")
-  action?: "create" | "renew" | "upgrade" | "downgrade";
-  isScheduled?: boolean; // True if the subscription will activate in the future (for downgrades)
-  subtotal?: number; // Base plan price
-  discountAmount?: number; // Total discount (proration + coupons)
-  discountReason?: string; // "upgrade", "coupon:CODE", etc.
-  taxAmount?: number; // Total tax/fees added (GST + Gateway Fee)
-  totalAmount?: number; // Final amount paid
-  createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
-  updatedAt?: Date; // Timestamp when the document was last updated (set automatically, updates on modification)
+  userId: Types.ObjectId;
+  plan?: "starter" | "medium" | "pro";
+  period?: "monthly" | "yearly";
+  amount: number;
+  subscriptionStartDate?: Date;
+  subscriptionEndDate?: Date;
+  transactionId?: string;
+  paymentGateway?: string;
+  action?: "create" | "renew" | "upgrade";
+  subtotal?: number;
+  discountAmount?: number;
+  discountReason?: string;
+  taxAmount?: number;
+  totalAmount?: number;
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 /**
@@ -72,13 +71,8 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
     },
     action: {
       type: String,
-      enum: ["create", "renew", "upgrade", "downgrade"],
+      enum: ["create", "renew", "upgrade"],
       default: "create",
-      immutable: true,
-    },
-    isScheduled: {
-      type: Boolean,
-      default: false,
       immutable: true,
     },
     subtotal: {

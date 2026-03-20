@@ -13,6 +13,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
 import { isValidObjectId, FilterQuery, Types } from "mongoose";
 import { foodItemSchema } from "@repo/types";
+import { blockIfExceedsStarterLimitsInGracePeriod } from "../utils/gracePeriod.js";
 
 function hasDuplicates(arr: string[]): boolean {
   const lowerArr = arr.map((tag) => tag.trim().toLowerCase());
@@ -84,6 +85,7 @@ export const createFoodItem = asyncHandler(async (req, res) => {
   }
 
   await canCreateFoodItem(req.subscription!, restaurant._id!.toString());
+  await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'foodItem', restaurant._id);
 
   if (hasVariants) {
     await checkVariantLimit(variants.length, req.subscription!);

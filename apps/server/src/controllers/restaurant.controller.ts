@@ -18,6 +18,7 @@ import sendEmail from "../utils/sendEmail.js";
 import { Order } from "../models/order.model.js";
 import { Table } from "../models/table.model.js";
 import { startOfDay, endOfDay, startOfMonth, subMonths } from "date-fns";
+import { blockIfExceedsStarterLimitsInGracePeriod } from "../utils/gracePeriod.js";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import {
   createRestaurantSchema,
@@ -76,6 +77,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   const ownerId = req.user!._id;
 
   await canCreateRestaurant(req.user!, req.subscription!);
+  await blockIfExceedsStarterLimitsInGracePeriod(ownerId, 'restaurant');
 
   // Check if the restaurant already exists
   const escapedName = restaurantName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -366,7 +368,17 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
   restaurant.restaurantName = restaurantName;
   restaurant.description = description;
   restaurant.logoUrl = logoUrl;
-  if (categories) restaurant.categories = categories;
+  if (categories) {
+    const currentCategoryCount = restaurant.categories?.length || 0;
+    const newCategoryCount = categories.length;
+
+    // Block if adding new categories during grace period
+    if (newCategoryCount > currentCategoryCount) {
+      await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'category', req.restaurant!._id);
+    }
+
+    restaurant.categories = categories;
+  }
   restaurant.address = address;
   restaurant.openingTime = openingTime;
   restaurant.closingTime = closingTime;
@@ -485,6 +497,7 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
   }
 
   await canAddCategory(restaurant, req.subscription!);
+  await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'category', req.restaurant!._id);
 
   const categories = restaurant.categories || [];
   // Check if the category already exists

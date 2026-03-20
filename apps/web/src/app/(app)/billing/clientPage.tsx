@@ -118,10 +118,9 @@ const ClientPage = () => {
             : currentPlanData.status === "active"
               ? "Upgrade Plan"
               : "Purchase Plan",
-          hasPendingPlan: !!currentSubscription?.pendingPlan,
+          isInGracePeriod: isInGracePeriod(),
         }}
         isInGracePeriod={isInGracePeriod()}
-        pendingPlan={currentSubscription?.pendingPlan}
         daysUntilExpiry={getDaysUntilExpiry()}
         className="animate-in fade-in slide-in-from-top-4 duration-500"
       />

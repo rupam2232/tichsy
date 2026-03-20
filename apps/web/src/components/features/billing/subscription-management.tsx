@@ -16,14 +16,12 @@ import {
   UpdatePlanDialog,
   type UpdatePlanDialogProps,
 } from "./update-plan-dialog";
-import { CurrentSubscription } from "@repo/types";
 
 export interface SubscriptionManagementProps {
   className?: string;
   currentPlan: CurrentPlan;
   updatePlan: UpdatePlanDialogProps;
   isInGracePeriod?: boolean;
-  pendingPlan?: CurrentSubscription["pendingPlan"];
   daysUntilExpiry?: number | null;
 }
 
@@ -32,7 +30,6 @@ export function SubscriptionManagement({
   currentPlan,
   updatePlan,
   isInGracePeriod,
-  pendingPlan,
   daysUntilExpiry,
 }: SubscriptionManagementProps) {
   return (
@@ -163,30 +160,10 @@ export function SubscriptionManagement({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            {pendingPlan ? (
-              // Show info message instead of button when pending plan exists
-              <div className="w-full rounded-lg border border-blue-500/50 bg-blue-500/10 p-4">
-                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                  Plan Change Scheduled
-                </h4>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  You have already scheduled a plan change to{" "}
-                  <strong>
-                    {pendingPlan.plan.charAt(0).toUpperCase() +
-                      pendingPlan.plan.slice(1)}
-                  </strong>{" "}
-                  ({pendingPlan.period}). This change will take effect
-                  automatically when your current subscription ends. You cannot
-                  make additional plan changes until the scheduled change is
-                  activated.
-                </p>
-              </div>
-            ) : (
-              <UpdatePlanDialog
-                className="mx-0 shadow-lg transition-all duration-200 hover:shadow-xl"
-                {...updatePlan}
-              />
-            )}
+            <UpdatePlanDialog
+              className="mx-0 shadow-lg transition-all duration-200 hover:shadow-xl"
+              {...updatePlan}
+            />
           </div>
 
           <Separator className="via-border my-4 bg-gradient-to-r from-transparent to-transparent sm:my-6" />

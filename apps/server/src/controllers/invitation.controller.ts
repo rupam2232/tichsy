@@ -13,6 +13,7 @@ import { env } from "../env.js";
 import { inviteStaff } from "../templates/emailTemplates.js";
 import { checkStaffLimit } from "../service/subscription.service.js";
 import { createNotification } from "../service/notification.service.js";
+import { blockIfExceedsStarterLimitsInGracePeriod, isUserInGracePeriod } from "../utils/gracePeriod.js";
 
 export const sendInvitation = asyncHandler(async (req, res) => {
   if (req.restaurantRole !== "owner") {
@@ -66,6 +67,7 @@ export const sendInvitation = asyncHandler(async (req, res) => {
 
   // Enforce staff limits from subscription plan (this counts active staff + pending invites)
   await checkStaffLimit(restaurant, restaurant.ownerId);
+  await blockIfExceedsStarterLimitsInGracePeriod(restaurant.ownerId, 'staff', restaurant._id);
 
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date();
@@ -207,6 +209,13 @@ export const acceptInvitation = asyncHandler(async (req, res) => {
 
   // We pass true here because the user hitting this endpoint is the invitee, not the owner
   await checkStaffLimit(restaurant, restaurant.ownerId, true);
+  const isInGracePeriod = await isUserInGracePeriod(restaurant.ownerId);
+  if (isInGracePeriod) {
+    throw new ApiError(
+      403,
+      "Unable to accept invitation. Please contact the restaurant owner to resolve this issue"
+    );
+  }
 
   // Check if already a member using RestaurantMember collection
   const existingMembership = await RestaurantMember.findOne({

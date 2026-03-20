@@ -11,7 +11,6 @@ import {
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import path from "path";
 import { formatInTimeZone } from "date-fns-tz";
-import { subDays } from "date-fns";
 import { env } from "../env.js";
 
 const fontPath = path.join(
@@ -153,12 +152,6 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
       : "-";
   };
 
-  // Calculate previous subscription end date (day before activation)
-  const getPreviousSubEndDate = (activationDate: Date | undefined) => {
-    if (!activationDate) return undefined;
-    return subDays(new Date(activationDate), 1);
-  };
-
   const formatCurrency = (amount: number | undefined) => {
     return (
       <View
@@ -240,22 +233,6 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
                 {formatDate(subscription.createdAt)}
               </Text>
             </View>
-            {subscription.isScheduled && (
-              <View
-                style={{
-                  marginTop: 8,
-                  alignItems: "flex-end",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Text style={styles.label}>ACTIVATION DATE</Text>
-                <Text style={[styles.value]}>
-                  {formatDate(subscription.subscriptionStartDate)}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -330,30 +307,6 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
             </View>
           </View>
         </View>
-
-        {/* Scheduled Activation Notice */}
-        {subscription.isScheduled && (
-          <View
-            style={{
-              marginTop: 20,
-              padding: 12,
-              backgroundColor: "#EFF6FF",
-              borderRadius: 4,
-              borderLeftWidth: 4,
-              borderLeftColor: "#3B82F6",
-            }}
-          >
-            <View>
-              <Text style={{ fontSize: 8, color: "#3B82F6" }}>
-                This plan activates after the previous subscription ends on{" "}
-                {formatDate(
-                  getPreviousSubEndDate(subscription.subscriptionStartDate)
-                )}
-                .
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Footer */}
         <View

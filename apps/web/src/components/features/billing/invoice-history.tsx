@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@repo/ui/components/table";
 import { Badge } from "@repo/ui/components/badge";
-import { CalendarDays, Clock, Download, ReceiptText } from "lucide-react";
+import { CalendarDays, Download, ReceiptText } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 
@@ -29,8 +29,6 @@ export interface InvoiceItem {
   status: "paid" | "refunded" | "open" | "void" | "free";
   invoiceUrl?: string;
   description?: string;
-  isScheduled?: boolean;
-  activationDate?: string;
 }
 
 interface InvoiceHistoryProps {
@@ -124,30 +122,15 @@ export function InvoiceHistory({
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[320px] min-w-0">
-                    <div className="flex flex-col gap-1">
-                      <span title={inv.description || "Invoice"} className="truncate">
-                        {inv.description || "Invoice"}
-                      </span>
-                      {inv.isScheduled && (
-                        <div className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400">
-                          <Clock className="h-3 w-3" />
-                          <span>Activation date: {inv.activationDate}</span>
-                        </div>
-                      )}
-                    </div>
+                    <span title={inv.description || "Invoice"} className="truncate">
+                      {inv.description || "Invoice"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {inv.amount}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex flex-col items-end gap-1">
-                      {statusBadge(inv.status)}
-                      {inv.isScheduled && (
-                        <Badge className="border-blue-500/40 bg-blue-500 text-blue-50 text-[10px] px-1.5 py-0">
-                          Scheduled
-                        </Badge>
-                      )}
-                    </div>
+                    {statusBadge(inv.status)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

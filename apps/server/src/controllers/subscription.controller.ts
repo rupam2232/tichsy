@@ -12,7 +12,10 @@ import { razorpay } from "../utils/razorpay.js";
 import { createSubscriptionSchema } from "@repo/types";
 import { generateSubscriptionReceiptPdf } from "../utils/generateSubscriptionReceiptPdf.js";
 import { isValidObjectId } from "mongoose";
-import { calculateScheduledStartDate } from "../utils/subscriptionUtils.js";
+import {
+  checkResourceLimits,
+  buildResourceLimitErrorMessage,
+} from "../service/resourceLimits.service.js";
 
 export const getSubscriptionDetails = asyncHandler(async (req, res) => {
   const subscription = await Subscription.findOne({
@@ -93,45 +96,38 @@ export const createSubscription = asyncHandler(async (req, res) => {
     existingSubscription.plan &&
     existingSubscription.subscriptionEndDate
   ) {
-    const currentPlanName = existingSubscription.plan;
-    const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
-    const newLevel = SubscriptionPlanHierarchy[plan] || 0;
+    const now = new Date();
+    const endDate = new Date(existingSubscription.subscriptionEndDate);
+    const isSubscriptionStillActive = endDate > now;
 
-    // Block all plan changes if user already has a pending plan scheduled
-    if (existingSubscription.pendingPlan) {
-      throw new ApiError(
-        400,
-        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan} (${existingSubscription.pendingPlan.period}). You cannot make additional plan changes until the scheduled change is activated.`
-      );
-    }
+    // Only apply upgrade/renew/downgrade logic if subscription is still active (not in grace period)
+    if (isSubscriptionStillActive) {
+      const currentPlanName = existingSubscription.plan;
+      const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
+      const newLevel = SubscriptionPlanHierarchy[plan] || 0;
 
-    // Downgrade: schedule for when current subscription ends
-    if (newLevel < currentLevel) {
-      action = "downgrade";
-      // Store current end date for the webhook to know when pending plan should activate
-      currentEndDate = existingSubscription.subscriptionEndDate.toISOString();
-      // No proration for downgrades - user pays full price for the new plan
-      // This will be stored as pendingPlan and activated when current subscription ends
-    }
-    // Renewal: same plan, possibly different period
-    else if (newLevel === currentLevel) {
-      action = "renew";
-      // Store current end date for the webhook to extend from
-      currentEndDate = existingSubscription.subscriptionEndDate.toISOString();
-      // No proration for renewals - user pays full price
-    }
-    // Upgrade: different (higher) plan - apply proration
-    else if (SUBSCRIPTION_PLANS[currentPlanName]) {
-      const oldPeriod = existingSubscription.period || "monthly";
-      const oldIsYearly = oldPeriod === "yearly";
-      const oldPlanPrice = oldIsYearly
-        ? SUBSCRIPTION_PLANS[currentPlanName].priceYearly
-        : SUBSCRIPTION_PLANS[currentPlanName].priceMonthly;
+      // Block downgrades during active subscription
+      if (newLevel < currentLevel) {
+        throw new ApiError(
+          400,
+          `You cannot downgrade while your current ${currentPlanName} subscription is active. Please wait until your subscription expires, then purchase the ${plan} plan.`
+        );
+      }
 
-      const now = new Date();
-      const endDate = new Date(existingSubscription.subscriptionEndDate);
+      // Renewal: same plan, possibly different period
+      if (newLevel === currentLevel) {
+        action = "renew";
+        // Store current end date for the webhook to extend from
+        currentEndDate = existingSubscription.subscriptionEndDate.toISOString();
+      }
+      // Upgrade: different (higher) plan - apply proration
+      else if (SUBSCRIPTION_PLANS[currentPlanName]) {
+        const oldPeriod = existingSubscription.period || "monthly";
+        const oldIsYearly = oldPeriod === "yearly";
+        const oldPlanPrice = oldIsYearly
+          ? SUBSCRIPTION_PLANS[currentPlanName].priceYearly
+          : SUBSCRIPTION_PLANS[currentPlanName].priceMonthly;
 
-      if (endDate > now) {
         const totalDuration = oldIsYearly ? 365 : 30;
         const oneDay = 24 * 60 * 60 * 1000;
         const remainingDays = Math.ceil(
@@ -144,6 +140,15 @@ export const createSubscription = asyncHandler(async (req, res) => {
           action = "upgrade";
         }
       }
+    }
+    // If subscription is expired (grace period), treat as new subscription (action = "create")
+  }
+
+  // For new subscriptions (including grace period users), validate resource limits
+  if (action === "create") {
+    const limitCheck = await checkResourceLimits(req.user!._id, plan);
+    if (!limitCheck.isWithinLimits) {
+      throw new ApiError(400, buildResourceLimitErrorMessage(limitCheck, plan));
     }
   }
 
@@ -204,7 +209,6 @@ export const previewSubscription = asyncHandler(async (req, res) => {
 
   let proratedCredit = 0;
   let action = "create";
-  let scheduledActivationDate: string | undefined;
 
   // Check for existing active subscription (Upgrade/Switch scenarios)
   const existingSubscription = await Subscription.findOne({
@@ -217,42 +221,36 @@ export const previewSubscription = asyncHandler(async (req, res) => {
     existingSubscription.plan &&
     existingSubscription.subscriptionEndDate
   ) {
-    const currentPlanName = existingSubscription.plan;
-    const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
-    const newLevel = SubscriptionPlanHierarchy[plan] || 0;
+    const now = new Date();
+    const endDate = new Date(existingSubscription.subscriptionEndDate);
+    const isSubscriptionStillActive = endDate > now;
 
-    // Block all plan changes if user already has a pending plan scheduled
-    if (existingSubscription.pendingPlan) {
-      throw new ApiError(
-        400,
-        `You have already scheduled a plan change to ${existingSubscription.pendingPlan.plan} (${existingSubscription.pendingPlan.period}). You cannot make additional plan changes until the scheduled change is activated.`
-      );
-    }
+    // Only apply upgrade/renew/downgrade logic if subscription is still active (not in grace period)
+    if (isSubscriptionStillActive) {
+      const currentPlanName = existingSubscription.plan;
+      const currentLevel = SubscriptionPlanHierarchy[currentPlanName] || 0;
+      const newLevel = SubscriptionPlanHierarchy[plan] || 0;
 
-    // Downgrade: schedule for when current subscription ends
-    if (newLevel < currentLevel) {
-      action = "downgrade";
-      // Calculate start date as beginning of the day after current subscription ends
-      scheduledActivationDate = calculateScheduledStartDate(existingSubscription.subscriptionEndDate).toISOString();
-      // No proration for downgrades - user pays full price
-    }
-    // Renewal: same plan, possibly different period
-    else if (newLevel === currentLevel) {
-      action = "renew";
-      // No proration for renewals - user pays full price
-    }
-    // Upgrade: different (higher) plan - apply proration
-    else if (SUBSCRIPTION_PLANS[currentPlanName]) {
-      const oldPeriod = existingSubscription.period || "monthly";
-      const oldIsYearly = oldPeriod === "yearly";
-      const oldPlanPrice = oldIsYearly
-        ? SUBSCRIPTION_PLANS[currentPlanName].priceYearly
-        : SUBSCRIPTION_PLANS[currentPlanName].priceMonthly;
+      // Block downgrades during active subscription
+      if (newLevel < currentLevel) {
+        throw new ApiError(
+          400,
+          `You cannot downgrade while your current ${currentPlanName} subscription is active. Please wait until your subscription expires, then purchase the ${plan} plan.`
+        );
+      }
 
-      const now = new Date();
-      const endDate = new Date(existingSubscription.subscriptionEndDate);
+      // Renewal: same plan, possibly different period
+      if (newLevel === currentLevel) {
+        action = "renew";
+      }
+      // Upgrade: different (higher) plan - apply proration
+      else if (SUBSCRIPTION_PLANS[currentPlanName]) {
+        const oldPeriod = existingSubscription.period || "monthly";
+        const oldIsYearly = oldPeriod === "yearly";
+        const oldPlanPrice = oldIsYearly
+          ? SUBSCRIPTION_PLANS[currentPlanName].priceYearly
+          : SUBSCRIPTION_PLANS[currentPlanName].priceMonthly;
 
-      if (endDate > now) {
         const totalDuration = oldIsYearly ? 365 : 30;
         const oneDay = 24 * 60 * 60 * 1000;
         const remainingDays = Math.ceil(
@@ -265,6 +263,15 @@ export const previewSubscription = asyncHandler(async (req, res) => {
           action = "upgrade";
         }
       }
+    }
+    // If subscription is expired (grace period), treat as new subscription (action = "create")
+  }
+
+  // For new subscriptions (including grace period users), validate resource limits
+  if (action === "create") {
+    const limitCheck = await checkResourceLimits(req.user!._id, plan);
+    if (!limitCheck.isWithinLimits) {
+      throw new ApiError(400, buildResourceLimitErrorMessage(limitCheck, plan));
     }
   }
 
@@ -289,7 +296,6 @@ export const previewSubscription = asyncHandler(async (req, res) => {
         taxAmount: platformFee,
         totalAmount,
         action,
-        ...(scheduledActivationDate && { scheduledActivationDate }),
       },
       "Subscription preview calculated successfully"
     )
