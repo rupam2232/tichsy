@@ -14,6 +14,7 @@ import {
   isSubscriptionExpired,
 } from "../config/subscriptionPlans.js";
 import { env } from "../env.js";
+import { checkRestaurantComplianceForPlan } from "./resourceLimits.service.js";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -116,7 +117,8 @@ export async function canAddCategory(
 
 export async function canUnarchiveRestaurant(
   user: User,
-  subscription: SubscriptionType
+  subscription: SubscriptionType,
+  restaurant: RestaurantType
 ) {
   if (!isProduction) return;
   const activeRestaurantCount = await Restaurant.countDocuments({
@@ -131,6 +133,19 @@ export async function canUnarchiveRestaurant(
     throw new ApiError(
       403,
       `Your plan allows max ${maxRestaurants} active restaurants. Upgrade your plan or archive another restaurant to unarchive this one`
+    );
+  }
+
+  const compliance = await checkRestaurantComplianceForPlan(
+    restaurant._id,
+    plan
+  );
+
+  if (!compliance.isWithinLimits) {
+    throw new ApiError(
+      403,
+      `Cannot unarchive restaurant. This restaurant exceeds your ${plan} plan limits.`,
+      compliance.summary
     );
   }
 }

@@ -49,7 +49,16 @@ export async function archiveExcessResources(
   });
 
   for (const restaurant of activeRestaurants) {
-    // 2. Archive Excess Tables
+    // 2. Enforce Category Limit
+    if (restaurant.categories.length > limits.maxCategoriesPerRestaurant) {
+      restaurant.categories = restaurant.categories.slice(
+        0,
+        limits.maxCategoriesPerRestaurant
+      );
+      await restaurant.save();
+    }
+
+    // 3. Archive Excess Tables
     const tables = await Table.find({
       restaurantId: restaurant._id,
       isArchived: { $ne: true },
@@ -65,7 +74,7 @@ export async function archiveExcessResources(
       }
     }
 
-    // 3. Archive Excess Food Items (by count)
+    // 4. Archive Excess Food Items (by count)
     const foodItems = await FoodItem.find({
       restaurantId: restaurant._id,
       isArchived: { $ne: true },
@@ -81,7 +90,7 @@ export async function archiveExcessResources(
       }
     }
 
-    // 4. Archive Food Items with excess images or variants
+    // 5. Archive Food Items with excess images or variants
     const activeFoodItems = await FoodItem.find({
       restaurantId: restaurant._id,
       isArchived: { $ne: true },
@@ -113,7 +122,7 @@ export async function archiveExcessResources(
       }
     }
 
-    // 5. Archive Excess Staff Members (using RestaurantMember model)
+    // 6. Archive Excess Staff Members (using RestaurantMember model)
     const activeStaffCount = await RestaurantMember.countDocuments({
       restaurantId: restaurant._id,
       isArchived: false,

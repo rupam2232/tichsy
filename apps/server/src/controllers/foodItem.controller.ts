@@ -11,7 +11,7 @@ import {
 } from "../service/foodItem.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import cloudinary from "../utils/cloudinary.js";
-import { isValidObjectId, FilterQuery, Types } from "mongoose";
+import { isValidObjectId, FilterQuery } from "mongoose";
 import { foodItemSchema } from "@repo/types";
 import { blockIfExceedsStarterLimitsInGracePeriod } from "../utils/gracePeriod.js";
 

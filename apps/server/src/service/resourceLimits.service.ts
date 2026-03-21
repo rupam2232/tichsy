@@ -25,6 +25,12 @@ interface RestaurantResourceInfo {
   staff: ResourceCount;
 }
 
+export interface RestaurantComplianceCheckResult {
+  isWithinLimits: boolean;
+  restaurant: RestaurantResourceInfo;
+  summary: string[];
+}
+
 export interface ResourceLimitCheckResult {
   isWithinLimits: boolean;
   restaurants: ResourceCount;
@@ -205,4 +211,130 @@ export function buildResourceLimitErrorMessage(
   ];
 
   return lines.join("\n");
+}
+
+export async function checkRestaurantComplianceForPlan(
+  restaurantId: string | Types.ObjectId,
+  targetPlan: SubscriptionPlan
+): Promise<RestaurantComplianceCheckResult> {
+  const limits = SUBSCRIPTION_PLANS[targetPlan];
+  const restaurant = await Restaurant.findById(restaurantId)
+    .select("_id restaurantName categories")
+    .lean();
+
+  if (!restaurant) {
+    throw new Error("Restaurant not found for plan compliance check");
+  }
+
+  const [tableCount, activeFoodItems, staffCount] = await Promise.all([
+    Table.countDocuments({
+      restaurantId: restaurant._id,
+      isArchived: { $ne: true },
+    }),
+    FoodItem.find({
+      restaurantId: restaurant._id,
+      isArchived: { $ne: true },
+    })
+      .select("variants imageUrls")
+      .lean(),
+    RestaurantMember.countDocuments({
+      restaurantId: restaurant._id,
+      isArchived: false,
+    }),
+  ]);
+
+  const categories: ResourceCount = {
+    current: restaurant.categories?.length || 0,
+    limit: limits.maxCategoriesPerRestaurant,
+    excess: Math.max(
+      0,
+      (restaurant.categories?.length || 0) - limits.maxCategoriesPerRestaurant
+    ),
+  };
+
+  const tables: ResourceCount = {
+    current: tableCount,
+    limit: limits.maxTablesPerRestaurant,
+    excess: Math.max(0, tableCount - limits.maxTablesPerRestaurant),
+  };
+
+  const foodItems: ResourceCount = {
+    current: activeFoodItems.length,
+    limit: limits.maxFoodItemsPerRestaurant,
+    excess: Math.max(0, activeFoodItems.length - limits.maxFoodItemsPerRestaurant),
+  };
+
+  let foodItemsWithExcessVariants = 0;
+  let foodItemsWithExcessImages = 0;
+
+  for (const item of activeFoodItems) {
+    const variantCount = item.variants?.length || 0;
+    const imageCount = item.imageUrls?.length || 0;
+
+    if (variantCount > limits.maxVariantsPerFoodItem) {
+      foodItemsWithExcessVariants++;
+    }
+    if (imageCount > limits.maxImagesPerFoodItem) {
+      foodItemsWithExcessImages++;
+    }
+  }
+
+  const staff: ResourceCount = {
+    current: staffCount,
+    limit: limits.maxStaffPerRestaurant,
+    excess: Math.max(0, staffCount - limits.maxStaffPerRestaurant),
+  };
+
+  const summary: string[] = [];
+
+  if (categories.excess > 0) {
+    summary.push(
+      `Archive or remove ${categories.excess} category(ies) (current ${categories.current}, limit ${categories.limit}).`
+    );
+  }
+
+  if (tables.excess > 0) {
+    summary.push(
+      `Archive ${tables.excess} table(s) (current ${tables.current}, limit ${tables.limit}).`
+    );
+  }
+
+  if (foodItems.excess > 0) {
+    summary.push(
+      `Archive ${foodItems.excess} food item(s) (current ${foodItems.current}, limit ${foodItems.limit}).`
+    );
+  }
+
+  if (foodItemsWithExcessVariants > 0) {
+    summary.push(
+      `${foodItemsWithExcessVariants} food item(s) exceed max variants per item (${limits.maxVariantsPerFoodItem}).`
+    );
+  }
+
+  if (foodItemsWithExcessImages > 0) {
+    summary.push(
+      `${foodItemsWithExcessImages} food item(s) exceed max images per item (${limits.maxImagesPerFoodItem}).`
+    );
+  }
+
+  if (staff.excess > 0) {
+    summary.push(
+      `Archive ${staff.excess} staff member(s) (current ${staff.current}, limit ${staff.limit}).`
+    );
+  }
+
+  return {
+    isWithinLimits: summary.length === 0,
+    restaurant: {
+      restaurantId: restaurant._id.toString(),
+      restaurantName: restaurant.restaurantName,
+      categories,
+      tables,
+      foodItems,
+      foodItemsWithExcessVariants,
+      foodItemsWithExcessImages,
+      staff,
+    },
+    summary,
+  };
 }

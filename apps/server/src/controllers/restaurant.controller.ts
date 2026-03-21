@@ -450,7 +450,7 @@ export const toggleRestaurantArchiveStatus = asyncHandler(async (req, res) => {
 
   // If unarchiving, check subscription limits
   if (restaurant.isArchived) {
-    await canUnarchiveRestaurant(req.user!, req.subscription!);
+    await canUnarchiveRestaurant(req.user!, req.subscription!, restaurant);
     restaurant.isArchived = false;
     restaurant.archivedAt = undefined;
     restaurant.archivedReason = undefined;
