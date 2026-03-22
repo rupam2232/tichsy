@@ -90,7 +90,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         restaurantId: restaurant._id,
       })
         .select(
-          "_id foodName foodType hasVariants variants foodType price discountedPrice isAvailable"
+          "_id foodName foodType category hasVariants variants foodType price discountedPrice isAvailable"
         )
         .lean()
         .session(session);
@@ -137,6 +137,9 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       }
       foodItems.push({
         foodItemId: isFoodItemValid._id,
+        foodName: isFoodItemValid.foodName,
+        foodType: isFoodItemValid.foodType,
+        foodCategory: isFoodItemValid.category ?? "Uncategorized",
         variantName: foodItem.variantName ?? null, // Ensure variantName is included if provided
         quantity: foodItem.quantity ?? 1, // Default to 1 if quantity is not provided
         price: foodItem.variantName
@@ -158,6 +161,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         ...foodItems[foodItems.length - 1],
         foodName: isFoodItemValid.foodName,
         foodType: isFoodItemValid.foodType,
+        foodCategory: isFoodItemValid.category ?? "Uncategorized",
         isVariantOrder:
           isFoodItemValid.variants.filter(
             (variant) => variant.variantName === foodItem.variantName
@@ -195,7 +199,11 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         {
           orderNo: orderNoCounter.orderNo,
           restaurantId: restaurant._id,
-          tableId: table._id,
+          table: {
+            tableId: table._id,
+            tableName: table.tableName,
+            qrSlug: table.qrSlug,
+          },
           foodItems,
           subtotal,
           totalAmount,
@@ -230,9 +238,9 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       isPaid: order[0].isPaid,
       externalPlatform: order[0].externalPlatform,
       table: {
-        _id: table._id,
-        tableName: table.tableName,
-        qrSlug: table.qrSlug,
+        _id: order[0].table._id,
+        tableName: order[0].table.tableName,
+        qrSlug: order[0].table.qrSlug,
         isOccupied: table.isOccupied,
       },
       orderedFoodItems,
@@ -430,23 +438,6 @@ export const getOrderById = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
-        from: "tables",
-        localField: "tableId",
-        foreignField: "_id",
-        as: "table",
-        pipeline: [
-          {
-            $project: {
-              _id: 1,
-              tableName: 1,
-              qrSlug: 1,
-            },
-          },
-        ],
-      },
-    },
-    {
-      $lookup: {
         from: "payments",
         localField: "_id",
         foreignField: "orderId",
@@ -478,23 +469,23 @@ export const getOrderById = asyncHandler(async (req, res) => {
       },
     },
     {
-      $unwind: "$table",
-    },
-    {
       $unwind: "$foodItems",
     },
-    // Lookup food item details
     {
       $lookup: {
         from: "fooditems",
         localField: "foodItems.foodItemId",
         foreignField: "_id",
         as: "foodItemDetails",
+        pipeline: [{ $project: { _id: 1, imageUrls: 1 } }],
       },
     },
-    // Unwind foodItemDetails (should only be one per foodItemId)
-    { $unwind: "$foodItemDetails" },
-    // Group back to order structure, but build foodItems array with merged info
+    {
+      $unwind: {
+        path: "$foodItemDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     {
       $group: {
         _id: "$_id",
@@ -523,20 +514,22 @@ export const getOrderById = asyncHandler(async (req, res) => {
         paymentAttempts: { $first: "$paymentAttempts" },
         orderedFoodItems: {
           $push: {
-            foodItemId: "$foodItems.foodItemId",
+            variantName: "$foodItems.variantName",
             quantity: "$foodItems.quantity",
             price: "$foodItems.price",
             finalPrice: "$foodItems.finalPrice",
-            foodName: "$foodItemDetails.foodName",
-            foodType: "$foodItemDetails.foodType",
+            foodName: "$foodItems.foodName",
+            foodType: "$foodItems.foodType",
+            foodCategory: "$foodItems.foodCategory",
             firstImageUrl: {
               $cond: {
-                if: { $gt: [{ $size: "$foodItemDetails.imageUrls" }, 0] },
+                if: {
+                  $gt: [{ $size: { $ifNull: ["$foodItemDetails.imageUrls", []] } }, 0],
+                },
                 then: { $arrayElemAt: ["$foodItemDetails.imageUrls", 0] },
                 else: null,
               },
-            }, // Get the first image URL if available
-            // check if the food item is a varinat
+            },
             isVariantOrder: {
               $cond: [
                 { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
@@ -545,28 +538,11 @@ export const getOrderById = asyncHandler(async (req, res) => {
               ],
             },
             variantDetails: {
-              // Get the variant details if variantName is provided
-              $cond: {
-                if: { $ne: ["$foodItems.variantName", null] },
-                then: {
-                  $arrayElemAt: [
-                    {
-                      $filter: {
-                        input: "$foodItemDetails.variants",
-                        as: "variant",
-                        cond: {
-                          $eq: [
-                            "$$variant.variantName",
-                            "$foodItems.variantName",
-                          ],
-                        },
-                      },
-                    },
-                    0,
-                  ],
-                },
-                else: null,
-              },
+              $cond: [
+                { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
+                { variantName: "$foodItems.variantName" },
+                null,
+              ],
             },
           },
         },
@@ -658,20 +634,11 @@ export const getOrdersByIds = asyncHandler(async (req, res) => {
     },
     { $unwind: { path: "$foodItems" } },
     {
-      $lookup: {
-        from: "fooditems",
-        localField: "foodItems.foodItemId",
-        foreignField: "_id",
-        as: "foodItemDetails",
-        pipeline: [{ $project: { _id: 1, foodName: 1, foodType: 1 } }],
-      },
-    },
-    { $unwind: { path: "$foodItemDetails" } },
-    {
       $group: {
         _id: "$_id",
         orderNo: { $first: "$orderNo" },
         restaurantId: { $first: "$restaurantId" },
+        table: { $first: "$table" },
         status: { $first: "$status" },
         totalAmount: { $first: "$totalAmount" },
         isPaid: { $first: "$isPaid" },
@@ -679,10 +646,10 @@ export const getOrdersByIds = asyncHandler(async (req, res) => {
         createdAt: { $first: "$createdAt" },
         orderedFoodItems: {
           $push: {
-            foodItemId: "$foodItems.foodItemId",
             variantName: "$foodItems.variantName",
-            foodName: "$foodItemDetails.foodName",
-            foodType: "$foodItemDetails.foodType",
+            foodName: "$foodItems.foodName",
+            foodType: "$foodItems.foodType",
+            foodCategory: "$foodItems.foodCategory",
             quantity: "$foodItems.quantity",
             finalPrice: "$foodItems.finalPrice",
             isVariantOrder: {
@@ -690,6 +657,13 @@ export const getOrdersByIds = asyncHandler(async (req, res) => {
                 { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
                 true,
                 false,
+              ],
+            },
+            variantDetails: {
+              $cond: [
+                { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
+                { variantName: "$foodItems.variantName" },
+                null,
               ],
             },
           },
@@ -795,7 +769,7 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
             orderNo: isNaN(Number(decodedSearch)) ? -1 : Number(decodedSearch),
           },
           {
-            "foodItemDetails.foodName": {
+            "foodItems.foodName": {
               $regex: decodedSearch,
               $options: "i",
             },
@@ -843,27 +817,8 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
   // Main aggregation pipeline for fetching orders
   const aggregationPipeline = [
     { $match: baseMatch },
-    {
-      $lookup: {
-        from: "tables",
-        localField: "tableId",
-        foreignField: "_id",
-        as: "table",
-        pipeline: [{ $project: { _id: 1, tableName: 1, qrSlug: 1 } }],
-      },
-    },
-    { $unwind: { path: "$table" } },
+    ...(decodedSearch ? [{ $match: searchMatch }] : []),
     { $unwind: { path: "$foodItems" } },
-    {
-      $lookup: {
-        from: "fooditems",
-        localField: "foodItems.foodItemId",
-        foreignField: "_id",
-        as: "foodItemDetails",
-        pipeline: [{ $project: { _id: 1, foodName: 1, foodType: 1 } }],
-      },
-    },
-    { $unwind: { path: "$foodItemDetails" } },
     {
       $group: {
         _id: "$_id",
@@ -880,10 +835,10 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
         notes: { $first: "$notes" },
         orderedFoodItems: {
           $push: {
-            foodItemId: "$foodItems.foodItemId",
             variantName: "$foodItems.variantName",
-            foodName: "$foodItemDetails.foodName",
-            foodType: "$foodItemDetails.foodType",
+            foodName: "$foodItems.foodName",
+            foodType: "$foodItems.foodType",
+            foodCategory: "$foodItems.foodCategory",
             quantity: "$foodItems.quantity",
             finalPrice: "$foodItems.finalPrice",
             isVariantOrder: {
@@ -891,6 +846,13 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
                 { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
                 true,
                 false,
+              ],
+            },
+            variantDetails: {
+              $cond: [
+                { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
+                { variantName: "$foodItems.variantName" },
+                null,
               ],
             },
           },
@@ -927,7 +889,6 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
   const groupIndex = aggregationPipeline.findIndex((stage) => !!stage.$group);
   const countPipeline = [
     ...aggregationPipeline.slice(0, groupIndex),
-    ...(decodedSearch ? [{ $match: searchMatch }] : []),
     { $group: { _id: "$_id" } },
     { $count: "total" },
   ];
@@ -1000,51 +961,10 @@ export const getOrderByTable = asyncHandler(async (req, res) => {
       $match: {
         _id: table.currentOrderId,
         restaurantId: restaurant._id,
-        tableId: table._id,
+        "table.qrSlug": req.params.tableQrSlug,
       },
-    },
-    {
-      $lookup: {
-        from: "tables",
-        localField: "tableId",
-        foreignField: "_id",
-        as: "table",
-        pipeline: [
-          {
-            $project: {
-              _id: 1,
-              tableName: 1,
-              qrSlug: 1,
-            },
-          },
-        ],
-      },
-    },
-    {
-      $unwind: "$table",
     },
     { $unwind: "$foodItems" },
-    // Lookup food item details
-    {
-      $lookup: {
-        from: "fooditems",
-        localField: "foodItems.foodItemId",
-        foreignField: "_id",
-        as: "foodItemDetails",
-        pipeline: [
-          {
-            $project: {
-              _id: 1,
-              foodName: 1,
-              foodType: 1,
-            },
-          },
-        ],
-      },
-    },
-    // Unwind foodItemDetails (should only be one per foodItemId)
-    { $unwind: "$foodItemDetails" },
-    // Group back to order structure, but build foodItems array with merged info
     {
       $group: {
         _id: "$_id",
@@ -1057,16 +977,22 @@ export const getOrderByTable = asyncHandler(async (req, res) => {
         createdAt: { $first: "$createdAt" },
         orderedFoodItems: {
           $push: {
-            foodItemId: "$foodItems.foodItemId",
             variantName: "$foodItems.variantName",
-            foodName: "$foodItemDetails.foodName",
-            foodType: "$foodItemDetails.foodType",
-            // check if the food item is a varinat
+            foodName: "$foodItems.foodName",
+            foodType: "$foodItems.foodType",
+            foodCategory: "$foodItems.foodCategory",
             isVariantOrder: {
               $cond: [
                 { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
                 true,
                 false,
+              ],
+            },
+            variantDetails: {
+              $cond: [
+                { $ne: [{ $ifNull: ["$foodItems.variantName", ""] }, ""] },
+                { variantName: "$foodItems.variantName" },
+                null,
               ],
             },
           },
@@ -1176,8 +1102,11 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   await order.save();
   if (status === "completed" || status === "cancelled") {
-    const table = await Table.findByIdAndUpdate(
-      order.tableId,
+    const table = await Table.findOneAndUpdate(
+      {
+        restaurantId: restaurant._id,
+        qrSlug: order.table.qrSlug,
+      },
       {
         isOccupied: false,
         currentOrderId: undefined,
@@ -1271,7 +1200,7 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
         restaurantId: restaurant._id,
       })
         .select(
-          "_id foodName foodType hasVariants variants foodType price discountedPrice isAvailable"
+          "_id foodName foodType category hasVariants variants foodType price discountedPrice isAvailable"
         )
         .lean()
         .session(session);
@@ -1318,6 +1247,9 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
       }
       updatedFoodItems.push({
         foodItemId: isFoodItemValid._id,
+        foodName: isFoodItemValid.foodName,
+        foodType: isFoodItemValid.foodType,
+        foodCategory: isFoodItemValid.category ?? "Uncategorized",
         variantName: foodItem.variantName || null, // Ensure variantName is included if provided
         quantity: foodItem.quantity || 1, // Default to 1 if quantity is not provided
         price: foodItem.variantName
@@ -1441,8 +1373,11 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
   order.isPaid = !order.isPaid;
   if (req.body?.markCompleted && order.isPaid && order.status !== "completed") {
     order.status = "completed"; // Automatically mark as completed if paid
-    const table = await Table.findByIdAndUpdate(
-      order.tableId,
+    const table = await Table.findOneAndUpdate(
+      {
+        restaurantId: restaurant._id,
+        qrSlug: order.table.qrSlug,
+      },
       {
         isOccupied: false,
         currentOrderId: undefined,

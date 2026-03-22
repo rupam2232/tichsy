@@ -1420,6 +1420,9 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
       $group: {
         _id: {
           foodItemId: "$foodItems.foodItemId",
+          foodName: "$foodItems.foodName",
+          foodType: "$foodItems.foodType",
+          foodCategory: "$foodItems.foodCategory",
           variantName: "$foodItems.variantName",
         },
         count: { $sum: "$foodItems.quantity" },
@@ -1433,14 +1436,37 @@ export const getAnalyticsTrending = asyncHandler(async (req, res) => {
         localField: "_id.foodItemId",
         foreignField: "_id",
         as: "foodItem",
+        pipeline: [{ $project: { _id: 1, imageUrls: 1 } }],
       },
     },
-    { $unwind: "$foodItem" },
+    {
+      $unwind: {
+        path: "$foodItem",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     {
       $project: {
-        _id: "$_id.foodItemId",
-        foodName: "$foodItem.foodName",
-        firstImageUrl: { $arrayElemAt: ["$foodItem.imageUrls", 0] },
+        _id: {
+          foodItemId: "$_id.foodItemId",
+          foodName: "$_id.foodName",
+          foodType: "$_id.foodType",
+          foodCategory: "$_id.foodCategory",
+          variantName: "$_id.variantName",
+        },
+        foodItemId: "$_id.foodItemId",
+        foodName: "$_id.foodName",
+        foodType: "$_id.foodType",
+        foodCategory: "$_id.foodCategory",
+        firstImageUrl: {
+          $cond: {
+            if: {
+              $gt: [{ $size: { $ifNull: ["$foodItem.imageUrls", []] } }, 0],
+            },
+            then: { $arrayElemAt: ["$foodItem.imageUrls", 0] },
+            else: null,
+          },
+        },
         variantName: "$_id.variantName",
         count: 1,
       },
@@ -1508,17 +1534,8 @@ export const getAnalyticsCategories = asyncHandler(async (req, res) => {
     },
     { $unwind: "$foodItems" },
     {
-      $lookup: {
-        from: "fooditems",
-        localField: "foodItems.foodItemId",
-        foreignField: "_id",
-        as: "foodDetails",
-      },
-    },
-    { $unwind: "$foodDetails" },
-    {
       $group: {
-        _id: { $ifNull: ["$foodDetails.category", "Uncategorized"] },
+        _id: { $ifNull: ["$foodItems.foodCategory", "Uncategorized"] },
         totalRevenue: {
           $sum: { $multiply: ["$foodItems.finalPrice", "$foodItems.quantity"] },
         },
@@ -1585,34 +1602,20 @@ export const getAnalyticsTopTables = asyncHandler(async (req, res) => {
         restaurantId: req.restaurant._id,
         status: "completed",
         isPaid: true,
-        tableId: { $exists: true, $ne: null },
+        "table.qrSlug": { $exists: true, $ne: null },
         createdAt: { $gte: queryStart, $lte: queryEnd },
       },
     },
     {
       $group: {
-        _id: "$tableId",
+        _id: "$table.qrSlug",
+        qrSlug: { $first: "$table.qrSlug" },
+        tableName: { $first: "$table.tableName" },
         count: { $sum: 1 },
       },
     },
     { $sort: { count: -1 } },
     { $limit: 5 },
-    {
-      $lookup: {
-        from: "tables",
-        localField: "_id",
-        foreignField: "_id",
-        as: "tableDetails",
-      },
-    },
-    { $unwind: "$tableDetails" },
-    {
-      $project: {
-        _id: 1,
-        tableName: "$tableDetails.tableName",
-        count: 1,
-      },
-    },
   ]);
 
   res

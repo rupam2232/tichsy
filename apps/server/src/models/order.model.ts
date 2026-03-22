@@ -1,12 +1,48 @@
 // Defines the Order schema and model for MongoDB using Mongoose
-import { Schema, model, Document, Types } from "mongoose";
+import { Schema, model, Document, Types, Query } from "mongoose";
 
+type OrderStatus =
+  | "pending"
+  | "preparing"
+  | "ready"
+  | "served"
+  | "completed"
+  | "cancelled";
+
+export interface TableDetails extends Document {
+  tableId: Types.ObjectId; // Reference to the Table
+  tableName: string;
+  qrSlug: string;
+}
+
+const tableDetailsSchema: Schema<TableDetails> = new Schema({
+  tableId: {
+    type: Schema.Types.ObjectId,
+    ref: "Table",
+    required: [true, "Table id is required"],
+    immutable: true,
+  },
+  tableName: {
+    type: String,
+    required: [true, "Table name is required"],
+    trim: true,
+    immutable: true,
+  },
+  qrSlug: {
+    type: String,
+    required: [true, "Table qrSlug is required"],
+    immutable: true,
+  },
+});
 /**
  * TypeScript interface for a FoodItem subdocument.
  * Represents a single food item (and optional variant) in an order.
  */
 export interface FoodItem extends Document {
   foodItemId: Types.ObjectId; // Reference to the FoodItem
+  foodName: string; // Snapshot of food name at order time
+  foodType: "veg" | "non-veg"; // Snapshot of food type at order time
+  foodCategory: string; // Snapshot of category at order time
   variantName?: string; // Name of the variant (if any)
   quantity: number; // Quantity ordered
   price: number; // Base price of the food item (before any discounts)
@@ -22,7 +58,24 @@ const foodItemSchema: Schema<FoodItem> = new Schema({
     ref: "FoodItem",
     required: [true, "Food item's id is required"],
   },
-  variantName: String,
+  foodName: {
+    type: String,
+    required: [true, "Food name is required"],
+    trim: true,
+  },
+  foodType: {
+    type: String,
+    enum: ["veg", "non-veg"],
+    required: [true, "Food type is required"],
+  },
+  foodCategory: {
+    type: String,
+    trim: true,
+    default: "Uncategorized",
+  },
+  variantName: {
+    type: String,
+  },
   quantity: {
     type: Number,
     required: [true, "Quantity is required"],
@@ -34,7 +87,6 @@ const foodItemSchema: Schema<FoodItem> = new Schema({
   finalPrice: {
     type: Number,
     required: [true, "Final price is required"],
-    immutable: true,
     validate: {
       validator: function (value: number) {
         return value >= 0; // Final price should not be negative
@@ -51,15 +103,9 @@ const foodItemSchema: Schema<FoodItem> = new Schema({
 export interface Order extends Document {
   orderNo: number; // Sequential order number unique per restaurant
   restaurantId: Types.ObjectId; // Reference to the Restaurant
-  tableId: Types.ObjectId; // Reference to the Table
+  table: TableDetails; // Snapshot of table details at order time
   foodItems: FoodItem[]; // Array of ordered food items
-  status:
-    | "pending"
-    | "preparing"
-    | "ready"
-    | "served"
-    | "completed"
-    | "cancelled"; // Order status (pending, preparing, etc.)
+  status: OrderStatus; // Order status (pending, preparing, etc.)
   subtotal: number; // Amount for only food items (before tax, discount, tip)
   totalAmount: number; // Final amount to be paid (after discount, tax, tip, if any)
   discountAmount?: number; // Amount deducted due to discount (if any)
@@ -99,10 +145,10 @@ const orderSchema: Schema<Order> = new Schema(
       required: [true, "Restaurant id is required"],
       immutable: true,
     },
-    tableId: {
-      type: Schema.Types.ObjectId,
-      ref: "Table",
-      required: [true, "Table id is required"],
+    table: {
+      type: tableDetailsSchema,
+      required: [true, "Table details are required"],
+      immutable: true,
     },
     foodItems: {
       type: [foodItemSchema],
@@ -112,9 +158,6 @@ const orderSchema: Schema<Order> = new Schema(
           return Array.isArray(arr) && arr.length > 0;
         },
         message: "Order must contain at least one food item",
-      },
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
       },
     },
     status: {
@@ -129,84 +172,52 @@ const orderSchema: Schema<Order> = new Schema(
         "cancelled",
       ],
       default: "pending",
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     subtotal: {
       type: Number,
       required: [true, "Sub total is required"],
-      immutable: true,
     },
     totalAmount: {
       type: Number,
       required: [true, "Total amount is required"],
-      immutable: true,
     },
     discountAmount: {
       type: Number,
       default: 0,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     taxAmount: {
       type: Number,
       default: 0,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     taxRate: {
       type: Number,
       default: 0,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     taxLabel: {
       type: String,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     isTaxIncludedInPrice: {
       type: Boolean,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     paymentMethod: {
       type: String,
       enum: ["online", "cash"],
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     paymentAttempts: [
       {
         type: Schema.Types.ObjectId,
         ref: "Payment",
-        immutable(doc) {
-          return doc.status === "completed" || doc.status === "cancelled";
-        },
       },
     ],
     isPaid: {
       type: Boolean,
       required: [true, "Is paid is required"],
       default: false,
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     notes: String,
     couponUsed: {
       type: Schema.Types.ObjectId,
       ref: "Coupon",
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     externalOrderId: {
       type: String,
@@ -219,9 +230,6 @@ const orderSchema: Schema<Order> = new Schema(
     kitchenStaffId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      immutable(doc) {
-        return doc.status === "completed" || doc.status === "cancelled";
-      },
     },
     customerName: {
       type: String,
@@ -245,6 +253,66 @@ const orderSchema: Schema<Order> = new Schema(
   }
 );
 
+const TERMINAL_ORDER_STATUSES: OrderStatus[] = ["completed", "cancelled"];
+
+async function blockMutationForTerminalOrder(
+  query: Query<unknown, Order>
+): Promise<void> {
+  const filter = query.getFilter();
+  const terminalOrder = await query.model
+    .findOne({
+      ...filter,
+      status: { $in: TERMINAL_ORDER_STATUSES },
+    })
+    .select("_id")
+    .lean();
+
+  if (terminalOrder) {
+    throw new Error("Completed or cancelled orders are immutable");
+  }
+}
+
+orderSchema.pre("save", async function (next) {
+  if (this.isNew) return next();
+
+  const existingOrder = await Order.findById(this._id).select("status").lean();
+  if (
+    existingOrder &&
+    TERMINAL_ORDER_STATUSES.includes(existingOrder.status as OrderStatus)
+  ) {
+    return next(new Error("Completed or cancelled orders are immutable"));
+  }
+
+  next();
+});
+
+orderSchema.pre("findOneAndUpdate", async function (next) {
+  try {
+    await blockMutationForTerminalOrder(this as Query<unknown, Order>);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+orderSchema.pre("updateOne", async function (next) {
+  try {
+    await blockMutationForTerminalOrder(this as Query<unknown, Order>);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+orderSchema.pre("updateMany", async function (next) {
+  try {
+    await blockMutationForTerminalOrder(this as Query<unknown, Order>);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
 /**
  * Compound index to ensure all order no. are unique per restaurant id.
  * Allows the order no. to be used by different restaurants, but only once per restaurant id.
@@ -253,7 +321,7 @@ orderSchema.index({ restaurantId: 1, orderNo: 1 }, { unique: true});
 
 orderSchema.index({ restaurantId: 1, status: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, isPaid: 1, status: 1, createdAt: -1 });
-orderSchema.index({ restaurantId: 1, tableId: 1 });
+orderSchema.index({ restaurantId: 1, "table.tableId": 1 });
 
 /**
  * Mongoose model for the Order schema.
