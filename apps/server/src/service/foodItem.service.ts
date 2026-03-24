@@ -89,7 +89,7 @@ export function checkImageLimit(
 
 export async function canUnarchiveFoodItem(
   restaurantId: string,
-  foodItemId: string,
+  foodItem: FoodItem,
   subscription?: SubscriptionType | null,
 ) {
   if (!isProduction) return;
@@ -118,10 +118,6 @@ export async function canUnarchiveFoodItem(
   }
 
   // Check if food item has excess images or variants
-  const foodItem = await FoodItem.findById(foodItemId);
-  if (!foodItem) {
-    throw new ApiError(404, "Food item not found");
-  }
 
   const imageCount = foodItem.imageUrls?.length || 0;
   const variantCount = foodItem.variants?.length || 0;

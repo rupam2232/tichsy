@@ -101,40 +101,49 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         );
       }
 
-      if (!foodItem.variantName && !isFoodItemValid.isAvailable) {
+      if (!isFoodItemValid.isAvailable) {
         throw new ApiError(
           400,
-          `Food item ${isFoodItemValid.foodName} is not available`
+          `Food item ${isFoodItemValid.foodName} is out of stock`
         );
       }
 
-      if (foodItem.variantName) {
-        if (isFoodItemValid.hasVariants === false) {
+      let selectedVariant = null;
+
+      if (isFoodItemValid.hasVariants) {
+        if (!foodItem.variantName) {
           throw new ApiError(
             400,
-            `${isFoodItemValid.foodName} does not have variants`
+            `${isFoodItemValid.foodName} requires a variant to be selected`
           );
         }
 
-        // Ensure the variant is available
-        const variant = isFoodItemValid.variants.find(
+        selectedVariant = isFoodItemValid.variants.find(
           (variant) => variant.variantName === foodItem.variantName
         );
 
-        if (!variant) {
+        if (!selectedVariant) {
           throw new ApiError(
             400,
             `Variant ${foodItem.variantName} for food item ${isFoodItemValid.foodName} is not valid`
           );
         }
 
-        if (variant.isAvailable === false) {
+        if (selectedVariant.isAvailable === false) {
           throw new ApiError(
             400,
-            `Variant ${foodItem.variantName} for food item ${isFoodItemValid.foodName} is not available`
+            `Variant ${foodItem.variantName} for food item ${isFoodItemValid.foodName} is out of stock`
+          );
+        }
+      } else {
+        if (foodItem.variantName) {
+          throw new ApiError(
+            400,
+            `${isFoodItemValid.foodName} does not have variants`
           );
         }
       }
+
       foodItems.push({
         foodItemId: isFoodItemValid._id,
         foodName: isFoodItemValid.foodName,
@@ -142,30 +151,17 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         foodCategory: isFoodItemValid.category ?? "Uncategorized",
         variantName: foodItem.variantName ?? null, // Ensure variantName is included if provided
         quantity: foodItem.quantity ?? 1, // Default to 1 if quantity is not provided
-        price: foodItem.variantName
-          ? isFoodItemValid.variants.filter(
-              (variant) => variant.variantName === foodItem.variantName
-            )[0].price
+        price: selectedVariant
+          ? selectedVariant.price
           : isFoodItemValid.price,
-        finalPrice: foodItem.variantName
-          ? (isFoodItemValid.variants.filter(
-              (variant) => variant.variantName === foodItem.variantName
-            )[0].discountedPrice ??
-            isFoodItemValid.variants.filter(
-              (variant) => variant.variantName === foodItem.variantName
-            )[0].price)
+        finalPrice: selectedVariant
+          ? (selectedVariant.discountedPrice ?? selectedVariant.price)
           : (isFoodItemValid.discountedPrice ?? isFoodItemValid.price),
       });
 
       orderedFoodItems.push({
         ...foodItems[foodItems.length - 1],
-        foodName: isFoodItemValid.foodName,
-        foodType: isFoodItemValid.foodType,
-        foodCategory: isFoodItemValid.category ?? "Uncategorized",
-        isVariantOrder:
-          isFoodItemValid.variants.filter(
-            (variant) => variant.variantName === foodItem.variantName
-          ).length > 0,
+        isVariantOrder: !!selectedVariant,
       });
     }
 
@@ -173,7 +169,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     // Calculate total amount from food items
     const subtotal = foodItems.reduce(
-      (acc, item) => acc + item.finalPrice * item.quantity,
+      (acc, item) => acc + (item.finalPrice || 0) * item.quantity,
       0
     ); // Calculate total amount from food items
     const taxAmount = restaurant.isTaxIncludedInPrice
@@ -1273,7 +1269,7 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     order.notes = notes || order.notes; // Update notes if provided, otherwise keep existing notes
 
     const subtotal = updatedFoodItems.reduce(
-      (acc, item) => acc + item.finalPrice * item.quantity,
+      (acc, item) => acc + (item.finalPrice || 0) * item.quantity,
       0
     ); // Calculate subtotal (amount charged) from food items
     const discountAmount = 0; // Order-level discount

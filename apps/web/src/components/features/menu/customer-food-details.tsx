@@ -15,6 +15,7 @@ import {
   FoodItem,
   AllFoodItems,
   FoodItemDetails,
+  FoodVariant,
   ApiResponse,
 } from "@repo/types";
 import { Loader2, Minus, Plus, Trash2, X } from "lucide-react";
@@ -90,6 +91,12 @@ const CustomerFoodDetails = ({
           ),
         };
       });
+      if (response.data.data.hasVariants && response.data.data.variants?.length > 0) {
+        const defaultVariant = response.data.data.variants.find((v: FoodVariant) => v.isDefault) || response.data.data.variants[0];
+        setVariantName(defaultVariant.variantName);
+      } else {
+        setVariantName("default");
+      }
     } catch (error) {
       console.error(
         "Failed to fetch food item details. Please try again later:",
@@ -154,6 +161,7 @@ const CustomerFoodDetails = ({
       } else {
         addItem({
           ...foodItemDetails,
+          price: foodItemDetails.price || 0,
           quantity: itemCount,
           restaurantSlug,
           foodId: foodItemDetails._id,
@@ -447,12 +455,12 @@ const CustomerFoodDetails = ({
                           {" "}
                           ₹{foodItemDetails.discountedPrice.toFixed(2)}
                           <span className="line-through ml-2 text-xs text-muted-foreground">
-                            ₹{foodItemDetails.price.toFixed(2)}
+                                      ₹{(foodItemDetails.price || 0).toFixed(2)}
                           </span>
                         </p>
                       ) : (
                         <p className="text-lg font-semibold">
-                          ₹{foodItemDetails.price.toFixed(2)}
+                          ₹{(foodItemDetails.price || 0).toFixed(2)}
                         </p>
                       )}
 
@@ -472,50 +480,16 @@ const CustomerFoodDetails = ({
                             Variants
                           </CardTitle>
                           <CardDescription>
-                            Select a variant for this food item. Select Default
-                            if you want the standard option.
+                            Select a variant for this item
                           </CardDescription>
                         </CardHeader>
                         <Separator className="mx-1" />
                         <CardContent className="px-1 pb-2">
                           <RadioGroup
-                            defaultValue="default"
+                            value={variantName}
                             onValueChange={setVariantName}
                             className="gap-0"
                           >
-                            <div className="flex items-center w-full justify-between space-x-4 hover:bg-muted rounded-sm px-2 cursor-pointer">
-                              <Label
-                                htmlFor="default"
-                                className="flex-1 py-2 cursor-pointer justify-between"
-                              >
-                                Default
-                                <div className="text-right">
-                                  {typeof foodItemDetails.discountedPrice ===
-                                  "number" ? (
-                                    <>
-                                      <span className="text-xs line-through text-muted-foreground mr-2">
-                                        ₹{foodItemDetails.price.toFixed(2)}
-                                      </span>
-                                      <span className="text-sm font-semibold">
-                                        ₹
-                                        {foodItemDetails.discountedPrice.toFixed(
-                                          2,
-                                        )}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="text-sm font-semibold">
-                                      ₹{foodItemDetails.price.toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                              </Label>
-                              <RadioGroupItem
-                                value="default"
-                                id="default"
-                                className="border-primary cursor-pointer"
-                              />
-                            </div>
                             {foodItemDetails.variants.map((variant, index) => (
                               <div key={index}>
                                 <Separator className="mx-1" />

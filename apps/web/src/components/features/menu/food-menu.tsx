@@ -401,17 +401,33 @@ const ClinetFoodMenu = ({
                       <h3 className="font-semibold line-clamp-1">
                         {foodItem.foodName}
                       </h3>
-                      {typeof foodItem.discountedPrice === "number" ? (
+                      {foodItem.hasVariants ? (
                         <p className="text-sm font-medium">
-                          {" "}
+                          {
+                            typeof foodItem.variants?.find((v) => v.isDefault)?.discountedPrice === "number" ? (
+                              <>
+                                ₹{foodItem.variants?.find((v) => v.isDefault)?.discountedPrice?.toFixed(2)}
+                                <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
+                                  ₹{foodItem.variants?.find((v) => v.isDefault)?.price?.toFixed(2)}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                ₹{foodItem.variants?.find((v) => v.isDefault)?.price?.toFixed(2) || foodItem.variants?.[0]?.price?.toFixed(2)}
+                              </>
+                            )
+                          }
+                        </p>
+                      ) : typeof foodItem.discountedPrice === "number" ? (
+                        <p className="text-sm font-medium">
                           ₹{foodItem.discountedPrice.toFixed(2)}
                           <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                            ₹{foodItem.price.toFixed(2)}
+                            ₹{foodItem.price?.toFixed(2)}
                           </span>
                         </p>
                       ) : (
                         <p className="text-sm font-medium">
-                          ₹{foodItem.price.toFixed(2)}
+                          ₹{foodItem.price?.toFixed(2) || "0.00"}
                         </p>
                       )}
                       {foodItem.isAvailable || foodItem.hasVariants ? (
@@ -481,7 +497,7 @@ const ClinetFoodMenu = ({
                                       foodId: foodItem._id,
                                       quantity: 1,
                                       foodName: foodItem.foodName,
-                                      price: foodItem.price,
+                                      price: foodItem.price || 0,
                                       discountedPrice: foodItem.discountedPrice,
                                       imageUrl: foodItem.imageUrls?.[0],
                                       foodType: foodItem.foodType,
@@ -513,7 +529,7 @@ const ClinetFoodMenu = ({
                                   foodId: foodItem._id,
                                   quantity: 1,
                                   foodName: foodItem.foodName,
-                                  price: foodItem.price,
+                                  price: foodItem.price || 0,
                                   discountedPrice: foodItem.discountedPrice,
                                   imageUrl: foodItem.imageUrls?.[0],
                                   foodType: foodItem.foodType,

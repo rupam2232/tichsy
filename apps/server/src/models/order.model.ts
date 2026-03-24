@@ -34,6 +34,18 @@ const tableDetailsSchema: Schema<TableDetails> = new Schema({
     immutable: true,
   },
 });
+export interface SelectedAddOn extends Document {
+  groupTitle: string;
+  optionName: string;
+  price: number;
+}
+
+const selectedAddOnSchema: Schema<SelectedAddOn> = new Schema({
+  groupTitle: { type: String, required: true },
+  optionName: { type: String, required: true },
+  price: { type: Number, required: true },
+});
+
 /**
  * TypeScript interface for a FoodItem subdocument.
  * Represents a single food item (and optional variant) in an order.
@@ -47,6 +59,7 @@ export interface FoodItem extends Document {
   quantity: number; // Quantity ordered
   price: number; // Base price of the food item (before any discounts)
   finalPrice: number; // Final price after any discounts or adjustments
+  selectedAddOns?: SelectedAddOn[]; // Snapshot of selected addons
 }
 
 /**
@@ -93,6 +106,10 @@ const foodItemSchema: Schema<FoodItem> = new Schema({
       },
       message: "Final price must be a non-negative number",
     },
+  },
+  selectedAddOns: {
+    type: [selectedAddOnSchema],
+    default: [],
   },
 });
 

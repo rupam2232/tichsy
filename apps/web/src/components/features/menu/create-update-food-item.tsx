@@ -308,20 +308,22 @@ const CreateUpdateFoodItem = ({
     }
 
     // Validate if any variant price is undefined or not a number from variants array
-    const invalidVariantPrice = data.variants.find(
-      (variant) =>
-        variant.price === undefined ||
-        isNaN(variant.price) ||
-        variant.variantName === "",
-    );
+    if (data.variants && data.variants.length > 0) {
+      const invalidVariantPrice = data.variants.find(
+        (variant) =>
+          variant.price === undefined ||
+          isNaN(variant.price) ||
+          variant.variantName === "",
+      );
 
-    if (invalidVariantPrice) {
-      const index = data.variants.indexOf(invalidVariantPrice);
-      form.setError(`variants.${index}.price`, {
-        type: "manual",
-        message: "Variant price is required",
-      });
-      return;
+      if (invalidVariantPrice) {
+        const index = data.variants.indexOf(invalidVariantPrice);
+        form.setError(`variants.${index}.price`, {
+          type: "manual",
+          message: "Variant price is required",
+        });
+        return;
+      }
     }
 
     try {

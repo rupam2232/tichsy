@@ -396,12 +396,12 @@ const MenuPage = ({
                             {" "}
                             ₹{foodItem.discountedPrice.toFixed(2)}
                             <span className="line-through ml-2 text-xs">
-                              ₹{foodItem.price.toFixed(2)}
+                              ₹{(foodItem.price || 0).toFixed(2)}
                             </span>
                           </p>
                         ) : (
                           <p className="text-lg font-semibold">
-                            ₹{foodItem.price.toFixed(2)}
+                            ₹{(foodItem.price || 0).toFixed(2)}
                           </p>
                         )}
                       </div>

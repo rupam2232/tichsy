@@ -69,6 +69,11 @@ export default function FoodItemBasicInfo({
     name: "discountedPrice",
   });
 
+  const hasVariants = useWatch({
+    control: form.control,
+    name: "hasVariants",
+  });
+
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
 
   return (
@@ -99,73 +104,77 @@ export default function FoodItemBasicInfo({
           </FormItem>
         )}
       />
-      <FormField
-        control={form.control}
-        name="price"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel htmlFor="price">Price</FormLabel>
-            <FormControl>
-              <Input
-                id="price"
-                type="number"
-                inputMode="numeric"
-                placeholder="E.g., 100"
-                autoComplete="off"
-                {...field}
-                value={field.value === undefined ? "" : field.value} // Convert undefined to an empty string
-                onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                onWheel={(e) => {
-                  (e.target as HTMLInputElement).blur();
-                }}
-                step={"0"}
-              />
-            </FormControl>
-            <FormMessage />
-            <FormDescription>
-              The original price of the food item. Must be a positive number.
-            </FormDescription>
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="discountedPrice"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel htmlFor="discountedPrice">Discounted Price</FormLabel>
-            <FormControl>
-              <Input
-                id="discountedPrice"
-                type="number"
-                inputMode="numeric"
-                placeholder="E.g., 80"
-                autoComplete="off"
-                {...field}
-                value={discountedPrice === undefined ? "" : discountedPrice} // Convert undefined to an empty string
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const number = value === "" ? undefined : Number(value); // Convert empty string to undefined
-                  form.setValue("discountedPrice", number, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                    shouldTouch: true,
-                  });
-                }}
-                onWheel={(e) => {
-                  (e.target as HTMLInputElement).blur();
-                }}
-                step={"0"}
-              />
-            </FormControl>
-            <FormMessage />
-            <FormDescription>
-              Optional discounted price for the food item. Must be a positive
-              number.
-            </FormDescription>
-          </FormItem>
-        )}
-      />
+      {!hasVariants && (
+        <>
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="price">Price</FormLabel>
+                <FormControl>
+                  <Input
+                    id="price"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="E.g., 100"
+                    autoComplete="off"
+                    {...field}
+                    value={field.value === undefined ? "" : field.value} // Convert undefined to an empty string
+                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                    onWheel={(e) => {
+                      (e.target as HTMLInputElement).blur();
+                    }}
+                    step={"0"}
+                  />
+                </FormControl>
+                <FormMessage />
+                <FormDescription>
+                  The original price of the food item. Must be a positive number.
+                </FormDescription>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="discountedPrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="discountedPrice">Discounted Price</FormLabel>
+                <FormControl>
+                  <Input
+                    id="discountedPrice"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="E.g., 80"
+                    autoComplete="off"
+                    {...field}
+                    value={discountedPrice === undefined ? "" : discountedPrice} // Convert undefined to an empty string
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const number = value === "" ? undefined : Number(value); // Convert empty string to undefined
+                      form.setValue("discountedPrice", number, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                        shouldTouch: true,
+                      });
+                    }}
+                    onWheel={(e) => {
+                      (e.target as HTMLInputElement).blur();
+                    }}
+                    step={"0"}
+                  />
+                </FormControl>
+                <FormMessage />
+                <FormDescription>
+                  Optional discounted price for the food item. Must be a positive
+                  number.
+                </FormDescription>
+              </FormItem>
+            )}
+          />
+        </>
+      )}
       <FormField
         control={form.control}
         name="foodType"

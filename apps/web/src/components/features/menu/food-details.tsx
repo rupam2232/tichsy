@@ -637,23 +637,27 @@ const FoodDetails = ({
                       </span>
                     </p>
                   </div>
-                  <p>
-                    Price:{" "}
-                    <span className="font-bold">
-                      ₹{foodItemDetails.price.toFixed(2)}
-                    </span>
-                  </p>
-                  <p>
-                    Discounted Price:{" "}
-                    <span
-                      className={`${typeof foodItemDetails.discountedPrice !== "number" || isNaN(foodItemDetails.discountedPrice) ? "text-muted-foreground" : "font-bold"}`}
-                    >
-                      {typeof foodItemDetails.discountedPrice === "number" &&
-                      !isNaN(foodItemDetails.discountedPrice)
-                        ? `₹${foodItemDetails.discountedPrice.toFixed(2)}`
-                        : "No discounted price set"}
-                    </span>
-                  </p>
+                  { !foodItemDetails.hasVariants && (
+                    <>
+                      <p>
+                        Price:{" "}
+                        <span className="font-bold">
+                          ₹{foodItemDetails.price?.toFixed(2)}
+                        </span>
+                      </p>
+                      <p>
+                        Discounted Price:{" "}
+                        <span
+                          className={`${typeof foodItemDetails.discountedPrice !== "number" || isNaN(foodItemDetails.discountedPrice) ? "text-muted-foreground" : "font-bold"}`}
+                        >
+                          {typeof foodItemDetails.discountedPrice === "number" &&
+                          !isNaN(foodItemDetails.discountedPrice)
+                            ? `₹${foodItemDetails.discountedPrice.toFixed(2)}`
+                            : "No discounted price set"}
+                        </span>
+                      </p>
+                    </>
+                  )}
                   <div className="flex items-center gap-1">
                     Food Type:{" "}
                     <VegNonVegTooltip

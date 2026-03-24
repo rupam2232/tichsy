@@ -8,7 +8,8 @@ export const foodItemSchema = z.object({
     .trim(),
   price: z
     .number("Price must be a positive number")
-    .min(0, "Price must be a positive number"),
+    .min(0, "Price must be a positive number")
+    .optional(),
   discountedPrice: z
     .union([
       z
@@ -32,8 +33,7 @@ export const foodItemSchema = z.object({
         .trim(),
       price: z
         .number("Variant price must be a positive number")
-        .min(0, "Variant price must be a positive number")
-        .optional(),
+        .min(0, "Variant price must be a positive number"),
       discountedPrice: z
         .union([
           z
@@ -52,8 +52,9 @@ export const foodItemSchema = z.object({
         .max(100, "Variant description cannot exceed 100 characters")
         .trim()
         .optional(),
+      isDefault: z.boolean().optional(),
     }),
-  ),
+  ).optional(),
   imageUrls: z
     .array(z.url("Invalid image URL"))
     .max(5, "You can upload a maximum of 5 images")
@@ -79,4 +80,41 @@ export const foodItemSchema = z.object({
     )
     .max(15, "You can only have a maximum of 15 tags")
     .optional(),
-});
+})
+.refine(
+  (data) => {
+    if (!data.hasVariants && data.price === undefined) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Price is required when the food item does not have variants.",
+    path: ["price"],
+  }
+)
+.refine(
+  (data) => {
+    if (data.hasVariants && (!data.variants || data.variants.length === 0)) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "At least one variant is required when hasVariants is true.",
+    path: ["variants"],
+  }
+)
+.refine(
+  (data) => {
+    if (data.hasVariants && data.variants && data.variants.length > 0) {
+      const defaultCount = data.variants.filter((v) => v.isDefault).length;
+      return defaultCount === 1;
+    }
+    return true;
+  },
+  {
+    message: "Exactly one variant must be set as the default.",
+    path: ["variants"],
+  }
+);

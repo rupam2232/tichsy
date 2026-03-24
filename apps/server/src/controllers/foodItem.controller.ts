@@ -539,10 +539,6 @@ export const updateFoodItem = asyncHandler(async (req, res) => {
     );
   }
 
-  if (foodItem.isArchived) {
-    throw new ApiError(403, "Cannot make changes in a archived food item");
-  }
-
   const {
     foodName,
     price,
@@ -704,7 +700,7 @@ export const toggleFoodItemArchiveStatus = asyncHandler(async (req, res) => {
 
   // If unarchiving, check subscription limits
   if (foodItem.isArchived) {
-    await canUnarchiveFoodItem(restaurant.id, foodItem.id, req.subscription);
+    await canUnarchiveFoodItem(restaurant.id, foodItem, req.subscription);
     foodItem.isArchived = false;
     foodItem.archivedAt = undefined;
     foodItem.archivedReason = undefined;

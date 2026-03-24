@@ -58,24 +58,21 @@ export const addToCart = asyncHandler(async (req, res) => {
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
-  } else if (!foodItem.isAvailable && !variantName) {
-    throw new ApiError(400, "Food item is not available");
+  } else if (!foodItem.isAvailable) {
+    throw new ApiError(400, "Food item is out of stock");
+  } else if (foodItem.hasVariants) {
+    if (!variantName) {
+      throw new ApiError(400, "Variant name is required for this food item");
+    }
+    const variant = foodItem.variants?.find((v) => v.variantName === variantName);
+    if (!variant) {
+      throw new ApiError(400, "Invalid variant name for this food item");
+    }
+    if (!variant.isAvailable) {
+      throw new ApiError(400, "Variant is out of stock");
+    }
   } else if (!foodItem.hasVariants && variantName) {
     throw new ApiError(400, "Variant name is not allowed for this food item");
-  } else if (
-    foodItem.hasVariants &&
-    variantName &&
-    (!foodItem.variants ||
-      !foodItem.variants.some((variant) => variant.variantName === variantName))
-  ) {
-    throw new ApiError(400, "Invalid variant name for this food item");
-  } else if (
-    variantName &&
-    foodItem.variants.some(
-      (variant) => variant.variantName === variantName && !variant.isAvailable
-    )
-  ) {
-    throw new ApiError(400, "Food item is not available");
   }
 
   let cart = null;
@@ -229,24 +226,21 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   if (!foodItem) {
     throw new ApiError(404, "Food item not found");
-  } else if (!foodItem.isAvailable && !variantName) {
-    throw new ApiError(400, "Food item is not available");
+  } else if (!foodItem.isAvailable) {
+    throw new ApiError(400, "Food item is out of stock");
+  } else if (foodItem.hasVariants) {
+    if (!variantName) {
+      throw new ApiError(400, "Variant name is required for this food item");
+    }
+    const variant = foodItem.variants?.find((v) => v.variantName === variantName);
+    if (!variant) {
+      throw new ApiError(400, "Invalid variant name for this food item");
+    }
+    if (!variant.isAvailable) {
+      throw new ApiError(400, "Variant is out of stock");
+    }
   } else if (!foodItem.hasVariants && variantName) {
     throw new ApiError(400, "Variant name is not allowed for this food item");
-  } else if (
-    foodItem.hasVariants &&
-    variantName &&
-    (!foodItem.variants ||
-      !foodItem.variants.some((variant) => variant.variantName === variantName))
-  ) {
-    throw new ApiError(400, "Invalid variant name for this food item");
-  } else if (
-    variantName &&
-    foodItem.variants.some(
-      (variant) => variant.variantName === variantName && !variant.isAvailable
-    )
-  ) {
-    throw new ApiError(400, "Food item is not available");
   }
 
   cart.items[itemIndex].quantity = quantity;

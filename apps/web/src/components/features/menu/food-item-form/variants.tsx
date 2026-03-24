@@ -18,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@repo/ui/components/accordion";
+import { Switch } from "@repo/ui/components/switch";
 import { UseFormReturn, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { foodItemSchema } from "@repo/types";
@@ -106,7 +107,7 @@ export default function FoodItemVariants({
             });
             append({
               variantName: "",
-              price: undefined,
+              price: 0,
               discountedPrice: undefined,
               description: "",
             });
@@ -160,7 +161,70 @@ export default function FoodItemVariants({
                         {field.variantName || "New Variant"}
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="border pt-6 p-4 rounded-md space-y-3 relative">
+                        <div className="border p-4 rounded-md space-y-3">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="ml-auto flex"
+                            onClick={() => {
+                              const wasDefault = Boolean(
+                                form.getValues(`variants.${index}.isDefault`),
+                              );
+                              remove(index);
+                              if (wasDefault && fields.length > 1) {
+                                setTimeout(() => {
+                                  form.setValue(`variants.0.isDefault`, true, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  });
+                                }, 0);
+                              }
+                            }}
+                          >
+                            <Trash2 />
+                            <span className="sr-only">Remove Variant</span>
+                          </Button>
+
+                          <FormField
+                            control={form.control}
+                            name={`variants.${index}.isDefault`}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <div className="space-y-0.5">
+                                  <FormLabel>Set as Default Variant</FormLabel>
+                                  <FormDescription>
+                                    Automatically pre-selected for customers.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    disabled={fields.length <= 1}
+                                    className="cursor-pointer"
+                                    checked={Boolean(field.value)}
+                                    onCheckedChange={(checked) => {
+                                      if (!checked) return;
+                                      field.onChange(checked);
+                                      if (checked) {
+                                        fields.forEach((_, i) => {
+                                          if (i !== index) {
+                                            form.setValue(
+                                              `variants.${i}.isDefault`,
+                                              false,
+                                              {
+                                                shouldDirty: true,
+                                                shouldValidate: true,
+                                              },
+                                            );
+                                          }
+                                        });
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                           <FormField
                             control={form.control}
                             name={`variants.${index}.variantName`}
@@ -303,17 +367,6 @@ export default function FoodItemVariants({
                               </FormItem>
                             )}
                           />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            className="mt-2 absolute top-0 right-2 p-2! h-min"
-                            onClick={() => {
-                              remove(index);
-                            }}
-                          >
-                            <Trash2 className="size-4" />
-                            <span className="sr-only">Remove Variant</span>
-                          </Button>
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -340,9 +393,10 @@ export default function FoodItemVariants({
             });
             append({
               variantName: "",
-              price: undefined,
+              price: 0,
               discountedPrice: undefined,
               description: "",
+              isDefault: fields.length === 0,
             });
             // Open the parent accordion
             setOpenParentAccordion("variants");

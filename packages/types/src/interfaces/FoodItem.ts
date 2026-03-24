@@ -5,12 +5,28 @@ export interface FoodVariant {
   description?: string; // Description for this variant
   discountedPrice?: number; // Optional final price after discount for this variant
   isAvailable: boolean; // Whether this variant is currently available
+  isDefault?: boolean; // Whether this is the default variant
+}
+
+export interface AddOnOption {
+  _id: string;
+  optionName: string;
+  price: number;
+  isAvailable: boolean;
+}
+
+export interface AddOnGroup {
+  _id: string;
+  groupTitle: string;
+  minSelections: number;
+  maxSelections: number;
+  options: AddOnOption[];
 }
 
 export interface FoodItem {
   _id: string; // Unique identifier for the food item
   foodName: string; // Name of the food item
-  price: number; // Base price of the food item
+  price?: number; // Base price of the food item (optional if hasVariants is true)
   discountedPrice?: number; // Optional final price after discount
   imageUrls?: string[]; // Optional array of image URLs
   foodType: "veg" | "non-veg"; // Type of the food (veg or non-veg)
@@ -19,10 +35,11 @@ export interface FoodItem {
   description?: string; // Optional description of the food item
   hasVariants: boolean; // Whether this item has variants
   createdAt: Date; // Timestamp when the document was first created (set automatically, never changes)
+  addOnGroups?: AddOnGroup[]; // Future-proofing for Addons/Extras
+  variants?: FoodVariant[]; // Array of variants (if any)
 }
 
 export interface FoodItemDetails extends FoodItem {
-  variants?: FoodVariant[]; // Array of variants (if any)
   tags?: string[]; // Optional tags for search/filtering (e.g., "Spicy", "Veg")
   category?: string; // Optional category (e.g., "Indian", "Snacks")
   restaurantDetails: {
