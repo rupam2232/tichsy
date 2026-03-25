@@ -831,6 +831,7 @@ export const getOrdersByRestaurant = asyncHandler(async (req, res) => {
         notes: { $first: "$notes" },
         orderedFoodItems: {
           $push: {
+            foodItemId: "$foodItems._id",
             variantName: "$foodItems.variantName",
             foodName: "$foodItems.foodName",
             foodType: "$foodItems.foodType",

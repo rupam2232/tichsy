@@ -30,7 +30,7 @@ import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage
+  AvatarImage,
 } from "@repo/ui/components/avatar";
 import { IconReceipt, IconSalad } from "@tabler/icons-react";
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
@@ -72,7 +72,17 @@ const CustomerOrderDetailsClientPage = () => {
   useEffect(() => {
     if (!socket || !orderId) return;
 
-    socket.emit("joinOrderRoom", orderId);
+    const handleConnect = () => {
+      socket.emit("joinOrderRoom", orderId);
+      console.log("Emitted joinOrderRoom event with order ID:", orderId);
+    };
+
+    if (socket.connected) {
+      handleConnect();
+    }
+
+    // Always listen for "connect" to handle reconnects cleanly
+    socket.on("connect", handleConnect);
 
     const handleOrderUpdate = (socketData: FullOrderDetailsType) => {
       setOrder((prev) => {
@@ -88,6 +98,7 @@ const CustomerOrderDetailsClientPage = () => {
     socket.on("orderUpdate", handleOrderUpdate);
 
     return () => {
+      socket.off("connect", handleConnect);
       socket.off("orderUpdate", handleOrderUpdate);
     };
   }, [socket, orderId]);
@@ -98,7 +109,12 @@ const CustomerOrderDetailsClientPage = () => {
       { id: "pending", label: "Placed", icon: IconReceipt, isError: false },
       { id: "preparing", label: "Preparing", icon: ChefHat, isError: false },
       { id: "ready", label: "Ready", icon: Utensils, isError: false },
-      { id: "completed", label: "Completed", icon: CheckCircle2, isError: false },
+      {
+        id: "completed",
+        label: "Completed",
+        icon: CheckCircle2,
+        isError: false,
+      },
     ];
 
     if (order?.status === "cancelled") {
@@ -365,10 +381,7 @@ const CustomerOrderDetailsClientPage = () => {
           {order.taxAmount && order.taxAmount > 0 ? (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Tax{" "}
-                {order.taxRate
-                  ? `(${order.taxRate}%)`
-                  : ""}
+                Tax {order.taxRate ? `(${order.taxRate}%)` : ""}
               </span>
               <span>+₹{order.taxAmount.toFixed(2)}</span>
             </div>

@@ -76,21 +76,41 @@ export function setupSocketIO(server: http.Server) {
 
         // Check if user is owner
         if (decoded._id === restaurant.ownerId.toString()) {
+          // Leave other restaurant rooms
+          Array.from(socket.rooms).forEach((room) => {
+            if (
+              room.startsWith("restaurant_") &&
+              room !== `restaurant_${activeRestaurantId}`
+            ) {
+              socket.leave(room);
+            }
+          });
+
           socket.join(`restaurant_${activeRestaurantId}`);
           console.log(`User joined ${activeRestaurantId} room`);
           return;
         }
 
         // Check if user is an active staff member
-        const membership = await RestaurantMember.exists({
+        const member = await RestaurantMember.exists({
           userId: decoded._id,
           restaurantId: restaurant._id,
           isArchived: false,
         });
 
-        if (!membership) {
-          return socket.disconnect();
+        if (!member) {
+          return;
         }
+
+        // Leave other restaurant rooms
+        Array.from(socket.rooms).forEach((room) => {
+          if (
+            room.startsWith("restaurant_") &&
+            room !== `restaurant_${activeRestaurantId}`
+          ) {
+            socket.leave(room);
+          }
+        });
 
         socket.join(`restaurant_${activeRestaurantId}`);
         console.log(`User joined ${activeRestaurantId} room`);
@@ -100,12 +120,26 @@ export function setupSocketIO(server: http.Server) {
       }
     });
 
+    socket.on("leaveRestaurantRoom", (activeRestaurantId) => {
+      if (!activeRestaurantId) return;
+      socket.leave(`restaurant_${activeRestaurantId}`);
+      console.log(`User left restaurant room: ${activeRestaurantId}`);
+    });
+
     socket.on("joinOrderRoom", (orderId) => {
       if (!orderId) return;
       if (isValidObjectId(orderId) === false) {
         console.error("Invalid order ID:", orderId);
         return;
       }
+
+      // Leave other order rooms to prevent receiving updates for old orders
+      Array.from(socket.rooms).forEach((room) => {
+        if (room.startsWith("order_") && room !== `order_${orderId}`) {
+          socket.leave(room);
+        }
+      });
+
       socket.join(`order_${orderId}`);
       socket.data.orderId = orderId;
       console.log(`User joined order room: ${orderId}`);

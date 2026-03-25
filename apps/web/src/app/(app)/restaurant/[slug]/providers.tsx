@@ -31,9 +31,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const socket = useSocket();
 
-  // Ref to keep the latest restaurant data for the connect handler
-  const connectHandlerRef = useRef<(() => void) | null>(null);
-
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [authError, setAuthError] = useState<{
     title: string;
@@ -67,7 +64,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         setAuthError(null);
         const response = await axios.get(`/restaurant/${slug}`);
         if (response.data.success) {
-          dispatch(setActiveRestaurant({...response.data.data, userRole: response.data.data.userRole.toLowerCase()}));
+          dispatch(
+            setActiveRestaurant({
+              ...response.data.data,
+              userRole: response.data.data.userRole.toLowerCase(),
+            }),
+          );
         }
       } catch (error) {
         console.error("Error fetching restaurant data:", error);
@@ -114,36 +116,31 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   // Connect handling
   useEffect(() => {
-    if (!socket) return;
-
-    // Clean any previous connect handler
-    if (connectHandlerRef.current) {
-      socket.off("connect", connectHandlerRef.current);
-      connectHandlerRef.current = null;
-    }
+    if (!socket || !activeRestaurant?._id) return;
 
     const handleConnect = () => {
-      if (activeRestaurant?._id) {
-        socket.emit("joinRestaurantRoom", activeRestaurant._id);
-        console.log(
-          "Emitted joinRestaurantRoom event with restaurant ID:",
-          activeRestaurant._id,
-          socket.id,
-        );
-      }
+      socket.emit("joinRestaurantRoom", activeRestaurant._id);
+      console.log(
+        "Emitted joinRestaurantRoom event with restaurant ID:",
+        activeRestaurant._id,
+        socket.id,
+      );
     };
-    connectHandlerRef.current = handleConnect;
 
     if (socket.connected) {
       handleConnect();
-    } else {
-      socket.on("connect", handleConnect);
     }
 
+    socket.on("connect", handleConnect);
+
     return () => {
-      if (connectHandlerRef.current) {
-        socket.off("connect", connectHandlerRef.current);
-        connectHandlerRef.current = null;
+      socket.off("connect", handleConnect);
+      if (socket.connected) {
+        socket.emit("leaveRestaurantRoom", activeRestaurant._id);
+        console.log(
+          "Emitted leaveRestaurantRoom with ID:",
+          activeRestaurant._id,
+        );
       }
     };
   }, [socket, activeRestaurant?._id]);
