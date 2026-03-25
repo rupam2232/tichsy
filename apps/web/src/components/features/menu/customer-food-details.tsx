@@ -64,7 +64,7 @@ const CustomerFoodDetails = ({
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [carouselCurrent, setCarouselCurrent] = useState<number>(0);
   const [carouselCount, setCarouselCount] = useState<number>(0);
-  const [variantName, setVariantName] = useState<string>("default");
+  const [variantName, setVariantName] = useState<string>("");
   const [itemCount, setItemCount] = useState<number>(1);
   const { cartItems, addItem, removeItem, editItem, syncCart } =
     useCart(restaurantSlug);
@@ -91,11 +91,17 @@ const CustomerFoodDetails = ({
           ),
         };
       });
-      if (response.data.data.hasVariants && response.data.data.variants?.length > 0) {
-        const defaultVariant = response.data.data.variants.find((v: FoodVariant) => v.isDefault) || response.data.data.variants[0];
-        setVariantName(defaultVariant.variantName);
+      if (
+        response.data.data.hasVariants &&
+        response.data.data.variants?.length > 0
+      ) {
+        const availableDefaultVariant =
+          response.data.data.variants.find(
+            (v: FoodVariant) => v.isDefault && v.isAvailable,
+          ) || response.data.data.variants.find((v: FoodVariant) => v.isAvailable);
+        setVariantName(availableDefaultVariant?.variantName || "");
       } else {
-        setVariantName("default");
+        setVariantName("");
       }
     } catch (error) {
       console.error(
@@ -127,11 +133,26 @@ const CustomerFoodDetails = ({
   const handleAddItem = useCallback(() => {
     if (!foodItemDetails) return;
 
-    if (
-      foodItemDetails.variants &&
-      foodItemDetails.variants.length > 0 &&
-      variantName !== "default"
-    ) {
+    if (!foodItemDetails.isAvailable) {
+      toast.error("This item is currently unavailable");
+      fetchFoodItemDetails();
+      syncCart();
+      return;
+    }
+
+    if (foodItemDetails.variants && foodItemDetails.variants.length > 0) {
+      const variant = foodItemDetails.variants.find(
+        (entry) => entry.variantName === variantName,
+      );
+      if (!variant || !variant.isAvailable) {
+        toast.error("Selected variant is currently unavailable");
+        fetchFoodItemDetails();
+        syncCart();
+        return;
+      }
+    }
+
+    if (foodItemDetails.variants && foodItemDetails.variants.length > 0) {
       const variant = foodItemDetails.variants.find(
         (variant) => variant.variantName === variantName,
       );
@@ -179,12 +200,13 @@ const CustomerFoodDetails = ({
     setDrawerOpen,
     cartItems,
     restaurantSlug,
+    fetchFoodItemDetails,
+    syncCart,
   ]);
 
   const itemPrice = useMemo(() => {
     return foodItemDetails
-      ? variantName !== "default" &&
-        foodItemDetails.variants &&
+      ? foodItemDetails.variants &&
         foodItemDetails.variants.length > 0
         ? foodItemDetails.variants.find(
             (variant) => variant.variantName === variantName,
@@ -195,8 +217,7 @@ const CustomerFoodDetails = ({
 
   const itemDiscountedPrice = useMemo(() => {
     return foodItemDetails
-      ? variantName !== "default" &&
-        foodItemDetails.variants &&
+      ? foodItemDetails.variants &&
         foodItemDetails.variants.length > 0
         ? foodItemDetails.variants.find(
             (variant) => variant.variantName === variantName,
@@ -205,13 +226,53 @@ const CustomerFoodDetails = ({
       : foodItem.discountedPrice;
   }, [foodItem.discountedPrice, foodItemDetails, variantName]);
 
+  const variantsByName = useMemo(() => {
+    const variants = foodItemDetails?.variants || [];
+    return new Map(variants.map((variant) => [variant.variantName, variant]));
+  }, [foodItemDetails?.variants]);
+
+  const hasVariants = (foodItemDetails?.variants?.length || 0) > 0;
+
+  const selectedVariant = useMemo(() => {
+    if (!hasVariants || !variantName) {
+      return null;
+    }
+    return variantsByName.get(variantName) || null;
+  }, [hasVariants, variantName, variantsByName]);
+
+  const canAddSelectedItem = useMemo(() => {
+    if (!foodItemDetails?.isAvailable) {
+      return false;
+    }
+    if (!hasVariants) {
+      return true;
+    }
+    if (!selectedVariant) {
+      return false;
+    }
+    return !!selectedVariant.isAvailable;
+  }, [foodItemDetails?.isAvailable, hasVariants, selectedVariant]);
+
+  const addDisabledReason = useMemo(() => {
+    if (!foodItemDetails?.isAvailable) {
+      return "Not Available";
+    }
+    if (hasVariants && !selectedVariant) {
+      return "Select an available variant";
+    }
+    if (hasVariants && selectedVariant && !selectedVariant.isAvailable) {
+      return "Selected variant unavailable";
+    }
+    return null;
+  }, [foodItemDetails?.isAvailable, hasVariants, selectedVariant]);
+
   useEffect(() => {
     if (drawerOpen && !showEditDrawer) {
       setFoodItemDetails(null);
       setIsLoading(true);
       fetchFoodItemDetails();
       setItemCount(1);
-      setVariantName("default");
+      setVariantName("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerOpen, foodItem._id]);
@@ -272,7 +333,7 @@ const CustomerFoodDetails = ({
                             </p>
                           </div>
                           {item.isAvailable ? (
-                            <div>
+                            <>
                               <div className="flex items-center space-x-2 mt-2 dark:border-zinc-600 border rounded-md w-min">
                                 <Button
                                   variant="ghost"
@@ -325,7 +386,7 @@ const CustomerFoodDetails = ({
                                     ).toFixed(2)
                                   : (item.price * item.quantity).toFixed(2)}
                               </p>
-                            </div>
+                            </>
                           ) : (
                             <div className="flex flex-col items-center px-3">
                               <p className="text-sm text-muted-foreground font-medium">
@@ -455,7 +516,7 @@ const CustomerFoodDetails = ({
                           {" "}
                           ₹{foodItemDetails.discountedPrice.toFixed(2)}
                           <span className="line-through ml-2 text-xs text-muted-foreground">
-                                      ₹{(foodItemDetails.price || 0).toFixed(2)}
+                            ₹{(foodItemDetails.price || 0).toFixed(2)}
                           </span>
                         </p>
                       ) : (
@@ -495,7 +556,10 @@ const CustomerFoodDetails = ({
                                 <Separator className="mx-1" />
                                 <div
                                   className={cn(
-                                    "flex justify-between space-x-4 w-full hover:bg-muted rounded-sm px-2 cursor-pointer py-2",
+                                    "flex justify-between space-x-4 w-full rounded-sm px-2 py-2",
+                                    variant.isAvailable
+                                      ? "cursor-pointer hover:bg-muted"
+                                      : "opacity-70 cursor-not-allowed",
                                     variantName === variant.variantName
                                       ? "items-start"
                                       : "items-center",
@@ -503,10 +567,22 @@ const CustomerFoodDetails = ({
                                 >
                                   <Label
                                     htmlFor={variant.variantName}
-                                    className="flex-1 cursor-pointer flex-col justify-start py-0"
+                                    className={cn(
+                                      "flex-1 flex-col justify-start py-0",
+                                      variant.isAvailable
+                                        ? "cursor-pointer"
+                                        : "cursor-not-allowed",
+                                    )}
                                   >
                                     <div className="flex items-center justify-between w-full">
-                                      {variant.variantName}
+                                      <span>
+                                        {variant.variantName}
+                                        {!variant.isAvailable && (
+                                          <span className="text-xs text-muted-foreground ml-2">
+                                            Unavailable
+                                          </span>
+                                        )}
+                                      </span>
                                       <div className="text-right">
                                         {typeof variant.discountedPrice ===
                                         "number" ? (
@@ -545,6 +621,7 @@ const CustomerFoodDetails = ({
                                   <RadioGroupItem
                                     value={variant.variantName}
                                     id={variant.variantName}
+                                    disabled={!variant.isAvailable}
                                     className="border-primary cursor-pointer mt-1"
                                   />
                                 </div>
@@ -596,14 +673,7 @@ const CustomerFoodDetails = ({
               )}
             >
               <CardDescription>
-                {foodItemDetails &&
-                (variantName === "default"
-                  ? foodItemDetails.isAvailable
-                  : foodItemDetails.variants?.some(
-                      (variant) =>
-                        variant.variantName === variantName &&
-                        variant.isAvailable,
-                    )) ? (
+                {canAddSelectedItem ? (
                   <div className="flex justify-between">
                     <div className="flex items-center gap-2 dark:border-zinc-600 border rounded-md w-min">
                       <Button
@@ -659,7 +729,7 @@ const CustomerFoodDetails = ({
                     className="text-sm h-8 gap-0"
                     disabled
                   >
-                    Not Available
+                    {addDisabledReason || "Not Available"}
                   </Button>
                 )}
               </CardDescription>

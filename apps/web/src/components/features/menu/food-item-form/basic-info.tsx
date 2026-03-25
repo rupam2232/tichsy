@@ -60,9 +60,6 @@ export default function FoodItemBasicInfo({
   formLoading,
   setFormLoading,
 }: FoodItemBasicInfoProps) {
-  const remoteCategories = foodItemDetails?.restaurantDetails?.categories ?? [];
-  const effectiveCategories =
-    remoteCategories.length > 0 ? remoteCategories : categories;
 
   const discountedPrice = useWatch({
     control: form.control,
@@ -279,8 +276,8 @@ export default function FoodItemBasicInfo({
                         </Button>
                       </div>
                       <CommandGroup>
-                        {effectiveCategories.length > 0 ? (
-                          effectiveCategories.map((category) => (
+                        {categories.length > 0 ? (
+                          categories.map((category) => (
                             <CommandItem
                               key={category}
                               value={category}

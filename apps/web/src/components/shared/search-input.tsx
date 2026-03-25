@@ -36,7 +36,11 @@ export default function SearchInput({
       params.delete("search");
       params.set("tab", "all");
     }
-    router.replace(`${pathname}?${params.toString()}`);
+    if (searchParams.get("tab") === "search") {
+      router.replace(`${pathname}?${params.toString()}`);
+    } else {
+      router.push(`${pathname}?${params.toString()}`);
+    }
   };
 
   const handleDebouncedSearch = useDebounceCallback(handleSearch, 300);
@@ -78,7 +82,7 @@ export default function SearchInput({
           onClick={() => {
             const params = new URLSearchParams(searchParams);
             params.delete("search");
-            params.set("tab", "all");
+            params.delete("tab");
             router.replace(`${pathname}?${params.toString()}`);
             if (searchInputRef.current) {
               searchInputRef.current.value = "";

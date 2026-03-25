@@ -110,6 +110,7 @@ export default function FoodItemVariants({
               price: 0,
               discountedPrice: undefined,
               description: "",
+              isDefault: true,
             });
             // Open the parent accordion
             setOpenParentAccordion("variants");
@@ -142,6 +143,11 @@ export default function FoodItemVariants({
             See Variants
           </AccordionTrigger>
           <AccordionContent>
+            {typeof form.formState.errors.variants?.message === "string" && (
+              <p className="text-sm text-destructive pb-2">
+                {form.formState.errors.variants.message}
+              </p>
+            )}
             {fields.length > 0 ? (
               fields.map((field, index) => {
                 const discountedPrice =

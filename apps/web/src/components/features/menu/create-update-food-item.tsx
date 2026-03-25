@@ -312,8 +312,7 @@ const CreateUpdateFoodItem = ({
       const invalidVariantPrice = data.variants.find(
         (variant) =>
           variant.price === undefined ||
-          isNaN(variant.price) ||
-          variant.variantName === "",
+          isNaN(variant.price),
       );
 
       if (invalidVariantPrice) {
@@ -322,6 +321,25 @@ const CreateUpdateFoodItem = ({
           type: "manual",
           message: "Variant price is required",
         });
+        setOpenParentAccordion("variants");
+        setOpenChildAccordion((prev) => [...(prev || []), `item-${index}`]);
+        toast.error("Please provide a valid price for each variant.");
+        return;
+      }
+
+      const invalidVariantName = data.variants.find(
+        (variant) => variant.variantName.trim() === "",
+      );
+
+      if (invalidVariantName) {
+        const index = data.variants.indexOf(invalidVariantName);
+        form.setError(`variants.${index}.variantName`, {
+          type: "manual",
+          message: "Variant name is required",
+        });
+        setOpenParentAccordion("variants");
+        setOpenChildAccordion((prev) => [...(prev || []), `item-${index}`]);
+        toast.error("Please provide a name for each variant.");
         return;
       }
     }
@@ -498,7 +516,12 @@ const CreateUpdateFoodItem = ({
                 : "Create Food Item"}
             </DialogTitle>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit, () => {
+                  setOpenParentAccordion("variants");
+                  toast.error("Please fix form errors before submitting.");
+                })}
+              >
                 <div
                   className={cn(
                     "grid gap-4 transition-all ease-in delay-75",

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
-import ClientPage from "./clientPage";
+import OrderTabList from "./tablist";
+import SearchInput from "@/components/shared/search-input";
+import OrderList from "./order-list";
+import { buildOrderQuery } from "@/utils/buildQuery";
 
 export async function generateMetadata({
   params,
@@ -26,7 +29,7 @@ export default async function page({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
   const { slug } = await params;
   const { tab = "all", search = "" } = await searchParams;
@@ -36,33 +39,7 @@ export default async function page({
   try {
     const { default: serverAxios } = await import("@/utils/server-axios");
 
-    let query = "";
-    switch (tab) {
-      case "all":
-        query = "";
-        break;
-      case "new":
-        query = "status=pending";
-        break;
-      case "inProgress":
-        query = "status=preparing";
-        break;
-      case "ready":
-        query = "status=ready";
-        break;
-      case "unPaid":
-        query = "isPaid=false";
-        break;
-      case "completed":
-        query = "status=completed&status=cancelled";
-        break;
-      case "search":
-        query = `search=${search}`;
-        break;
-      default:
-        query = "";
-        break;
-    }
+    const query = buildOrderQuery(tab, search);
 
     const response = await serverAxios.get(`/order/${slug}?${query}`);
     if (
@@ -76,5 +53,13 @@ export default async function page({
     console.error("Failed to fetch orders server-side:", error);
   }
 
-  return <ClientPage initialOrders={initialOrders} slug={slug} />;
+  return (
+    <section className="flex flex-1 flex-col p-4 gap-4 lg:p-6 @container/main">
+      <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
+        <OrderTabList />
+        <SearchInput placeholder="Search orders by No., table name, food item name..." className="w-full sm:w-auto sm:min-w-[300px]" />
+      </div>
+      <OrderList initialOrders={initialOrders} slug={slug} />
+    </section>
+  );
 }

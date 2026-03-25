@@ -368,9 +368,7 @@ const ClinetFoodMenu = ({
                   }
                   className={cn(
                     "overflow-hidden transition-all duration-200 hover:scale-101 hover:shadow-md cursor-pointer group py-0 gap-0 relative",
-                    !foodItem.isAvailable &&
-                      !foodItem.hasVariants &&
-                      "grayscale opacity-80",
+                    !foodItem.isAvailable && "grayscale opacity-80",
                   )}
                   onClick={() => {
                     setSelectedFoodItem(foodItem);
@@ -430,7 +428,7 @@ const ClinetFoodMenu = ({
                           ₹{foodItem.price?.toFixed(2) || "0.00"}
                         </p>
                       )}
-                      {foodItem.isAvailable || foodItem.hasVariants ? (
+                      {foodItem.isAvailable ? (
                         cartItems.some(
                           (item) => item.foodId === foodItem._id,
                         ) ? (
@@ -609,7 +607,7 @@ const ClinetFoodMenu = ({
         </TabsContent>
       </Tabs>
       {!isStaffCreatingOrder && cartItems && cartItems.length > 0 && (
-        <div className="fixed bottom-2 w-full md:w-1/3 right-0 rounded-md bg-primary z-30">
+        <div className="fixed bottom-2 w-[95%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30">
           <Link
             href={`/${slug}/cart/?tableId=${tableId}`}
             className="flex items-center justify-center p-4 font-semibold"

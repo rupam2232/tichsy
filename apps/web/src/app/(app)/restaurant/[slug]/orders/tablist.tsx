@@ -3,27 +3,20 @@
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
 
-const FIXED_TABS = [
+const ORDER_TABS = [
   { value: "all", label: "All" },
-  { value: "available", label: "Available" },
-  { value: "unavailable", label: "Unavailable" },
+  { value: "new", label: "New" },
+  { value: "inProgress", label: "In Progress" },
+  { value: "ready", label: "Ready" },
+  { value: "unPaid", label: "Unpaid" },
+  { value: "completed", label: "Completed" },
 ];
 
-const TAB_TRIGGER_CLASS =
-  "font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-primary transition-all duration-200 shadow-none";
-
-export default function MenuTabList() {
+export default function OrderTabList() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-
-  const categories = useSelector(
-    (state: RootState) =>
-      state.restaurantsSlice.activeRestaurant?.categories ?? [],
-  );
 
   const currentTab = searchParams.get("tab") || "all";
 
@@ -34,11 +27,6 @@ export default function MenuTabList() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const tabs = [
-    ...FIXED_TABS,
-    ...categories.map((cat) => ({ value: cat, label: cat })),
-  ];
-
   return (
     <Tabs
       value={currentTab}
@@ -47,11 +35,11 @@ export default function MenuTabList() {
     >
       <ScrollArea className="w-full sm:min-w-0 flex-1 sm:pb-2 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md">
         <TabsList>
-          {tabs.map((tab) => (
+          {ORDER_TABS.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className={TAB_TRIGGER_CLASS}
+              className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-primary transition-all duration-200 shadow-none"
             >
               {tab.label}
             </TabsTrigger>
