@@ -67,8 +67,8 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-80 md:w-96 bg-background"
-        align="end"
+        className="w-80 md:w-md bg-background"
+        align="center"
         forceMount
       >
         <DropdownMenuLabel className="flex items-center justify-between font-normal">
@@ -86,7 +86,7 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-250px)]">
+        <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-160px)]">
           <PushNotificationRequest />
           {showFullLoader ? (
             <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">

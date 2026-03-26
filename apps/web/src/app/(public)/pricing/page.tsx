@@ -5,6 +5,9 @@ import { getAllPlans } from "@repo/pricing";
 export const metadata: Metadata = {
   title: "Pricing - Tichsy",
   description: "Explore Tichsy pricing information. Find our affordable pricing plans, with no hidden pricing. We have generous free plan for those getting started.",
+  alternates: {
+    canonical: "/pricing",
+  },
 };
 
 export default function PricingPage() {

@@ -146,7 +146,7 @@ export function LiveTableStatus({ slug }: LiveTableStatusProps) {
   );
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow @container/live-table-status">
+    <Card className="shadow-xs hover:shadow-md transition-shadow @container/live-table-status">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between pb-0">
         <CardTitle className="text-lg">Live Table Status</CardTitle>
         <div className="flex items-center gap-3">

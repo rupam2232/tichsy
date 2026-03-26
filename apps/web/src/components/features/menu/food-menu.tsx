@@ -610,7 +610,7 @@ const ClinetFoodMenu = ({
         <div className="fixed bottom-2 w-[95%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30">
           <Link
             href={`/${slug}/cart/?tableId=${tableId}`}
-            className="flex items-center justify-center p-4 font-semibold"
+            className="flex items-center justify-center p-4 font-semibold text-white"
           >
             View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}
             )

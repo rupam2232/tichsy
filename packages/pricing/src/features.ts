@@ -128,6 +128,9 @@ export const PLAN_DISPLAYS: Record<SubscriptionPlan, PlanDisplay> = {
       {
         name: "Priority support",
       },
+      {
+        name: "Early access to new features",
+      },
     ],
   },
 };

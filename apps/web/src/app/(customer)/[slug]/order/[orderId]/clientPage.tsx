@@ -218,7 +218,7 @@ const CustomerOrderDetailsClientPage = () => {
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 bg-background",
                       isCompleted && !step.isError
-                        ? "dark:border-green-600 dark:bg-green-600 border-green-300 bg-green-300 text-primary-foreground"
+                        ? "border-green-600 bg-green-600 text-primary-foreground"
                         : "border-muted text-muted-foreground",
                       step.isError && isCompleted
                         ? "border-destructive bg-destructive text-destructive-foreground"
@@ -231,7 +231,7 @@ const CustomerOrderDetailsClientPage = () => {
                     className={cn(
                       "text-xs font-medium text-center",
                       isCompleted
-                        ? "text-primary-foreground"
+                        ? "text-secondary-foreground"
                         : "dark:text-muted-foreground text-muted-foreground/70",
                     )}
                   >

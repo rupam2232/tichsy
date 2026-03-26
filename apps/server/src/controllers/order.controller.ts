@@ -1105,10 +1105,10 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
         qrSlug: order.table.qrSlug,
       },
       {
-        isOccupied: false,
-        currentOrderId: undefined,
+        $set: { isOccupied: false },
+        $unset: { currentOrderId: "" },
       },
-      { new: true, runValidators: true, lean: true }
+      { new: true, lean: true }
     );
     if (table) {
       io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {
@@ -1376,10 +1376,10 @@ export const updatePaidStatus = asyncHandler(async (req, res) => {
         qrSlug: order.table.qrSlug,
       },
       {
-        isOccupied: false,
-        currentOrderId: undefined,
+        $set: { isOccupied: false },
+        $unset: { currentOrderId: "" },
       },
-      { new: true, runValidators: true, lean: true }
+      { new: true, lean: true }
     );
     if (table) {
       io?.to(`restaurant_${restaurant.id}`).emit("tableUpdated", {

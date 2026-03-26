@@ -127,10 +127,8 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-  modal,
 }: Readonly<{
   children: React.ReactNode;
-  modal: React.ReactNode;
 }>) {
   let user = null;
   try {
@@ -143,7 +141,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
+    <html lang="en" className="custom-scrollbar">
       <body>
         <script
           type="application/ld+json"
@@ -165,7 +163,6 @@ export default async function RootLayout({
           }}
         />
         <Providers user={user}>
-          {modal}
           {children}
         </Providers>
       </body>

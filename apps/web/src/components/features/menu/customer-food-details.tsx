@@ -709,7 +709,7 @@ const CustomerFoodDetails = ({
                       Add
                       {typeof itemDiscountedPrice === "number" ? (
                         <>
-                          <span className="text-xs line-through text-muted-foreground items-baseline">
+                          <span className="text-xs line-through font-normal items-baseline">
                             ₹{((itemPrice ?? 1) * itemCount).toFixed(2)}
                           </span>
                           <span className="text-sm font-semibold">

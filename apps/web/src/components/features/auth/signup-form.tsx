@@ -2,7 +2,6 @@
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Card, CardContent } from "@repo/ui/components/card";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { signUpSchema } from "@repo/types";
@@ -55,6 +54,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export function SignupForm({
   className,
@@ -254,20 +254,10 @@ export function SignupForm({
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className={cn("overflow-hidden p-0", cardClassName)}>
-        <CardContent className="grid p-0 md:grid-cols-2">
-          <div className="bg-muted relative hidden md:block">
-            <Image
-              fill
-              sizes="(min-width: 768px) 50vw, 100vw"
-              src="/placeholder.png"
-              alt="Image"
-              priority={true}
-              className="absolute inset-0 h-full w-full object-cover object-left"
-            />
-          </div>
+        <CardContent className="p-0">
           <Form {...form}>
             <form
-              className="md:h-[84vh] overflow-y-auto overflow-x-hidden"
+              className="h-[90vh] overflow-y-auto overflow-x-hidden"
               onSubmit={form.handleSubmit(onSubmit)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -281,9 +271,27 @@ export function SignupForm({
               <ScrollArea className="h-full">
                 <div className="flex flex-col gap-6 p-6 md:p-8">
                   <div className="flex flex-col items-center text-center">
-                    <h1 className="text-2xl font-bold">{`Welcome to Tichsy`}</h1>
+                    <Link href="/">
+                      <Image
+                        loading="eager"
+                        src="/white-transparent-icon.svg"
+                        className="hidden dark:block"
+                        alt="logo"
+                        width={50}
+                        height={50}
+                      />
+                      <Image
+                        loading="eager"
+                        src="/black-transparent-icon.svg"
+                        className="block dark:hidden"
+                        alt="logo"
+                        width={50}
+                        height={50}
+                      />
+                    </Link>
+                    <h1 className="text-2xl font-bold">Welcome to Tichsy</h1>
                     <p className="text-muted-foreground text-balance">
-                      {`Create an account to get started with Tichsy`}
+                      Create an account to get started with Tichsy
                     </p>
                   </div>
 
@@ -556,8 +564,8 @@ export function SignupForm({
                   </div>
                   <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs *:[a]:underline *:[a]:underline-offset-4">
                     By clicking continue, you agree to our{" "}
-                    <Link href="#">Terms of Service</Link> and{" "}
-                    <Link href="#">Privacy Policy</Link>.
+                    <Link href="/terms">Terms of Service</Link> and{" "}
+                    <Link href="/privacy">Privacy Policy</Link>.
                   </div>
                 </div>
               </ScrollArea>

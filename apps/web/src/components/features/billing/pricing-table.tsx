@@ -39,7 +39,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
   const [isYearly, setIsYearly] = useState(true);
 
   return (
-    <section className="px-4 py-16 sm:px-6 lg:px-8">
+    <section className="px-4 py-16 sm:px-6 lg:px-8 pt-36">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-16 grid items-start gap-8 lg:grid-cols-2 lg:gap-16">
@@ -92,7 +92,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                   />
                 )}
                 <span className="relative z-10">Yearly</span>
-                <span className="bg-background text-foreground inline-block rounded-full px-2 py-1 text-xs whitespace-nowrap shadow-sm shadow-foreground/20 relative z-10 ml-2">
+                <span className="bg-foreground text-background inline-block rounded-full px-2 py-1 text-xs whitespace-nowrap shadow-sm shadow-foreground/20 relative z-10 ml-2">
                   Save 10%
                 </span>
               </button>
@@ -101,11 +101,11 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid gap-6 lg:grid-cols-3 lg:gap-7 max-w-5xl mx-auto">
+        <div className="grid gap-6 lg:grid-cols-3 lg:gap-7 max-w-6xl mx-auto justify-center">
           {plans.map((plan, index) => (
             <div
               key={plan.id}
-              className={`border-background relative rounded-3xl border bg-gradient-to-b p-6 shadow-2xl shadow-foreground/10 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] ${gradientFrom[index]} via-secondary/10 to-background from-[0%] via-[40%] to-[100%]`}
+              className={`max-w-2xl relative rounded-3xl bg-gradient-to-b p-6 shadow-2xl shadow-foreground/10 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] ${gradientFrom[index]} via-secondary/10 to-background from-[0%] via-[40%] to-[100%]`}
             >
               {/* Most Popular Badge */}
               {plan.isFeatured && (
@@ -162,13 +162,14 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                       key={isYearly ? "per-year" : "per-month"}
-                      className="text-muted-foreground ml-2 text-sm"
+                      className="text-muted-foreground ml-2 text-sm flex flex-col"
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      / {isYearly ? "year" : "month"}
+                      INR / {isYearly ? "year" : "month"} {" "}
+                      <span className="text-xs">(inclusive of processing fees)</span>
                     </motion.span>
                   </AnimatePresence>
                 </div>
@@ -194,7 +195,7 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                 <ul className="space-y-3">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <div className="bg-secondary mt-0.5 mr-3 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full">
+                      <div className="bg-accent mt-0.5 mr-3 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full">
                         <Check className="h-2.5 w-2.5" />
                       </div>
                       <span className="text-foreground text-sm leading-relaxed">

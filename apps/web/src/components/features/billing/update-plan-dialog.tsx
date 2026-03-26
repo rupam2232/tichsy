@@ -108,7 +108,7 @@ export function UpdatePlanDialog({
               size="sm"
               pressed={!isYearly}
               onPressedChange={(pressed) => setIsYearly(!pressed)}
-              className="px-3 py-2 cursor-pointer hover:text-primary-foreground! data-[state=off]:text-muted-foreground"
+              className="px-3 py-2 cursor-pointer data-[state=off]:text-muted-foreground"
             >
               Monthly
             </Toggle>
@@ -116,7 +116,7 @@ export function UpdatePlanDialog({
               size="sm"
               pressed={isYearly}
               onPressedChange={(pressed) => setIsYearly(pressed)}
-              className="px-3 py-2 cursor-pointer hover:text-primary-foreground! data-[state=off]:text-muted-foreground"
+              className="px-3 py-2 cursor-pointer data-[state=off]:text-muted-foreground"
             >
               Yearly
             </Toggle>

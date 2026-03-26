@@ -17,15 +17,10 @@ const ToggleTheme = ({ className }: React.HTMLAttributes<HTMLDivElement>) => {
         onClick={() => setTheme("dark")}
         className={cn(
           "relative border-r border-accent rounded-r-none transition-colors",
-          theme === "dark" && "bg-accent dark:bg-accent/50"
+          theme === "dark" && "bg-accent dark:bg-accent/50",
         )}
       >
-        <Moon
-          className={cn(
-            "text-primary-foreground",
-            theme === "dark" ? "fill-primary-foreground" : "fill-none"
-          )}
-        />
+        <Moon className="text-secondary-foreground" />
         <span className="sr-only">Dark Theme</span>
       </Button>
       <Button
@@ -34,15 +29,10 @@ const ToggleTheme = ({ className }: React.HTMLAttributes<HTMLDivElement>) => {
         onClick={() => setTheme("light")}
         className={cn(
           "relative border-r border-accent rounded-none transition-colors",
-          theme === "light" && "bg-accent dark:bg-accent/50"
+          theme === "light" && "bg-accent dark:bg-accent/50",
         )}
       >
-        <Sun
-          className={cn(
-            "text-primary-foreground",
-            theme === "light" ? "fill-primary-foreground" : "fill-none"
-          )}
-        />
+        <Sun className="text-secondary-foreground" />
         <span className="sr-only">Light Theme</span>
       </Button>
       <Button
@@ -51,15 +41,10 @@ const ToggleTheme = ({ className }: React.HTMLAttributes<HTMLDivElement>) => {
         onClick={() => setTheme("system")}
         className={cn(
           "relative rounded-l-none transition-colors",
-          theme === "system" && "bg-accent dark:bg-accent/50"
+          theme === "system" && "bg-accent dark:bg-accent/50",
         )}
       >
-        <IconDeviceDesktop
-          className={cn(
-            "text-primary-foreground",
-            theme === "system" ? "fill-primary-foreground" : "fill-none"
-          )}
-        />
+        <IconDeviceDesktop className="text-secondary-foreground" />
         <span className="sr-only">System Theme</span>
       </Button>
     </div>

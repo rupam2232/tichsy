@@ -214,7 +214,7 @@ const OrderCard = ({
           >
             <Button
               variant="outline"
-              className="border bg-background hover:bg-accent"
+              className="border bg-background text-secondary-foreground hover:bg-accent"
             >
               <Info />
               Details

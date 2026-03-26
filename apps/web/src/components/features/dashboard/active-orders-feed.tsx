@@ -170,7 +170,7 @@ export function ActiveOrdersFeed({ slug }: ActiveOrdersFeedProps) {
         </Link>
       </CardHeader>
       <CardContent className="px-0! pb-0! relative">
-        <ScrollArea className="lg:h-[450px] w-full pl-5 pr-8">
+        <ScrollArea className="lg:h-[450px] w-full sm:px-5">
           <div
             className={cn(
               "grid grid-cols-1 @2xl/active-orders:grid-cols-2 gap-4 py-6",
@@ -202,7 +202,7 @@ export function ActiveOrdersFeed({ slug }: ActiveOrdersFeedProps) {
                   }
                   restaurantSlug={slug}
                   setOrders={setOrdersProxy}
-                  className="border-border hover:scale-none bg-card/80 shadow-none hover:shadow-none"
+                  className="border-border hover:scale-none bg-card/80 shadow-none hover:shadow-none p-0 rounded-none sm:rounded-xl border-0 border-t sm:border"
                   cardContentClassName="p-5 md:p-6"
                 />
               ))

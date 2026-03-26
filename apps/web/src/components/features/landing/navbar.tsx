@@ -25,7 +25,7 @@ export default function NavbarComp() {
   const navItems = [
     {
       name: "Features",
-      link: "#features",
+      link: "/#features",
     },
     {
       name: "Pricing",
@@ -85,7 +85,7 @@ export default function NavbarComp() {
                 variant="primary"
                 className="bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
               >
-                Try for free
+                Try for Free
               </NavbarButton>
             </>
           )}
@@ -112,12 +112,12 @@ export default function NavbarComp() {
               key={`mobile-link-${idx}`}
               href={item.link}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="relative text-neutral-600 dark:text-neutral-300"
+              className="relative text-neutral-600 dark:text-neutral-300 w-full"
             >
               <span className="block">{item.name}</span>
             </Link>
           ))}
-          <div className="flex w-full gap-4">
+          <div className="flex flex-col sm:flex-row w-full gap-x-4 gap-y-2">
             {authenticated ? (
               <NavbarButton
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -146,7 +146,7 @@ export default function NavbarComp() {
                   variant="primary"
                   className="w-full bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
                 >
-                  Try for free
+                  Try for Free
                 </NavbarButton>
               </>
             )}

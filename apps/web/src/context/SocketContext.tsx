@@ -13,15 +13,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    if (!user) {
-      if (socket) {
-        console.log("Disconnecting socket due to logout");
-        socket.disconnect();
-        setSocket(null);
-      }
-      return;
-    }
-
     if (socket?.connected) return;
 
     const newSocket = io(SOCKET_URL, {

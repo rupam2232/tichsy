@@ -135,8 +135,10 @@ const TableQRCode = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <DialogTrigger className="w-min [&_svg]:size-6! p-5 bg-transparent hover:bg-secondary/10 border border-accent-foreground/60">
+          <DialogTrigger asChild>
+          <Button size="icon" variant="outline" className="text-secondary-foreground bg-background hover:bg-accent">
             <IconQrcode />
+          </Button>
           </DialogTrigger>
         </TooltipTrigger>
         <TooltipContent>
@@ -171,7 +173,7 @@ const TableQRCode = ({
               >
                 {/* QR Code */}
                 <Image
-                  src={qrSrc || "/placeholder-logo.png"}
+                  src={qrSrc || "/dark-icon.svg"}
                   alt="QR Code"
                   width={250}
                   height={250}

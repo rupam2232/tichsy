@@ -180,7 +180,7 @@ export function PasswordChangeDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline">Edit Password</Button>
+        <Button variant="outline" className="bg-background text-foreground hover:bg-accent hover:text-accent-foreground">Edit Password</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] transition-all duration-300 overflow-y-auto custom-scrollbar p-5 overflow-x-hidden">
         <DialogHeader>

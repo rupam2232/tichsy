@@ -36,24 +36,26 @@ export function setupSocketIO(server: http.Server) {
     socket.data.accessToken = accessToken;
     socket.data.refreshToken = refreshToken;
 
-    if (!accessToken) {
-      return socket.disconnect();
-    }
-    const decoded = jwt.verify(
-      accessToken,
-      env.ACCESS_TOKEN_SECRET
-    ) as accessTokenUser;
+    let decoded: accessTokenUser | null = null;
 
-    // Join user-specific room
-    socket.join(`user_${decoded._id}`);
-    console.log(`User ${decoded._id} joined their personal room`);
+    if (accessToken) {
+      try {
+        decoded = jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET) as accessTokenUser;
 
-    // Mark as Online if a refresh token exists
-    if (refreshToken) {
-      DeviceSession.findOneAndUpdate(
-        { userId: decoded._id, refreshToken },
-        { $set: { isOnline: true, lastActiveAt: new Date() } }
-      ).catch((err) => console.error("Error setting device online:", err));
+        // Join user-specific room
+        socket.join(`user_${decoded._id}`);
+        console.log(`User ${decoded._id} joined their personal room`);
+
+        // Mark as Online if a refresh token exists
+        if (refreshToken) {
+          DeviceSession.findOneAndUpdate(
+            { userId: decoded._id, refreshToken },
+            { $set: { isOnline: true, lastActiveAt: new Date() } }
+          ).catch((err) => console.error("Error setting device online:", err));
+        }
+      } catch (err) {
+        console.error("Invalid socket access token:", err);
+      }
     }
 
     socket.on("joinRestaurantRoom", async (activeRestaurantId) => {
@@ -65,13 +67,8 @@ export function setupSocketIO(server: http.Server) {
           .select("_id ownerId")
           .lean();
         if (!restaurant) return socket.disconnect();
-        if (
-          !decoded ||
-          typeof decoded !== "object" ||
-          !decoded._id ||
-          !restaurant._id
-        ) {
-          return socket.disconnect();
+        if (!decoded || typeof decoded !== "object" || !decoded._id || !restaurant._id) {
+          return;
         }
 
         // Check if user is owner
@@ -147,7 +144,7 @@ export function setupSocketIO(server: http.Server) {
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
-      if (refreshToken) {
+      if (refreshToken && decoded?._id) {
         DeviceSession.findOneAndUpdate(
           { userId: decoded._id, refreshToken },
           { $set: { isOnline: false, lastActiveAt: new Date() } }

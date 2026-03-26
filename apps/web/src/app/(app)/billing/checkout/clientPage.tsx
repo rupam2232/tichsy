@@ -33,6 +33,7 @@ import type { ApiResponse } from "@repo/types";
 import { signOut } from "@/store/authSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { IconReceipt } from "@tabler/icons-react";
+import Link from "next/link";
 
 interface PreviewData {
   plan: string;
@@ -59,7 +60,9 @@ export default function ClientPage({
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
-  const [resourceLimitError, setResourceLimitError] = useState<string | null>(null);
+  const [resourceLimitError, setResourceLimitError] = useState<string | null>(
+    null,
+  );
 
   const selectedPlan = plans.find((p) => p.id === planId);
   const isMobile = useIsMobile();
@@ -99,10 +102,15 @@ export default function ClientPage({
         }
         const errorMessage = axiosError.response?.data.message || "";
         // Check if this is a resource limit error
-        if (errorMessage.includes("exceeds") || errorMessage.includes("Archive")) {
+        if (
+          errorMessage.includes("exceeds") ||
+          errorMessage.includes("Archive")
+        ) {
           setResourceLimitError(errorMessage);
         } else {
-          toast.error(errorMessage || "Failed to calculate pricing. Please try again.");
+          toast.error(
+            errorMessage || "Failed to calculate pricing. Please try again.",
+          );
           router.push("/billing");
         }
       } finally {
@@ -239,7 +247,8 @@ export default function ClientPage({
               Resource Limits Exceeded
             </CardTitle>
             <CardDescription>
-              You cannot purchase the {selectedPlan.title} plan with your current resource usage.
+              You cannot purchase the {selectedPlan.title} plan with your
+              current resource usage.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -249,8 +258,9 @@ export default function ClientPage({
               </pre>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              To purchase this plan, please archive your excess resources first. You can archive
-              individual items (tables, food items, staff) or archive entire restaurants.
+              To purchase this plan, please archive your excess resources first.
+              You can archive individual items (tables, food items, staff) or
+              archive entire restaurants.
             </p>
           </CardContent>
           <CardFooter className="flex gap-3">
@@ -258,7 +268,7 @@ export default function ClientPage({
               Back to Billing
             </Button>
             <Button onClick={() => router.push("/home")}>
-              Go to Restaurants
+              Go to Home
             </Button>
           </CardFooter>
         </Card>
@@ -342,7 +352,7 @@ export default function ClientPage({
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <IconReceipt className="size-4" />
-                  Order Summary
+                  Payment Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -413,9 +423,23 @@ export default function ClientPage({
                   </span>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 py-3 pb-4 text-xs text-muted-foreground text-center justify-center border-t">
-                By clicking &#34;Pay Now&#34;, you agree to our Terms of Service
-                and Privacy Policy
+              <CardFooter className="bg-muted/30 py-3 pb-4 text-xs text-muted-foreground text-center block border-t">
+                By clicking &#34;Pay Now&#34;, you agree to our{" "}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="underline hover:text-primary"
+                >
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="underline hover:text-primary"
+                >
+                  Privacy Policy
+                </Link>
               </CardFooter>
             </Card>
           </div>

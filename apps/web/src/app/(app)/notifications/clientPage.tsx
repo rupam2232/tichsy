@@ -43,8 +43,8 @@ export default function NotificationsPage() {
   const showBottomLoader = loading && notifications.length > 0;
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto md:max-w-2xl p-4 md:p-6">
+      <div className="mb-2 md:mb-6 flex md:items-center md:justify-between md:flex-row flex-col">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Notifications
@@ -57,7 +57,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button onClick={handleMarkAllRead} variant="ghost" size="sm">
+          <Button onClick={handleMarkAllRead} variant="ghost" size="sm" className=" w-max mt-4 md:mt-0">
             <CheckCheck />
             Mark all read
           </Button>

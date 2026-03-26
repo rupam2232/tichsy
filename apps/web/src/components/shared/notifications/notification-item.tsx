@@ -151,7 +151,7 @@ export function NotificationItem({
         </div>
         <p
           className={cn(
-            "text-sm text-foreground/60 line-clamp-2",
+            "text-sm text-foreground/60",
             !notification.read && "text-foreground/80",
           )}
         >

@@ -391,11 +391,18 @@ const footerLinks = [
     ],
   },
   {
+    title: "Legal",
+    links: [
+      { id: 6, title: "Terms of Service", url: "/terms" },
+      { id: 7, title: "Privacy Policy", url: "/privacy" },
+    ],
+  },
+  {
     title: "Socials",
     links: [
       { id: 3, title: "LinkedIn", url: "https://linkedin.com/in/rupam2232" },
       { id: 4, title: "X/Twitter", url: "https://x.com/rupam2232" },
-      { id: 5, title: "Github", url: "https://github.com/rupam2232" },
+      { id: 5, title: "Github", url: "https://github.com/rupam2232/tichsy" },
     ],
   },
 ];

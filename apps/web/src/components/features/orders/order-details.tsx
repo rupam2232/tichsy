@@ -5,10 +5,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
@@ -135,7 +133,7 @@ const OrderDetails = ({
       <DialogTrigger asChild onClick={() => onChildBtnClick()}>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-screen w-full">
+      <DialogContent className="max-w-screen w-full pb-5 sm:pb-0">
         <ScrollArea className="max-h-[90vh]">
           <DialogHeader className="p-4">
             <DialogTitle>Order Details</DialogTitle>
@@ -418,11 +416,6 @@ const OrderDetails = ({
               No order details found. Please try again later
             </div>
           )}
-          <DialogFooter className="p-4 flex justify-between! items-center w-full flex-row">
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
-          </DialogFooter>
         </ScrollArea>
       </DialogContent>
     </Dialog>
