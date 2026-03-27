@@ -22,7 +22,7 @@ import {
   AllFoodItems,
   FoodItemDetails,
   FoodVariant,
-  ApiResponse
+  ApiResponse,
 } from "@repo/types";
 import { Loader2, Trash2, X } from "lucide-react";
 import {
@@ -40,7 +40,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@repo/ui/components/carousel";
-import { FoodImage } from "@/components/shared/food-image";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
 import CreateUpdateFoodItem from "./create-update-food-item";
@@ -57,6 +56,13 @@ import {
 } from "@repo/ui/components/alert-dialog";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
 import { Switch } from "@repo/ui/components/switch";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
+import { IconSalad } from "@tabler/icons-react";
 
 const FoodDetails = ({
   children,
@@ -70,7 +76,9 @@ const FoodDetails = ({
   restaurantSlug: string;
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
-  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const [foodItemDetails, setFoodItemDetails] =
     useState<FoodItemDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -86,6 +94,11 @@ const FoodDetails = ({
   const router = useRouter();
   const sheetCloseRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
+
+  const isSheetLayerActive = useCallback(() => {
+    const url = new URL(window.location.href);
+    return url.searchParams.get("food") === foodItem._id;
+  }, [foodItem._id]);
 
   const fetchFoodItemDetails = useCallback(async () => {
     if (!foodItem || !foodItem._id) {
@@ -137,25 +150,49 @@ const FoodDetails = ({
     if (open) {
       setIsSheetOpen(true);
       fetchFoodItemDetails();
-      window.history.pushState(null, "", window.location.href);
-    } else {
-      router.back();
+      const url = new URL(window.location.href);
+      url.searchParams.set("food", foodItem._id);
+      window.history.pushState(
+        { overlay: "food-sheet", food: foodItem._id },
+        "",
+        url.toString(),
+      );
+      return;
     }
+
+    if (isSheetLayerActive()) {
+      window.history.back();
+      return;
+    }
+
+    setIsSheetOpen(false);
+    setFoodVariant(null);
   };
 
   useEffect(() => {
-    const handlePopState = () => {
-      setIsSheetOpen(false);
-      setFoodVariant(null);
+    const syncFromHistory = () => {
+      const shouldBeOpen = isSheetLayerActive();
+
+      if (shouldBeOpen) {
+        if (!isSheetOpen) {
+          setIsSheetOpen(true);
+          fetchFoodItemDetails();
+        }
+        return;
+      }
+
+      if (isSheetOpen) {
+        setIsSheetOpen(false);
+        setFoodVariant(null);
+      }
     };
 
-    if (isSheetOpen) {
-      window.addEventListener("popstate", handlePopState);
-    }
+    syncFromHistory();
+    window.addEventListener("popstate", syncFromHistory);
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("popstate", syncFromHistory);
     };
-  }, [isSheetOpen]);
+  }, [fetchFoodItemDetails, isSheetLayerActive, isSheetOpen]);
 
   const toggleAvailableStatus = async () => {
     if (!foodItemDetails) return;
@@ -484,15 +521,17 @@ const FoodDetails = ({
                           key={index}
                           className="relative rounded-xl"
                         >
-                          <FoodImage
-                            src={url}
-                            alt={`Food Item Image ${index + 1}`}
-                            priority={index < 1}
-                            draggable={false}
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            className="object-cover rounded-xl h-auto w-auto"
-                            fill
-                          />
+                          <Avatar className="h-full w-full rounded-lg">
+                            <AvatarImage
+                              src={getOptimizedUrl(url, 500, 500)}
+                              alt={`Food Item Image ${index + 1}`}
+                              className="object-cover"
+                              draggable={false}
+                            />
+                            <AvatarFallback className="rounded-lg">
+                              <IconSalad className="size-8 sm:size-16" />
+                            </AvatarFallback>
+                          </Avatar>
                         </CarouselItem>
                       ))
                     ) : (
@@ -637,7 +676,7 @@ const FoodDetails = ({
                       </span>
                     </p>
                   </div>
-                  { !foodItemDetails.hasVariants && (
+                  {!foodItemDetails.hasVariants && (
                     <>
                       <p>
                         Price:{" "}
@@ -650,8 +689,8 @@ const FoodDetails = ({
                         <span
                           className={`${typeof foodItemDetails.discountedPrice !== "number" || isNaN(foodItemDetails.discountedPrice) ? "text-muted-foreground" : "font-bold"}`}
                         >
-                          {typeof foodItemDetails.discountedPrice === "number" &&
-                          !isNaN(foodItemDetails.discountedPrice)
+                          {typeof foodItemDetails.discountedPrice ===
+                            "number" && !isNaN(foodItemDetails.discountedPrice)
                             ? `₹${foodItemDetails.discountedPrice.toFixed(2)}`
                             : "No discounted price set"}
                         </span>
@@ -687,15 +726,21 @@ const FoodDetails = ({
                         toggleAvailableStatus();
                       }}
                     >
-                      <SelectTrigger className="text-sm font-medium w-[180px] border-muted-foreground/70">
+                      <SelectTrigger className="text-sm font-medium w-[180px] border-muted-foreground/70 cursor-pointer">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="available">
+                        <SelectItem
+                          value="available"
+                          className="cursor-pointer"
+                        >
                           <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                           Available
                         </SelectItem>
-                        <SelectItem value="not available">
+                        <SelectItem
+                          value="not available"
+                          className="cursor-pointer"
+                        >
                           <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                           Not Available
                         </SelectItem>

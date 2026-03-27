@@ -110,19 +110,19 @@ export default function SelectTable() {
       {/* Header */}
       <div className="flex flex-col-reverse sm:flex-row gap-y-2 items-center justify-between px-4 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline @[425px]:items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 ring-2 ring-green-500/20"></span>
             <span className="text-muted-foreground">
               Available: {allTables ? allTables.availableTables : 0}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline @[425px]:items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20"></span>
             <span className="text-muted-foreground">
               Occupied: {allTables ? allTables.occupiedTables : 0}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline @[425px]:items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-muted ring-2 ring-secondary-foreground/20"></span>
             <span className="text-muted-foreground">
               Archived: {allTables ? allTables.archivedTables : 0}

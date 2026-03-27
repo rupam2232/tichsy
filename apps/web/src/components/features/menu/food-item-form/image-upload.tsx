@@ -1,7 +1,11 @@
 "use client";
 
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { Loader2, Trash2, ImagePlusIcon } from "lucide-react";
@@ -20,6 +24,9 @@ import {
 } from "@repo/ui/components/alert-dialog";
 import type { FoodItemDetails } from "@repo/types";
 import { IconSalad } from "@tabler/icons-react";
+import { SUBSCRIPTION_PLANS } from "@repo/pricing";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface FoodItemImageUploadProps {
   imageUrls: string[];
@@ -46,6 +53,12 @@ export default function FoodItemImageUpload({
   userRole,
   foodItemDetails,
 }: FoodItemImageUploadProps) {
+  const selectedPlan = useSelector(
+    (state: RootState) => state.subscription.currentSubscription?.plan,
+  );
+  const MAX_IMAGE_FILES_LIMIT =
+    SUBSCRIPTION_PLANS[selectedPlan || "starter"].maxImagesPerFoodItem || 1;
+
   const onImageDrop = (
     acceptedFiles: File[],
     rejectedFiles: FileRejection[],
@@ -76,16 +89,18 @@ export default function FoodItemImageUpload({
       return;
     }
     if (acceptedFiles.length > 0) {
-      if (acceptedFiles.length > 5) {
-        setImageErrorMessage("You can only upload up to 5 images");
+      if (acceptedFiles.length > MAX_IMAGE_FILES_LIMIT) {
+        setImageErrorMessage(
+          `You can only upload up to ${MAX_IMAGE_FILES_LIMIT} images`,
+        );
         return;
       }
       if (acceptedFiles.some((file) => file.size > MAX_IMAGE_SIZE)) {
         setImageErrorMessage("One or more files exceed the 1MB size limit");
         return;
       }
-      if (imageUrls && imageUrls.length + acceptedFiles.length > 5) {
-        setImageErrorMessage("You can only upload a maximum of 5 images");
+      if (imageUrls && imageUrls.length + acceptedFiles.length > MAX_IMAGE_FILES_LIMIT) {
+        setImageErrorMessage(`You can only upload a maximum of ${MAX_IMAGE_FILES_LIMIT} images`);
         return;
       }
       handleImageUpload(acceptedFiles);
@@ -102,7 +117,7 @@ export default function FoodItemImageUpload({
         "image/jpg": [],
       },
       multiple: true,
-      maxFiles: 5,
+      maxFiles: MAX_IMAGE_FILES_LIMIT,
       maxSize: MAX_IMAGE_SIZE,
       onDrop: onImageDrop,
     });
@@ -111,12 +126,10 @@ export default function FoodItemImageUpload({
     <>
       <div
         {...getRootProps()}
-        className={`group aspect-square rounded-xl mx-auto text-center cursor-pointer hover:bg-secondary/70 bg-secondary flex items-center justify-center ${imageUrls && imageUrls.length >= 5 ? "hidden" : ""} ${
+        className={`group aspect-square rounded-xl mx-auto text-center cursor-pointer hover:bg-secondary/70 bg-secondary flex items-center justify-center ${imageUrls && imageUrls.length >= MAX_IMAGE_FILES_LIMIT ? "hidden" : ""} ${
           isDragActive
             ? `${!isDragReject ? "border-green-500" : "border-red-500"} border-2`
-            : isDragReject
-              ? "border-red-500 border-2"
-              : "border-zinc-500 border-dashed border"
+            : "border-zinc-500 border-dashed border"
         }`}
       >
         <input {...getInputProps()} name="logoUrl" />

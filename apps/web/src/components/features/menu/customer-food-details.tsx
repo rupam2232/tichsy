@@ -27,7 +27,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@repo/ui/components/carousel";
-import { FoodImage } from "@/components/shared/food-image";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
 import { useCart } from "@/hooks/useCart";
@@ -42,6 +41,13 @@ import {
 } from "@repo/ui/components/card";
 import { Separator } from "@repo/ui/components/separator";
 import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
+import { IconSalad } from "@tabler/icons-react";
 
 const CustomerFoodDetails = ({
   foodItem,
@@ -98,7 +104,8 @@ const CustomerFoodDetails = ({
         const availableDefaultVariant =
           response.data.data.variants.find(
             (v: FoodVariant) => v.isDefault && v.isAvailable,
-          ) || response.data.data.variants.find((v: FoodVariant) => v.isAvailable);
+          ) ||
+          response.data.data.variants.find((v: FoodVariant) => v.isAvailable);
         setVariantName(availableDefaultVariant?.variantName || "");
       } else {
         setVariantName("");
@@ -206,8 +213,7 @@ const CustomerFoodDetails = ({
 
   const itemPrice = useMemo(() => {
     return foodItemDetails
-      ? foodItemDetails.variants &&
-        foodItemDetails.variants.length > 0
+      ? foodItemDetails.variants && foodItemDetails.variants.length > 0
         ? foodItemDetails.variants.find(
             (variant) => variant.variantName === variantName,
           )?.price
@@ -217,8 +223,7 @@ const CustomerFoodDetails = ({
 
   const itemDiscountedPrice = useMemo(() => {
     return foodItemDetails
-      ? foodItemDetails.variants &&
-        foodItemDetails.variants.length > 0
+      ? foodItemDetails.variants && foodItemDetails.variants.length > 0
         ? foodItemDetails.variants.find(
             (variant) => variant.variantName === variantName,
           )?.discountedPrice
@@ -470,15 +475,17 @@ const CustomerFoodDetails = ({
                                     key={index}
                                     className="relative rounded-xl"
                                   >
-                                    <FoodImage
-                                      src={url}
-                                      alt={`Food Item Image ${index + 1}`}
-                                      priority={index < 1}
-                                      draggable={false}
-                                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                      className="object-cover rounded-xl h-auto w-auto"
-                                      fill
-                                    />
+                                    <Avatar className="h-full w-full rounded-lg">
+                                      <AvatarImage
+                                        src={getOptimizedUrl(url, 500, 500)}
+                                        alt={`Food Item Image ${index + 1}`}
+                                        className="object-cover"
+                                        draggable={false}
+                                      />
+                                      <AvatarFallback className="rounded-lg">
+                                        <IconSalad className="size-8 sm:size-16" />
+                                      </AvatarFallback>
+                                    </Avatar>
                                   </CarouselItem>
                                 ))}
                               </CarouselContent>

@@ -164,7 +164,7 @@ export function SiteHeader() {
               </AvatarFallback>
             </Avatar>
             <div className="flex items-center">
-              <span className="line-clamp-1">
+              <span className="hidden sm:block line-clamp-1">
                 {activeRestaurant?.restaurantName}
               </span>
               {activeRestaurant?.userRole === "owner" && (

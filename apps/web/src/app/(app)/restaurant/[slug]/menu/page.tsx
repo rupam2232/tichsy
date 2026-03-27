@@ -56,7 +56,7 @@ export default async function page(props: {
         <MenuTabList />
         <SearchInput
           placeholder="Search food items by name, category, tags..."
-          className="w-full sm:w-auto sm:min-w-[300px]"
+          className="w-full sm:w-auto sm:min-w-[200px]"
         />
         <AddFoodItemButton slug={slug} />
       </div>

@@ -86,36 +86,6 @@ const TableDetails = ({
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      fetchTableDetails();
-      setIsOpen(true);
-      window.history.pushState(
-        { tableSlug: table.qrSlug },
-        "",
-        window.location.href,
-      );
-    } else {
-      router.back();
-    }
-  };
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setIsOpen(false);
-      setIsEditing(false);
-      handleDeselectTable();
-    };
-
-    if (isOpen) {
-      window.addEventListener("popstate", handlePopState);
-    }
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-
   const fetchTableDetails = useCallback(async () => {
     if (!table || !table.qrSlug) {
       console.warn("No table selected or table does not have a qrSlug");
@@ -167,6 +137,61 @@ const TableDetails = ({
       setIsLoading(false);
     }
   }, [dispatch, restaurantSlug, router, table, pathname, setAllTables]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      fetchTableDetails();
+      setIsOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.set("table", table.qrSlug);
+      window.history.pushState(
+        { overlay: "sheet", table: table.qrSlug },
+        "",
+        url.toString(),
+      );
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const tableParam = url.searchParams.get("table");
+
+    if (tableParam === table.qrSlug) {
+      window.history.back();
+      return;
+    }
+
+    setIsOpen(false);
+    setIsEditing(false);
+    handleDeselectTable();
+  };
+
+  useEffect(() => {
+    const syncFromHistory = () => {
+      const url = new URL(window.location.href);
+      const activeTableSlug = url.searchParams.get("table");
+      const shouldBeOpen = activeTableSlug === table.qrSlug;
+
+      if (shouldBeOpen) {
+        if (!isOpen) {
+          setIsOpen(true);
+          fetchTableDetails();
+        }
+        return;
+      }
+
+      if (isOpen) {
+        setIsOpen(false);
+        setIsEditing(false);
+        handleDeselectTable();
+      }
+    };
+
+    syncFromHistory();
+    window.addEventListener("popstate", syncFromHistory);
+    return () => {
+      window.removeEventListener("popstate", syncFromHistory);
+    };
+  }, [fetchTableDetails, handleDeselectTable, isOpen, table.qrSlug]);
 
   const form = useForm<z.infer<typeof tableSchema>>({
     resolver: zodResolver(tableSchema),
@@ -588,6 +613,7 @@ const TableDetails = ({
                   "/upload/r_max/",
                 )}
                 qrCodeName={tableDetails.tableName + "-qrcode"}
+                tableSlug={table.qrSlug}
               />
             </div>
             <p>

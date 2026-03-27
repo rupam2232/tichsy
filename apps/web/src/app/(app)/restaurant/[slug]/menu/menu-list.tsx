@@ -242,7 +242,7 @@ export default function MenuList({ initialFoodItems, slug }: MenuListProps) {
                   fill
                   priority={index < 3}
                   draggable={false}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                   sizes="(max-width: 607px) calc(50vw - 24px), (max-width: 799px) calc(33vw - 22px), (max-width: 1071px) calc(25vw - 20px), calc(20vw - 23px)"
                   className="object-cover transition-all duration-200 group-hover:scale-101"
                   fallbackIconClassName="size-8 sm:size-16"
                 />

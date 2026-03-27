@@ -61,8 +61,9 @@ export function cloudinaryLoader({
 
   const params = [
     "f_auto",
-    "c_limit",
+    "c_fill",
     `w_${width}`,
+    `h_${width}`,
     `q_${quality || "auto"}`,
   ];
   const parts = src.split("/upload/");

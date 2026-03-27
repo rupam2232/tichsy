@@ -12,6 +12,51 @@ import {
 } from "../templates/emailTemplates.js";
 import { User } from "../models/user.model.js";
 import { sendOtpSchema, verifyOtpSchema } from "@repo/types";
+import { env } from "../env.js";
+
+const isProduction = env.NODE_ENV === "production";
+const OTP_DAILY_SOFT_LIMIT = 85;
+
+const otpDailyBudgetState = {
+  dayKey: "",
+  sentCount: 0,
+};
+
+const getUtcDayKey = (date: Date) => date.toISOString().slice(0, 10);
+
+const ensureOtpDailyBudget = () => {
+  if (!isProduction) {
+    return;
+  }
+
+  const currentDayKey = getUtcDayKey(new Date());
+
+  if (otpDailyBudgetState.dayKey !== currentDayKey) {
+    otpDailyBudgetState.dayKey = currentDayKey;
+    otpDailyBudgetState.sentCount = 0;
+  }
+
+  if (otpDailyBudgetState.sentCount >= OTP_DAILY_SOFT_LIMIT) {
+    throw new ApiError(
+      429,
+      "We have reached the daily limit for sending OTP emails. Please try again tomorrow"
+    );
+  }
+};
+
+const markOtpSent = () => {
+  if (!isProduction) {
+    return;
+  }
+
+  const currentDayKey = getUtcDayKey(new Date());
+  if (otpDailyBudgetState.dayKey !== currentDayKey) {
+    otpDailyBudgetState.dayKey = currentDayKey;
+    otpDailyBudgetState.sentCount = 0;
+  }
+
+  otpDailyBudgetState.sentCount += 1;
+};
 
 export const sendOtp = asyncHandler(async (req, res) => {
   const validatedData = sendOtpSchema.parse(req.body);
@@ -69,6 +114,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Otp not created");
   }
 
+  ensureOtpDailyBudget();
+
   if (context === "signup") {
     const emailResponse = await sendEmail(
       email,
@@ -82,6 +129,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
+
+    markOtpSent();
   } else if (context === "change-email") {
     const emailResponse = await sendEmail(
       email,
@@ -95,6 +144,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
+
+    markOtpSent();
   } else if (context === "change-password" || context === "forgot-password") {
     const emailResponse = await sendEmail(
       email,
@@ -108,6 +159,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
+
+    markOtpSent();
   } else if (context === "verify-current-email") {
     const emailResponse = await sendEmail(
       email,
@@ -121,6 +174,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!emailResponse || emailResponse.success === false) {
       throw new ApiError(500, "Failed to send Otp");
     }
+
+    markOtpSent();
   } else {
     throw new ApiError(400, "Invalid template");
   }

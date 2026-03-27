@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { IconFlame } from "@tabler/icons-react";
+import { IconFlame, IconSalad } from "@tabler/icons-react";
 import {
   Select,
   SelectContent,
@@ -28,13 +28,18 @@ import {
 } from "date-fns";
 import type { DashboardAnalytics, ApiResponse } from "@repo/types";
 import Link from "next/link";
-import { FoodImage } from "@/components/shared/food-image";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/store/authSlice";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 interface TrendingItemsProps {
   slug: string;
@@ -89,14 +94,15 @@ export function TrendingItems({ slug }: TrendingItemsProps) {
           start = startOfMonth(end);
         }
 
-        const res =
-          await axios.get<ApiResponse<DashboardAnalytics["topFoodItems"]>>(`/restaurant/${slug}/dashboard/analytics/trending`, {
-            params: {
-              timezone: userTimezone,
-              startDate: format(start, "yyyy-MM-dd"),
-              endDate: format(end, "yyyy-MM-dd"),
-            }
-          });
+        const res = await axios.get<
+          ApiResponse<DashboardAnalytics["topFoodItems"]>
+        >(`/restaurant/${slug}/dashboard/analytics/trending`, {
+          params: {
+            timezone: userTimezone,
+            startDate: format(start, "yyyy-MM-dd"),
+            endDate: format(end, "yyyy-MM-dd"),
+          },
+        });
         setTopFoodItems(res.data.data || []);
       } catch (error) {
         console.error("Failed to fetch trending foods:", error);
@@ -176,14 +182,17 @@ export function TrendingItems({ slug }: TrendingItemsProps) {
                 >
                   {/* Image Section */}
                   <div className="relative aspect-square w-full bg-muted overflow-hidden">
-                    <FoodImage
-                      src={item.firstImageUrl}
-                      alt={item.foodName}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                      fallbackIconClassName="w-10 h-10"
-                    />
+                    <Avatar className="h-full w-full rounded-none">
+                      <AvatarImage
+                        src={getOptimizedUrl(item.firstImageUrl, 300, 300)}
+                        alt={item.foodName}
+                        className="object-cover"
+                        draggable={false}
+                      />
+                      <AvatarFallback className="rounded-none">
+                        <IconSalad className="size-10" />
+                      </AvatarFallback>
+                    </Avatar>
 
                     {/* Rank Badge */}
                     <div className="absolute top-2 left-2 z-[9px]">
@@ -216,13 +225,9 @@ export function TrendingItems({ slug }: TrendingItemsProps) {
                     </div>
 
                     <div className="flex items-center justify-between mt-auto pt-2">
-                      {item.variantName ? (
-                        <span className="text-[10px] font-medium text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm">
+                      {item.variantName && (
+                        <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">
                           {item.variantName}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-medium text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm">
-                          Regular
                         </span>
                       )}
 

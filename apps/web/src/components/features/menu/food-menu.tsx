@@ -27,7 +27,7 @@ import CustomerFoodDetails from "./customer-food-details";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
+import VegNonVegTooltip, { NonVegIcon, VegIcon } from "@/components/shared/veg-nonveg-tooltip";
 
 const ClinetFoodMenu = ({
   slug,
@@ -270,6 +270,20 @@ const ClinetFoodMenu = ({
               >
                 All
               </TabsTrigger>
+              <TabsTrigger
+                value="veg"
+                className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
+                onClick={() => setTabName("veg")}
+              >
+                <VegIcon innerClassName="w-[4px] h-[4px]" />Veg
+              </TabsTrigger>
+              <TabsTrigger
+                value="non-veg"
+                className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
+                onClick={() => setTabName("non-veg")}
+              >
+                <NonVegIcon innerClassName="w-[4px] h-[4px]" />Non Veg
+              </TabsTrigger>
               {restaurantCategories.map((tab, label) => (
                 <TabsTrigger
                   key={label}
@@ -389,9 +403,9 @@ const ClinetFoodMenu = ({
                       fill
                       priority={index < 3}
                       draggable={false}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      sizes="(max-width: 607px) calc(50vw - 24px), (max-width: 799px) calc(33vw - 22px), (max-width: 1071px) calc(25vw - 20px), calc(20vw - 23px)"
                       className="object-cover transition-all duration-200 group-hover:scale-101"
-                      fallbackIconClassName="size-8 sm:size-16"
+                      fallbackIconClassName="size-8!"
                     />
                   </div>
                   <CardContent className="p-3">

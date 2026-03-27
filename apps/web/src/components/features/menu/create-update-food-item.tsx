@@ -58,9 +58,6 @@ const CreateUpdateFoodItem = ({
   const [imageFiles, setImageFiles] = useState<File[] | null>(null);
   const [imageErrorMessage, setImageErrorMessage] = useState<string>("");
   const [tempImages, setTempImages] = useState<string[]>([]);
-  const [pendingImageOperations, setPendingImageOperations] = useState<
-    Promise<void>[]
-  >([]);
   const [openParentAccordion, setOpenParentAccordion] = useState<string | null>(
     null,
   ); // Parent accordion state
@@ -69,7 +66,9 @@ const CreateUpdateFoodItem = ({
   ); // Child accordion state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,10 +95,74 @@ const CreateUpdateFoodItem = ({
   });
 
   const imageUrlsRef = useRef<string[]>(imageUrls || []);
+  const tempImagesRef = useRef<string[]>([]);
+  const pendingImageOperationsRef = useRef<Set<Promise<void>>>(new Set());
+  const isDialogCleanupInProgressRef = useRef(false);
+
+  const trackImageOperation = useCallback((operation: Promise<void>) => {
+    pendingImageOperationsRef.current.add(operation);
+    operation.finally(() => {
+      pendingImageOperationsRef.current.delete(operation);
+    });
+    return operation;
+  }, []);
+
+  const waitForPendingImageOperations = useCallback(async () => {
+    const pendingOperations = Array.from(pendingImageOperationsRef.current);
+    if (pendingOperations.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(pendingOperations);
+  }, []);
+
+  const getCurrentDialogParam = useCallback(() => {
+    return isEditing ? "edit" : "create";
+  }, [isEditing]);
+
+  const isDialogLayerActive = useCallback(() => {
+    const url = new URL(window.location.href);
+    const dialogParam = getCurrentDialogParam();
+    const isDialogOpenInUrl = url.searchParams.get(dialogParam) === "true";
+
+    if (!isDialogOpenInUrl) {
+      return false;
+    }
+
+    if (!isEditing || !foodItemDetails?._id) {
+      return isDialogOpenInUrl;
+    }
+
+    return url.searchParams.get("food") === foodItemDetails._id;
+  }, [foodItemDetails?._id, getCurrentDialogParam, isEditing]);
+
+  const resetDialogState = useCallback(() => {
+    form.reset({
+      foodName: foodItemDetails?.foodName || "",
+      price: foodItemDetails?.price ?? undefined,
+      discountedPrice: foodItemDetails?.discountedPrice ?? undefined,
+      category: foodItemDetails?.category ?? undefined,
+      foodType: foodItemDetails?.foodType || "veg",
+      description: foodItemDetails?.description || "",
+      tags: foodItemDetails?.tags || [],
+      imageUrls: foodItemDetails?.imageUrls || [],
+      hasVariants: foodItemDetails?.hasVariants || false,
+      variants: foodItemDetails?.variants || [],
+    });
+    imageUrlsRef.current = foodItemDetails?.imageUrls || [];
+    setImageFiles(null);
+    setImageErrorMessage("");
+    setOpenParentAccordion(null);
+    setOpenChildAccordion(null);
+  }, [foodItemDetails, form]);
 
   useEffect(() => {
     imageUrlsRef.current = imageUrls || [];
   }, [imageUrls]);
+
+  useEffect(() => {
+    tempImagesRef.current = tempImages;
+  }, [tempImages]);
 
   useEffect(() => {
     if (foodItemDetails) {
@@ -111,22 +174,101 @@ const CreateUpdateFoodItem = ({
         foodType: foodItemDetails.foodType || "veg",
         description: foodItemDetails.description || "",
         tags: foodItemDetails.tags || [],
-        imageUrls: tempImages ? imageUrls : foodItemDetails.imageUrls || [],
+        imageUrls:
+          tempImagesRef.current.length > 0
+            ? imageUrlsRef.current
+            : foodItemDetails.imageUrls || [],
         hasVariants: foodItemDetails.hasVariants || false,
         variants: foodItemDetails.variants || [],
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foodItemDetails, form]);
+
+  const cleanupTempImages = useCallback(async () => {
+    await waitForPendingImageOperations();
+
+    const imagesToRemove = Array.from(new Set(tempImagesRef.current));
+    if (imagesToRemove.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(
+      imagesToRemove.map(async (url) => {
+        await axios.delete("/media/food-item", {
+          data: {
+            mediaUrl: url,
+            foodItemId:
+              isEditing &&
+              foodItemDetails?.imageUrls?.includes(url) &&
+              foodItemDetails?._id
+                ? foodItemDetails._id
+                : undefined,
+          },
+        });
+      }),
+    );
+
+    setTempImages([]);
+    tempImagesRef.current = [];
+  }, [foodItemDetails, isEditing, waitForPendingImageOperations]);
+
+  const closeDialogAndCleanup = useCallback(async () => {
+    if (isDialogCleanupInProgressRef.current) {
+      return;
+    }
+
+    isDialogCleanupInProgressRef.current = true;
+    setIsDialogOpen(false);
+    await cleanupTempImages();
+    resetDialogState();
+    isDialogCleanupInProgressRef.current = false;
+  }, [cleanupTempImages, resetDialogState]);
+
+  const closeDialogWithHistory = useCallback(() => {
+    if (!isDialogLayerActive()) {
+      void closeDialogAndCleanup();
+      return;
+    }
+
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete(getCurrentDialogParam());
+    window.history.replaceState(window.history.state, "", url.toString());
+    void closeDialogAndCleanup();
+  }, [closeDialogAndCleanup, getCurrentDialogParam, isDialogLayerActive]);
 
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setIsDialogOpen(true);
-      if (!isEditing) window.history.pushState(null, "", window.location.href);
-    } else {
-      if (isEditing) setIsDialogOpen(false);
-      else router.back();
+
+      if (isDialogLayerActive()) {
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const dialogParam = getCurrentDialogParam();
+      url.searchParams.set(dialogParam, "true");
+
+      if (isEditing && foodItemDetails?._id) {
+        url.searchParams.set("food", foodItemDetails._id);
+      }
+
+      window.history.pushState(
+        {
+          overlay: isEditing ? "food-edit-dialog" : "food-create-dialog",
+          food: foodItemDetails?._id,
+        },
+        "",
+        url.toString(),
+      );
+      return;
     }
+
+    closeDialogWithHistory();
   };
 
   const handleImageRemove = useCallback(
@@ -135,73 +277,81 @@ const CreateUpdateFoodItem = ({
         toast.error("No images to remove");
         return;
       }
-      const removePromise = new Promise<void>((resolve, reject) => {
-        (async () => {
-          setImageErrorMessage("");
-          if (!imageUrls.includes(url) && !tempImages.includes(url)) {
-            toast.error("Image not found in the list");
-            resolve();
-            return;
-          }
-          const tempImageUrls = imageUrls;
-          const tempImageFiles = imageFiles;
-          try {
-            form.setValue(
-              "imageUrls",
-              imageUrls.filter((u) => u !== url),
-              { shouldDirty: true, shouldValidate: true, shouldTouch: true },
-            );
-            setImageFiles((prev) =>
-              prev ? prev.filter((file) => file.name !== url) : null,
-            );
-            await Promise.all(pendingImageOperations);
-            const response = await axios.delete("/media/food-item", {
-              data: {
-                mediaUrl: url,
-                foodItemId:
-                  isEditing &&
-                  foodItemDetails?.imageUrls?.includes(url) &&
-                  foodItemDetails?._id
-                    ? foodItemDetails._id
-                    : undefined,
-              },
-            });
-            if (!response.data.success) {
-              toast.error(response.data.message || "Failed to remove image");
-            }
-            setTempImages((prev) => prev.filter((img) => img !== url));
-            if (isEditing && setFoodItemDetails) {
-              setFoodItemDetails((prev) => {
-                if (!prev) return prev;
-                return {
-                  ...prev,
-                  imageUrls: prev.imageUrls?.filter((img) => img !== url),
-                };
-              });
-            }
-            resolve();
-          } catch (error) {
-            console.error("Error removing image:", error);
-            const axiosError = error as AxiosError<ApiResponse>;
-            toast.error(
-              axiosError.response?.data.message || "Failed to remove image",
-            );
-            form.setValue("imageUrls", tempImageUrls);
-            setImageFiles(tempImageFiles);
-            if (axiosError.response?.status === 401) {
-              dispatch(signOut());
-              router.push(`/signin?redirect=${pathname}`);
-            }
-            reject(error);
-          }
-        })();
-      });
+      setImageErrorMessage("");
 
-      setPendingImageOperations((prev) => [...prev, removePromise]);
+      if (!imageUrls.includes(url) && !tempImagesRef.current.includes(url)) {
+        toast.error("Image not found in the list");
+        return;
+      }
+
+      const previousImageUrls = imageUrls;
+      const previousImageFiles = imageFiles;
+
+      form.setValue(
+        "imageUrls",
+        imageUrls.filter((u) => u !== url),
+        { shouldDirty: true, shouldValidate: true, shouldTouch: true },
+      );
+      setImageFiles((prev) =>
+        prev ? prev.filter((file) => file.name !== url) : null,
+      );
+
+      const removeOperation = (async () => {
+        const response = await axios.delete("/media/food-item", {
+          data: {
+            mediaUrl: url,
+            foodItemId:
+              isEditing &&
+              foodItemDetails?.imageUrls?.includes(url) &&
+              foodItemDetails?._id
+                ? foodItemDetails._id
+                : undefined,
+          },
+        });
+
+        if (!response.data.success) {
+          throw new Error(response.data.message || "Failed to remove image");
+        }
+
+        imageUrlsRef.current = imageUrlsRef.current.filter(
+          (img) => img !== url,
+        );
+        setTempImages((prev) => prev.filter((img) => img !== url));
+
+        if (isEditing && setFoodItemDetails) {
+          setFoodItemDetails((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              imageUrls: prev.imageUrls?.filter((img) => img !== url),
+            };
+          });
+        }
+      })();
+
+      try {
+        await trackImageOperation(removeOperation);
+      } catch (error) {
+        console.error("Error removing image:", error);
+        const axiosError = error as AxiosError<ApiResponse>;
+        toast.error(
+          axiosError.response?.data.message || "Failed to remove image",
+        );
+        form.setValue("imageUrls", previousImageUrls, {
+          shouldDirty: true,
+          shouldValidate: true,
+          shouldTouch: true,
+        });
+        imageUrlsRef.current = previousImageUrls;
+        setImageFiles(previousImageFiles);
+        if (axiosError.response?.status === 401) {
+          dispatch(signOut());
+          router.push(`/signin?redirect=${pathname}`);
+        }
+      }
     },
     [
       imageUrls,
-      tempImages,
       imageFiles,
       form,
       isEditing,
@@ -209,96 +359,84 @@ const CreateUpdateFoodItem = ({
       dispatch,
       router,
       setFoodItemDetails,
-      pendingImageOperations,
+      trackImageOperation,
       pathname,
     ],
   );
 
   const handleImageUpload = useCallback(
     async (files: File[]) => {
-      const uploadPromise = new Promise<void>((resolve, reject) => {
-        (async () => {
-          try {
-            const formData = new FormData();
-            files.forEach((file) => {
-              formData.append("foodItemImages", file);
-            });
-            const response = await axios.post("/media/food-item", formData, {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            });
-            if (!response.data.success) {
-              toast.error(response.data.message || "Failed to upload images");
-              reject(new Error("Image upload failed"));
-              return;
-            }
-            imageUrlsRef.current = [
-              ...(imageUrlsRef.current || []),
-              ...response.data.data,
-            ];
-            form.setValue(
-              "imageUrls",
-              [...(imageUrls || []), ...response.data.data],
-              {
-                shouldDirty: true,
-                shouldValidate: true,
-                shouldTouch: true,
-              },
-            );
-            setTempImages((prev) => [...prev, ...response.data.data]);
-            setImageFiles(null);
-            resolve();
-          } catch (error) {
-            console.error("Error uploading images:", error);
-            const axiosError = error as AxiosError<ApiResponse>;
-            toast.error(
-              axiosError.response?.data.message || "Failed to upload images",
-            );
-            if (axiosError.response?.status === 401) {
-              dispatch(signOut());
-              router.push(`/signin?redirect=${pathname}`);
-            }
-            reject(error);
-          }
-        })();
-      });
+      const uploadOperation = (async () => {
+        const formData = new FormData();
+        files.forEach((file) => {
+          formData.append("foodItemImages", file);
+        });
 
-      setPendingImageOperations((prev) => [...prev, uploadPromise]);
+        const response = await axios.post("/media/food-item", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        if (!response.data.success) {
+          throw new Error(response.data.message || "Failed to upload images");
+        }
+
+        const nextImageUrls = [
+          ...(imageUrlsRef.current || []),
+          ...response.data.data,
+        ];
+        imageUrlsRef.current = nextImageUrls;
+
+        form.setValue("imageUrls", nextImageUrls, {
+          shouldDirty: true,
+          shouldValidate: true,
+          shouldTouch: true,
+        });
+
+        setTempImages((prev) => [...prev, ...response.data.data]);
+        setImageFiles(null);
+      })();
+
+      try {
+        await trackImageOperation(uploadOperation);
+      } catch (error) {
+        console.error("Error uploading images:", error);
+        const axiosError = error as AxiosError<ApiResponse>;
+        toast.error(
+          axiosError.response?.data.message || "Failed to upload images",
+        );
+        if (axiosError.response?.status === 401) {
+          dispatch(signOut());
+          router.push(`/signin?redirect=${pathname}`);
+        }
+      }
     },
-    [imageUrls, form, dispatch, router, pathname],
+    [dispatch, form, pathname, router, trackImageOperation],
   );
 
   useEffect(() => {
-    const handlePopState = () => {
-      setIsDialogOpen(false);
-      if (tempImages && tempImages.length > 0) {
-        tempImages.forEach((url) => handleImageRemove(url));
+    const syncFromHistory = () => {
+      const shouldBeOpen = isDialogLayerActive();
+
+      if (shouldBeOpen) {
+        if (!isDialogOpen) {
+          setIsDialogOpen(true);
+        }
+        return;
       }
-      form.reset();
-      setImageFiles(null);
-      setImageErrorMessage("");
-      setOpenParentAccordion(null);
-      setOpenChildAccordion(null);
+
+      if (isDialogOpen) {
+        void closeDialogAndCleanup();
+      }
     };
 
-    if (isDialogOpen && !isEditing) {
-      window.addEventListener("popstate", handlePopState);
-    }
+    syncFromHistory();
+    window.addEventListener("popstate", syncFromHistory);
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("popstate", syncFromHistory);
     };
-  }, [
-    isDialogOpen,
-    isEditing,
-    tempImages,
-    form,
-    setImageFiles,
-    setImageErrorMessage,
-    setOpenParentAccordion,
-    setOpenChildAccordion,
-    handleImageRemove,
-  ]);
+  }, [closeDialogAndCleanup, isDialogLayerActive, isDialogOpen]);
 
   const onSubmit = async (data: z.infer<typeof foodItemSchema>) => {
     if (formLoading) return; // Prevent multiple submissions
@@ -310,9 +448,7 @@ const CreateUpdateFoodItem = ({
     // Validate if any variant price is undefined or not a number from variants array
     if (data.variants && data.variants.length > 0) {
       const invalidVariantPrice = data.variants.find(
-        (variant) =>
-          variant.price === undefined ||
-          isNaN(variant.price),
+        (variant) => variant.price === undefined || isNaN(variant.price),
       );
 
       if (invalidVariantPrice) {
@@ -347,7 +483,7 @@ const CreateUpdateFoodItem = ({
     try {
       setFormLoading(true);
       // Wait for all pending image operations to complete
-      await Promise.all(pendingImageOperations);
+      await waitForPendingImageOperations();
       // Check if the form values have changed
       if (
         !form.formState.isDirty &&
@@ -435,9 +571,16 @@ const CreateUpdateFoodItem = ({
               : [response.data.data, ...prev.foodItems],
         };
       });
+
       setTempImages([]);
-      form.reset();
-      setIsDialogOpen(false);
+      tempImagesRef.current = [];
+      resetDialogState();
+
+      if (isDialogLayerActive() && window.history.length > 1) {
+        window.history.back();
+      } else {
+        setIsDialogOpen(false);
+      }
 
       toast.success(
         response.data.message ||
@@ -470,17 +613,30 @@ const CreateUpdateFoodItem = ({
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (tempImages && tempImages.length > 0) {
-        // If there are images, remove them before leaving the page
-        tempImages.forEach((url) => handleImageRemove(url));
+      const imagesToRemove = Array.from(new Set(tempImagesRef.current));
+      if (imagesToRemove.length === 0) {
+        return;
       }
+
+      imagesToRemove.forEach((url) => {
+        void axios.delete("/media/food-item", {
+          data: {
+            mediaUrl: url,
+            foodItemId:
+              isEditing &&
+              foodItemDetails?.imageUrls?.includes(url) &&
+              foodItemDetails?._id
+                ? foodItemDetails._id
+                : undefined,
+          },
+        });
+      });
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageUrls]);
+  }, [foodItemDetails, isEditing]);
 
   useEffect(() => {
     if (!imageErrorMessage) return;

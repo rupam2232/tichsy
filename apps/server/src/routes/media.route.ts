@@ -10,6 +10,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import rateLimit from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
 import { env } from "../env.js";
+import { optionalSubscriptionActive } from "../middlewares/subscriptionCheck.middleware.js";
 const router = Router();
 
 const restaurantLogoLimit = rateLimit({
@@ -49,7 +50,8 @@ router
   .route("/food-item")
   .post(
     isProduction ? foodItemImageLimit : (req, res, next) => next(),
-    upload.array("foodItemImages", 5),
+    optionalSubscriptionActive,
+    upload.array("foodItemImages", 15),
     foodItemImageUpload
   )
   .delete(deleteFoodItemImage);

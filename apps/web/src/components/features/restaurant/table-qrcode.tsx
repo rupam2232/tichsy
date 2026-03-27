@@ -24,10 +24,12 @@ const TableQRCode = ({
   qrCodeData,
   qrCodeImage,
   qrCodeName = "table-qrcode",
+  tableSlug,
 }: {
   qrCodeData: string;
   qrCodeImage?: string;
   qrCodeName?: string;
+  tableSlug: string;
 }) => {
   const qrCode = useRef<QRCodeStyling | null>(null);
   const [open, setOpen] = useState(false);
@@ -36,27 +38,59 @@ const TableQRCode = ({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
+  const isQrLayerActive = useCallback(() => {
+    const url = new URL(window.location.href);
+    return (
+      url.searchParams.get("table") === tableSlug &&
+      url.searchParams.get("qr") === "true"
+    );
+  }, [tableSlug]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
       setOpen(true);
-      window.history.pushState({ qrCodeData }, "", window.location.href);
-    } else {
-      window.history.back();
+      const url = new URL(window.location.href);
+      url.searchParams.set("table", tableSlug);
+      url.searchParams.set("qr", "true");
+      window.history.pushState(
+        { overlay: "qr", table: tableSlug },
+        "",
+        url.toString(),
+      );
+      return;
     }
+
+    if (isQrLayerActive()) {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("qr");
+        window.history.replaceState(
+          { overlay: "sheet", table: tableSlug },
+          "",
+          url.toString(),
+        );
+        setOpen(false);
+      }
+      return;
+    }
+
+    setOpen(false);
   };
 
   useEffect(() => {
-    const handlePopState = () => {
-      setOpen(false);
+    const syncFromHistory = () => {
+      const shouldBeOpen = isQrLayerActive();
+      setOpen((prev) => (prev === shouldBeOpen ? prev : shouldBeOpen));
     };
 
-    if (open) {
-      window.addEventListener("popstate", handlePopState);
-    }
+    syncFromHistory();
+    window.addEventListener("popstate", syncFromHistory);
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("popstate", syncFromHistory);
     };
-  }, [open]);
+  }, [isQrLayerActive]);
 
   useEffect(
     () => {
@@ -92,17 +126,12 @@ const TableQRCode = ({
           reader.readAsDataURL(blob as Blob);
         });
       }
-      return () => {
-        if (qrSrc) URL.revokeObjectURL(qrSrc);
-      };
     },
-    // eslint-disable-next-line
     [open, qrCodeData, qrCodeImage]
   );
 
   useEffect(() => {
     if (ref.current === null || !isImageLoaded) {
-      console.log("Ref is null or image not loaded yet");
       return;
     }
     toPng(ref.current, { cacheBust: true, pixelRatio: 2 })
@@ -113,11 +142,10 @@ const TableQRCode = ({
         toast.error("Failed to generate QR Code image");
         console.error(err);
       });
-  }, [isImageLoaded, ref]);
+  }, [isImageLoaded]);
 
   const onButtonClick = useCallback(() => {
     if (ref.current === null || !isImageLoaded || !imageUrl) {
-      console.log("Ref is null or image not loaded yet");
       return;
     }
     try {
@@ -136,9 +164,13 @@ const TableQRCode = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
-          <Button size="icon" variant="outline" className="text-secondary-foreground bg-background hover:bg-accent">
-            <IconQrcode />
-          </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="text-secondary-foreground bg-background hover:bg-accent"
+            >
+              <IconQrcode />
+            </Button>
           </DialogTrigger>
         </TooltipTrigger>
         <TooltipContent>
