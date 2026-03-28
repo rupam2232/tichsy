@@ -141,7 +141,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className="custom-scrollbar">
+    <html lang="en" className="custom-scrollbar" suppressHydrationWarning>
       <body>
         <script
           type="application/ld+json"

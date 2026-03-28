@@ -56,8 +56,6 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
               your goals and budget.
             </p>
 
-            {/* Toggle */}
-
             {/* Toggle with layoutId */}
             <div className="bg-bacground relative inline-flex items-center rounded-full border-t-0 border p-1.5 shadow-[inset_0_1.5px_0_color-mix(in_oklch,_var(--muted-foreground)_20%,_transparent)]">
               <button
