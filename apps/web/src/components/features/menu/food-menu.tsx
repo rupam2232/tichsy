@@ -238,13 +238,12 @@ const ClinetFoodMenu = ({
   return (
     <div
       className={cn(
-        "relative @container/food-menu",
+        "relative @container/food-menu mb-24",
         { "p-4": !isStaffCreatingOrder },
         className,
       )}
     >
       <Tabs
-        className="mb-24"
         defaultValue="all"
         value={tabName}
         onValueChange={(value) => {
@@ -255,7 +254,7 @@ const ClinetFoodMenu = ({
           setTabName(value);
         }}
       >
-        <div className="flex flex-wrap items-center sm:items-baseline justify-between gap-2 pt-2">
+        <div className="flex flex-wrap items-center sm:items-baseline justify-between gap-2">
           <ScrollArea
             className={cn(
               "w-full sm:w-0 flex-1 pb-2 rounded-md",

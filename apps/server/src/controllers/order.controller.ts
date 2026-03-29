@@ -151,9 +151,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
         foodCategory: isFoodItemValid.category ?? "Uncategorized",
         variantName: foodItem.variantName ?? null, // Ensure variantName is included if provided
         quantity: foodItem.quantity ?? 1, // Default to 1 if quantity is not provided
-        price: selectedVariant
-          ? selectedVariant.price
-          : isFoodItemValid.price,
+        price: selectedVariant ? selectedVariant.price : isFoodItemValid.price,
         finalPrice: selectedVariant
           ? (selectedVariant.discountedPrice ?? selectedVariant.price)
           : (isFoodItemValid.discountedPrice ?? isFoodItemValid.price),
@@ -234,7 +232,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       isPaid: order[0].isPaid,
       externalPlatform: order[0].externalPlatform,
       table: {
-        _id: order[0].table._id,
+        _id: order[0].table.tableId,
         tableName: order[0].table.tableName,
         qrSlug: order[0].table.qrSlug,
         isOccupied: table.isOccupied,
@@ -520,7 +518,10 @@ export const getOrderById = asyncHandler(async (req, res) => {
             firstImageUrl: {
               $cond: {
                 if: {
-                  $gt: [{ $size: { $ifNull: ["$foodItemDetails.imageUrls", []] } }, 0],
+                  $gt: [
+                    { $size: { $ifNull: ["$foodItemDetails.imageUrls", []] } },
+                    0,
+                  ],
                 },
                 then: { $arrayElemAt: ["$foodItemDetails.imageUrls", 0] },
                 else: null,

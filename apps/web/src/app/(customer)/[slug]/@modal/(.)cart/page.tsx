@@ -13,29 +13,18 @@ import {
   useSearchParams,
   usePathname,
 } from "next/navigation";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/components/avatar";
-import { getOptimizedUrl } from "@/utils/imageOptimizer";
+import { X } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
-import { IconSalad } from "@tabler/icons-react";
-import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 import { cn } from "@repo/ui/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/hooks/useCart";
 import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
-import { Textarea } from "@repo/ui/components/textarea";
-import axios from "@/utils/axiosInstance";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
-import { ApiResponse } from "@repo/types";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";
-import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
+import CartView, { CartViewHandle, OrderSuccessData } from "@/components/features/cart/cart-view";
+import { ApiResponse } from "@repo/types";
 
 const CheckoutModalPage = () => {
   const router = useRouter();
@@ -46,24 +35,9 @@ const CheckoutModalPage = () => {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(
     pathname.includes("cart"),
   );
-  const { syncCart, cartItems, removeItem, editItem, clearCart } =
-    useCart(restaurantSlug);
-  const [taxDetails, setTaxDetails] = useState<{
-    isTaxIncludedInPrice: boolean;
-    taxLabel: string;
-    taxRate: number;
-  }>();
-  const [notes, setNotes] = useState<string>("");
+  const cartRef = useRef<CartViewHandle>(null);
+  const { cartItems } = useCart(restaurantSlug);
   const dispatch = useDispatch<AppDispatch>();
-
-  useEffect(() => {
-    if (restaurantSlug) {
-      syncCart().then((e) => {
-        setTaxDetails(e.payload?.taxDetails);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantSlug]);
 
   useEffect(() => {
     let isMounted = true;
@@ -83,61 +57,22 @@ const CheckoutModalPage = () => {
     };
   }, [restaurantSlug, drawerOpen]);
 
-  const restaurantCartItemSubtotal = cartItems.reduce((total, item) => {
-    if (typeof item.discountedPrice === "number") {
-      return total + item.discountedPrice * item.quantity;
-    }
-    return total + item.price * item.quantity;
-  }, 0);
-
-  const preDiscountedPrice = cartItems.some(
-    (item) => typeof item.discountedPrice === "number",
-  )
-    ? cartItems.reduce((total, item) => {
-        return total + item.price * item.quantity;
-      }, 0)
-    : null;
-
-  const toPay =
-    restaurantCartItemSubtotal +
-    (taxDetails && !taxDetails.isTaxIncludedInPrice
-      ? restaurantCartItemSubtotal * taxDetails.taxRate
-      : 0);
-
-  const confirmOrder = async () => {
-    const toastId = toast.loading("Placing order...");
-    try {
-      const response = await axios.post(`/order/${restaurantSlug}/${tableId}`, {
-        foodItems: cartItems.map((item) => ({
-          _id: item.foodId,
-          quantity: item.quantity,
-          variantName: item.variantName || undefined,
-        })),
-        notes: notes,
-        paymentMethod: "cash",
-      });
-      toast.success(response.data.message || "Order placed successfully!", {
-        id: toastId,
-      });
+  const onOrderSuccess = (response: ApiResponse<OrderSuccessData>) => {
+    if (response.data?.order?._id) {
       dispatch(
         addOrder({
           restaurantSlug: restaurantSlug,
-          orderId: response.data.data.order._id,
+          orderId: response.data.order._id,
         }),
       );
-      clearCart();
-      router.replace(`/${restaurantSlug}/my-orders`);
-      setDrawerOpen(false);
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      console.error(axiosError.response?.data.message || axiosError.message);
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to place order. Please try again.",
-        {
-          id: toastId,
-        },
-      );
+    }
+    router.replace(`/${restaurantSlug}/my-orders`);
+    setDrawerOpen(false);
+  };
+
+  const confirmOrder = async () => {
+    if (cartRef.current) {
+      await cartRef.current.confirmOrder();
     }
   };
 
@@ -155,212 +90,37 @@ const CheckoutModalPage = () => {
       <DrawerContent className="w-full h-full data-[vaul-drawer-direction=bottom]:max-h-[85vh]">
         <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full">
           <DrawerTitle className="px-6 pb-2 border-b text-lg">Cart</DrawerTitle>
-          <ScrollArea className="h-full pb-6 md:py-2">
-            <div className="px-6">
-              {cartItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-4" />
-                  <p className="text-lg font-bold">Your cart is empty</p>
-                  <p className="text-muted-foreground">
-                    Add some delicious items from {restaurantSlug}&apos;s menu
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.foodId + (item.variantName || "")}
-                      className="flex items-center space-x-4 pt-2 pb-4 border-b last:border-b-0 last:pb-0 relative"
-                    >
-                      <Avatar
-                        className={cn(
-                          "w-16 h-16 shrink-0 rounded-lg",
-                          !item.isAvailable && "opacity-80 grayscale",
-                        )}
-                      >
-                        <AvatarImage
-                          src={getOptimizedUrl(
-                            item.imageUrl,
-                            150,
-                            150,
-                            "c_fill",
-                          )}
-                          alt={item.foodName}
-                          className="object-cover"
-                          draggable={false}
-                        />
-                        <AvatarFallback className="rounded-lg bg-muted text-muted-foreground">
-                          <IconSalad className="size-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={cn(
-                          "flex-1 min-w-0",
-                          item.isAvailable
-                            ? "opacity-100"
-                            : "opacity-80 grayscale",
-                        )}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <VegNonVegTooltip
-                            foodType={item.foodType}
-                            innerClassName="size-1"
-                          />
-                          <h4 className="font-medium line-clamp-3">
-                            {item.foodName}{" "}
-                            {item.variantName && `(${item.variantName})`}
-                          </h4>
-                        </div>
-
-                        {typeof item.discountedPrice === "number" ? (
-                          <p className="text-sm font-medium">
-                            {" "}
-                            ₹{item.discountedPrice.toFixed(2)}
-                            <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                              ₹{item.price.toFixed(2)}
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-sm font-medium">
-                            ₹{item.price.toFixed(2)}
-                          </p>
-                        )}
-
-                        <div className="flex items-center space-x-2 mt-2 dark:border-zinc-600 border rounded-md w-min">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={item.isAvailable === false}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (item.quantity > 1) {
-                                editItem({
-                                  ...item,
-                                  quantity: item.quantity - 1,
-                                });
-                              } else {
-                                removeItem(item);
-                              }
-                            }}
-                            className="w-8 h-8"
-                          >
-                            <Minus className="w-3 h-3" />
-                            <span className="sr-only">Remove from cart</span>
-                          </Button>
-                          <span className="text-sm font-medium w-8 text-center">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={item.isAvailable === false}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              editItem({
-                                ...item,
-                                quantity: item.quantity + 1,
-                              });
-                            }}
-                            className="w-8 h-8"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span className="sr-only">Add to cart</span>
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        {item.isAvailable === false ? (
-                          <p className="text-sm font-medium">Unavailable</p>
-                        ) : typeof item.discountedPrice === "number" ? (
-                          <p className="text-sm font-medium flex flex-col items-end">
-                            <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                              ₹{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                            ₹{(item.discountedPrice * item.quantity).toFixed(2)}
-                          </p>
-                        ) : (
-                          <p className="text-sm font-medium">
-                            ₹{(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(item)}
-                          className="text-red-500 hover:text-red-700 transition-colors opacity-100! grayscale-0! z-20"
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <Textarea
-                    className="my-4 border rounded-md resize-none text-wrap whitespace-pre-wrap min-h-11 max-h-40"
-                    placeholder="Add special instructions..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-
-                  <div className="py-6 border-t mb-40">
-                    <div className="space-y-2 mb-4">
-                      <h3 className="text-lg font-semibold">Bill Summary</h3>
-                      <div className="flex justify-between text-sm">
-                        <span>Sub Total</span>
-                        <div className="flex items-center space-x-2">
-                          {preDiscountedPrice && (
-                            <span className="text-xs line-through opacity-70">
-                              ₹{preDiscountedPrice.toFixed(2)}
-                            </span>
-                          )}
-                          <span>₹{restaurantCartItemSubtotal.toFixed(2)}</span>
-                        </div>
-                      </div>
-                      {taxDetails &&
-                        !taxDetails.isTaxIncludedInPrice &&
-                        taxDetails.taxLabel && (
-                          <div className="flex justify-between text-sm">
-                            <span>{taxDetails.taxLabel}</span>
-                            <span>
-                              ₹
-                              {(
-                                restaurantCartItemSubtotal * taxDetails.taxRate
-                              ).toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                      <hr />
-                      <div className="flex justify-between font-bold text-lg">
-                        <span>To Pay</span>
-                        <span>₹{toPay.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <DrawerFooter className="flex flex-col gap-2 absolute bottom-14 left-0 right-0 p-4 border-t backdrop-blur-lg bg-background/40">
-                      <Button
-                        className="w-full transition-colors"
-                        disabled={
-                          cartItems.length === 0 ||
-                          cartItems.some((item) => item.isAvailable === false)
-                        }
-                        onClick={confirmOrder}
-                      >
-                        Confirm Order
-                      </Button>
-
-                      <DrawerClose asChild>
-                        <Button variant="outline" className="w-full">
-                          Continue Shopping
-                        </Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </div>
-                </div>
-              )}
+          <ScrollArea className="h-[calc(100%-28vh)]">
+            <div className="px-6 py-4 pb-20">
+              <CartView
+                ref={cartRef}
+                slug={restaurantSlug}
+                tableId={tableId}
+                onSuccess={onOrderSuccess}
+              />
             </div>
+            <ScrollBar className="z-9" />
           </ScrollArea>
         </div>
+        <DrawerFooter className="sticky bottom-0 left-0 right-0 p-4 border-t backdrop-blur-lg bg-background/40 w-full md:mx-auto md:w-2xl lg:w-3xl">
+        <div className="h-8 w-full bg-gradient-to-t from-background to-transparent absolute top-0 left-0 right-0 -translate-y-full" />
+          <Button
+            className="w-full transition-colors"
+            disabled={
+              cartItems.length === 0 ||
+              cartItems.some((item) => item.isAvailable === false)
+            }
+            onClick={confirmOrder}
+          >
+            Confirm Order
+          </Button>
+
+          <DrawerClose asChild>
+            <Button variant="outline" className="w-full">
+              Continue Shopping
+            </Button>
+          </DrawerClose>
+        </DrawerFooter>
         <DrawerClose
           asChild
           className={cn(

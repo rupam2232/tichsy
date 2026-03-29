@@ -1,7 +1,6 @@
 "use client";
-import { Button } from "@repo/ui/components/button";
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import type { AxiosError } from "axios";
@@ -10,28 +9,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { cn } from "@repo/ui/lib/utils";
 import ClinetFoodMenu from "@/components/features/menu/food-menu";
-import { Check, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@repo/ui/components/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/components/avatar";
-import { getOptimizedUrl } from "@/utils/imageOptimizer";
-import { IconSalad } from "@tabler/icons-react";
-import { Textarea } from "@repo/ui/components/textarea";
-import { Input } from "@repo/ui/components/input";
-import { Label } from "@repo/ui/components/label";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import Link from "next/link";
+import { Button } from "@repo/ui/components/button";
+import { Check } from "lucide-react";
 import { RootState } from "@/store/store";
-import VegNonVegTooltip from "@/components/shared/veg-nonveg-tooltip";
+import CartView, { CartViewHandle } from "@/components/features/cart/cart-view";
 
 const FoodOrderStepsForStaffs = ({
   step,
@@ -60,17 +44,8 @@ const FoodOrderStepsForStaffs = ({
     useState<boolean>(false);
   const [tableId, setTableId] = useState<string | null>(null);
   const observer = useRef<IntersectionObserver>(null);
-  const { cartItems, syncCart, removeItem, editItem, clearCart } =
-    useCart(slug);
-  const [notes, setNotes] = useState<string>("");
-  const [taxDetails, setTaxDetails] = useState<{
-    isTaxIncludedInPrice: boolean;
-    taxLabel: string;
-    taxRate: number;
-  }>();
-  const [customerName, setCustomerName] = useState<string>("");
-  const [customerPhone, setCustomerPhone] = useState<string>("");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const cartRef = useRef<CartViewHandle>(null);
 
   const fetchAllTables = useCallback(async () => {
     if (!slug) {
@@ -133,11 +108,11 @@ const FoodOrderStepsForStaffs = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const { syncCart, cartItems } = useCart(slug);
+
   useEffect(() => {
     if (slug) {
-      syncCart().then((e) => {
-        setTaxDetails(e.payload?.taxDetails);
-      });
+      syncCart();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
@@ -148,65 +123,17 @@ const FoodOrderStepsForStaffs = ({
     }
   }, [step]);
 
-  const restaurantCartItemSubtotal = useMemo(() => {
-    return cartItems.reduce((total, item) => {
-      if (typeof item.discountedPrice === "number") {
-        return total + item.discountedPrice * item.quantity;
-      }
-      return total + item.price * item.quantity;
-    }, 0);
-  }, [cartItems]);
-
-  const preDiscountedPrice = useMemo(() => {
-    return cartItems.some((item) => typeof item.discountedPrice === "number")
-      ? cartItems.reduce((total, item) => {
-          return total + item.price * item.quantity;
-        }, 0)
-      : null;
-  }, [cartItems]);
-
-  const toPay = useMemo(() => {
-    return (
-      restaurantCartItemSubtotal +
-      (taxDetails && !taxDetails.isTaxIncludedInPrice
-        ? restaurantCartItemSubtotal * taxDetails.taxRate
-        : 0)
-    );
-  }, [restaurantCartItemSubtotal, taxDetails]);
-
   const confirmOrder = async () => {
-    const toastId = toast.loading("Placing order...");
-    try {
-      const response = await axios.post(`/order/${slug}/${tableId}`, {
-        foodItems: cartItems.map((item) => ({
-          _id: item.foodId,
-          quantity: item.quantity,
-          variantName: item.variantName || undefined,
-        })),
-        notes: notes,
-        paymentMethod: "cash",
-        customerName: customerName || undefined,
-        customerPhone: customerPhone || undefined,
-      });
-      toast.success(response.data.message || "Order placed successfully!", {
-        id: toastId,
-      });
-      clearCart();
-      if (onClose) {
-        onClose();
-      } else {
-        router.back();
-      }
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      console.error(axiosError.response?.data.message || axiosError.message);
-      toast.error(
-        axiosError.response?.data.message ||
-          "Failed to place order. Please try again.",
-        {
-          id: toastId,
-        },
-      );
+    if (cartRef.current) {
+      await cartRef.current.confirmOrder();
+    }
+  };
+
+  const onOrderSuccess = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      router.back();
     }
   };
 
@@ -236,24 +163,24 @@ const FoodOrderStepsForStaffs = ({
   return (
     <div
       className={cn(
-        "flex flex-col h-full @container/food-order-steps-for-staffs",
+        "flex flex-col h-full @container/food-order-steps-for-staffs relative",
         className,
       )}
     >
       <div
         ref={scrollContainerRef}
-        className="flex-1 px-6 custom-scrollbar overflow-y-auto"
+        className="flex-1 px-6 custom-scrollbar overflow-y-auto pt-2 pb-10"
       >
         {step === 1 && (
           <>
             {isTablePageLoading ? (
-              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 pt-2 px-2">
+              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 px-2">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <Skeleton key={index} className="min-h-25 w-full" />
                 ))}
               </div>
             ) : allTables && allTables.tables.length > 0 ? (
-              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 p-2 mb-20">
+              <div className="grid grid-cols-2 @lg/food-order-steps-for-staffs:grid-cols-3 @2xl/food-order-steps-for-staffs:grid-cols-4 gap-3 px-2">
                 {allTables.tables.map((t, index) => (
                   <div
                     ref={
@@ -284,10 +211,10 @@ const FoodOrderStepsForStaffs = ({
                     )}
                     <div
                       className={cn(
-                        "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate min-h-25 border",
+                        "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate min-h-25 shadow border",
                         t.isOccupied
-                          ? "bg-red-100 text-red-700 border-red-200"
-                          : "bg-green-100 text-green-700 border-green-200",
+                          ? "bg-red-200 dark:bg-red-100 text-red-900 dark:text-red-700"
+                          : "bg-green-200 dark:bg-green-100 text-green-900 dark:text-green-700",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">
@@ -320,253 +247,29 @@ const FoodOrderStepsForStaffs = ({
           tableId={tableId}
           isStaffCreatingOrder={true}
           scrollClassName="max-w-[calc(100vw-3rem)] overflow-y-auto"
-          className={cn(step !== 2 && "hidden")}
+          className={cn("m-0!", step !== 2 && "hidden")}
         />
-        {step === 3 &&
-          (cartItems.length === 0 ? (
-            <Card>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShoppingBag className="w-12 h-12 mx-auto mb-4" />
-                  <p className="text-lg font-bold">Your cart is empty</p>
-                  <p className="text-muted-foreground mb-6">
-                    Add some delicious items from {slug}&apos;s menu
-                  </p>
-                  <Button
-                    className="bg-primary hover:bg-primary/90"
-                    onClick={() => {
-                      setStep(2);
-                    }}
-                  >
-                    Browse Menu
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              <Card className="gap-2">
-                <CardHeader>
-                  <CardTitle>Your Items</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.foodId + (item.variantName || "")}
-                      className="flex flex-col sm:flex-row sm:items-center space-x-4 pt-2 pb-4 border-b first:border-t last:border-b-0 last:pb-0 relative"
-                    >
-                      <Avatar
-                        className={cn(
-                          "w-16 h-16 shrink-0 rounded-lg",
-                          !item.isAvailable && "opacity-80 grayscale",
-                        )}
-                      >
-                        <AvatarImage
-                          src={getOptimizedUrl(
-                            item.imageUrl,
-                            150,
-                            150,
-                            "c_fill",
-                          )}
-                          alt={item.foodName}
-                          className="object-cover"
-                          draggable={false}
-                        />
-                        <AvatarFallback className="rounded-lg bg-muted text-muted-foreground">
-                          <IconSalad className="size-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-1 items-center">
-                        <div
-                          className={cn(
-                            "flex-1 min-w-0",
-                            item.isAvailable
-                              ? "opacity-100"
-                              : "opacity-80 grayscale",
-                          )}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <VegNonVegTooltip
-                              foodType={item.foodType}
-                              innerClassName="size-1"
-                            />
-                            <h4 className="font-medium line-clamp-3">
-                              {item.foodName}{" "}
-                              {item.variantName && `(${item.variantName})`}
-                            </h4>
-                          </div>
-
-                          {typeof item.discountedPrice === "number" ? (
-                            <p className="text-sm font-medium">
-                              {" "}
-                              ₹{item.discountedPrice.toFixed(2)}
-                              <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                                ₹{item.price.toFixed(2)}
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="text-sm font-medium">
-                              ₹{item.price.toFixed(2)}
-                            </p>
-                          )}
-
-                          <div className="flex items-center space-x-2 mt-2 dark:border-zinc-600 border rounded-md w-min">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={item.isAvailable === false}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (item.quantity > 1) {
-                                  editItem({
-                                    ...item,
-                                    quantity: item.quantity - 1,
-                                  });
-                                } else {
-                                  removeItem(item);
-                                }
-                              }}
-                              className="w-8 h-8"
-                            >
-                              <Minus className="w-3 h-3" />
-                              <span className="sr-only">Remove from cart</span>
-                            </Button>
-                            <span className="text-sm font-medium w-8 text-center">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={item.isAvailable === false}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                editItem({
-                                  ...item,
-                                  quantity: item.quantity + 1,
-                                });
-                              }}
-                              className="w-8 h-8"
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span className="sr-only">Add to cart</span>
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          {item.isAvailable === false ? (
-                            <p className="text-sm font-medium">Unavailable</p>
-                          ) : typeof item.discountedPrice === "number" ? (
-                            <p className="text-sm font-medium flex flex-col items-end">
-                              <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                                ₹{(item.price * item.quantity).toFixed(2)}
-                              </span>
-                              ₹
-                              {(item.discountedPrice * item.quantity).toFixed(
-                                2,
-                              )}
-                            </p>
-                          ) : (
-                            <p className="text-sm font-medium">
-                              ₹{(item.price * item.quantity).toFixed(2)}
-                            </p>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(item)}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <Trash2 />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-              <Textarea
-                className="my-4 border rounded-md resize-none text-wrap whitespace-pre-wrap min-h-11 max-h-40"
-                placeholder="Add special instructions..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-              <Card className="gap-4">
-                <CardHeader>
-                  <CardTitle>Bill Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span>Sub Total</span>
-                      <div className="flex items-center space-x-2">
-                        {preDiscountedPrice && (
-                          <span className="text-xs line-through opacity-70">
-                            ₹{preDiscountedPrice.toFixed(2)}
-                          </span>
-                        )}
-                        <span>₹{restaurantCartItemSubtotal.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    {taxDetails &&
-                      !taxDetails.isTaxIncludedInPrice &&
-                      taxDetails.taxLabel && (
-                        <div className="flex justify-between text-sm">
-                          <span>{taxDetails.taxLabel}</span>
-                          <span>
-                            ₹
-                            {(
-                              restaurantCartItemSubtotal * taxDetails.taxRate
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    <hr />
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>To Pay</span>
-                      <span>₹{toPay.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="mb-18 gap-4">
-                <CardHeader>
-                  <CardTitle>Customer Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customer-name">Customer Name</Label>
-                    <Input
-                      id="customer-name"
-                      placeholder="Enter Customer Name"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customer-phone">Customer Phone</Label>
-                    <Input
-                      id="customer-phone"
-                      placeholder="Enter Customer Phone"
-                      type="tel"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ))}
+        {step === 3 && (
+          <CartView
+            ref={cartRef}
+            slug={slug}
+            tableId={tableId}
+            isStaff={true}
+            onSuccess={onOrderSuccess}
+            onBrowseMenu={() => setStep(2)}
+          />
+        )}
       </div>
 
-      <div className="h-[6rem] sm:h-[4rem]"></div>
+      {/* <div className="h-[6rem]"></div> */}
 
       <div
         className={cn(
-          "bg-background rounded-b-lg border-t p-4 flex items-center justify-between sm:justify-between flex-col-reverse gap-2 sm:flex-row fixed bottom-0 left-0 right-0 z-15",
+          "bg-background rounded-b-lg border-t p-4 flex items-center justify-between sm:justify-between flex-col-reverse gap-2 sm:flex-row relative",
           footerClassName,
         )}
       >
+        <div className="h-8 w-full bg-gradient-to-t from-background to-transparent absolute top-0 left-0 right-0 -translate-y-full" />
         {step === 1 && (
           <>
             <Button

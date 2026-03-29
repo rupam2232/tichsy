@@ -651,6 +651,7 @@ const TableDetails = ({
               Archive:
               <Switch
                 className="cursor-pointer"
+                disabled={activeRestaurant?.userRole !== "owner"}
                 checked={tableDetails.isArchived}
                 onCheckedChange={toggleArchiveStatus}
               />

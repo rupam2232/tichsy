@@ -36,7 +36,9 @@ export default function SelectTable() {
   const router = useRouter();
   const [allTables, setAllTables] = useState<AllTables | null>(null);
   const observer = useRef<IntersectionObserver>(null);
-  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
 
   const handleTableSelect = (table: Table) => {
     setSelectedTable(table);
@@ -55,7 +57,9 @@ export default function SelectTable() {
     try {
       if (page === 1) {
         setIsPageLoading(true);
-        const response = await axios.get(`/table/${slug}?limit=20&includeArchived=true`);
+        const response = await axios.get(
+          `/table/${slug}?limit=20&includeArchived=true`,
+        );
         setAllTables(response.data.data);
       } else {
         setIsPageChanging(true);
@@ -92,18 +96,21 @@ export default function SelectTable() {
     fetchAllTables();
   }, [slug, fetchAllTables]);
 
-  const lastElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries && Array.isArray(entries) && entries[0]?.isIntersecting) {
-        if (allTables && allTables?.totalPages > page) {
-          if (isPageChanging) return;
-          setPage((prevPageNumber) => prevPageNumber + 1);
+  const lastElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries && Array.isArray(entries) && entries[0]?.isIntersecting) {
+          if (allTables && allTables?.totalPages > page) {
+            if (isPageChanging) return;
+            setPage((prevPageNumber) => prevPageNumber + 1);
+          }
         }
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [allTables, page, isPageChanging]);
+      });
+      if (node) observer.current.observe(node);
+    },
+    [allTables, page, isPageChanging],
+  );
 
   return (
     <section className="@container/main">
@@ -177,7 +184,7 @@ export default function SelectTable() {
                 >
                   <div
                     className={cn(
-                      "rounded-lg ring-3 ring-transparent cursor-pointer transition-all duration-200 relative  p-0.5 z-20",
+                      "rounded-lg ring-3 ring-transparent cursor-pointer transition-all duration-200 relative z-20",
                       isSelected && table.isArchived
                         ? "ring-secondary-foreground/50"
                         : isSelected && table.isOccupied
@@ -193,12 +200,12 @@ export default function SelectTable() {
                   >
                     <Card
                       className={cn(
-                        "flex items-center justify-center cursor-pointer transition-all duration-200 rounded-lg truncate whitespace-pre-wrap min-h-[100px]",
+                        "flex items-center justify-center cursor-pointer transition-all duration-200 rounded-lg truncate whitespace-pre-wrap min-h-[100px] border shadow",
                         table.isArchived
-                          ? "bg-muted text-muted-foreground/80 border"
+                          ? "bg-muted text-muted-foreground/80"
                           : table.isOccupied
-                            ? "bg-red-100 text-red-700 border-red-200"
-                            : "bg-green-100 text-green-700 border-green-200",
+                            ? "bg-red-200 dark:bg-red-100 text-red-900 dark:text-red-700"
+                            : "bg-green-200 dark:bg-green-100 text-green-900 dark:text-green-700",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">
