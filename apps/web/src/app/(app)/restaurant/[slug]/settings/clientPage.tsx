@@ -59,7 +59,9 @@ const ClientPage = () => {
   const [isSlugUnique, setIsSlugUnique] = useState<boolean | null>(null);
   const [isCheckingSlug, setIsCheckingSlug] = useState<boolean>(false);
   const debounced = useDebounceCallback(setFormSlug, 300);
-  const activeRestaurant = useSelector((state: RootState) => state.restaurantsSlice.activeRestaurant);
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
   const role = activeRestaurant?.userRole;
 
   const form = useForm<z.infer<typeof updateRestaurantSchema>>({
@@ -310,7 +312,7 @@ const ClientPage = () => {
     });
 
   const fetchRestaurantData = useCallback(async () => {
-    if (role !== "owner"){
+    if (role !== "owner") {
       return;
     }
     try {
@@ -496,7 +498,7 @@ const ClientPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logoUrl, restaurantData]);
 
-  if (role !== "owner"){
+  if (role !== "owner") {
     return (
       <section className="flex flex-1 items-center justify-center p-4 h-[calc(100vh-5rem)]">
         <p className="text-muted-foreground text-center">
@@ -524,10 +526,11 @@ const ClientPage = () => {
       </div>
       <Form {...form}>
         <form
-          className="space-y-4 relative flex items-start justify-between flex-col lg:flex-row-reverse mt-5"
-          onSubmit={form.handleSubmit(onSubmit, (errors) =>
-            console.log("Form errors:", errors),
-          )}
+          className="space-y-4 flex items-start justify-between flex-col lg:flex-row-reverse mt-5"
+          onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            toast.error("Failed to update restaurant data. Please try again");
+            console.log("Form errors:", errors);
+          })}
         >
           <div className="lg:sticky top-[calc((var(--header-height)+6rem))] lg:max-w-1/3 grid">
             <p className="text-sm font-semibold mb-2">Restaurant Logo</p>
@@ -547,6 +550,7 @@ const ClientPage = () => {
                     <AlertDialogTrigger asChild>
                       <Button
                         type="button"
+                        size="icon"
                         className="absolute top-0 right-0 rounded-full bg-input/30 hover:bg-input/50"
                         variant="outline"
                         aria-label="Remove Logo"
@@ -579,6 +583,7 @@ const ClientPage = () => {
                 ) : (
                   <Button
                     type="button"
+                    size="icon"
                     className="absolute top-0 right-0 rounded-full bg-input/30 hover:bg-input/50"
                     variant="outline"
                     onClick={handleImageRemove}
@@ -612,9 +617,9 @@ const ClientPage = () => {
               <p className="text-red-500">{imageErrorMessage}</p>
             )}
             <span className="text-sm text-muted-foreground mt-2">
-              Upload JPG, PNG, or JPEG image with a minimum size of 500x500
-              pixels and a maximum file size of {MAX_IMAGE_SIZE / 1024 / 1024}
-              MB.
+              Upload a square image (e.g., 500x500 pixels) for the best results.
+              The image will be cropped to a circle. Maximum file size is{" "}
+              {MAX_IMAGE_SIZE / 1024 / 1024}MB.
             </span>
           </div>
           <div className="lg:max-w-1/2 space-y-4">
@@ -631,7 +636,7 @@ const ClientPage = () => {
                       id="restaurantName"
                       type="text"
                       placeholder="E.g., Restro"
-                      autoComplete="restaurant-name"
+                      autoComplete="off"
                       required
                       {...field}
                     />
@@ -658,7 +663,7 @@ const ClientPage = () => {
                       id="slug"
                       type="text"
                       placeholder="E.g., restro"
-                      autoComplete="slug"
+                      autoComplete="off"
                       required
                       {...field}
                       onChange={(e) => {
@@ -704,7 +709,7 @@ const ClientPage = () => {
                       className="resize-none min-h-20 max-h-40"
                       id="description"
                       placeholder="E.g., Best restaurant in town"
-                      autoComplete="description"
+                      autoComplete="off"
                       {...field}
                     />
                   </FormControl>
@@ -779,7 +784,7 @@ const ClientPage = () => {
                       id="openingTime"
                       type="text"
                       placeholder="E.g., 09:00"
-                      autoComplete="openingTime"
+                      autoComplete="off"
                       {...field}
                     />
                   </FormControl>
@@ -805,7 +810,7 @@ const ClientPage = () => {
                       id="closingTime"
                       type="text"
                       placeholder="E.g., 23:00"
-                      autoComplete="closingTime"
+                      autoComplete="off"
                       {...field}
                     />
                   </FormControl>

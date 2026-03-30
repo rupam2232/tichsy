@@ -41,6 +41,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { addRestaurant } from "@/store/restaurantSlice";
+import { Textarea } from "@repo/ui/components/textarea";
+import { cn } from "@repo/ui/lib/utils";
 
 const CreateRestaurantDialog = ({
   children = "Create a New Restaurant",
@@ -285,16 +287,13 @@ const CreateRestaurantDialog = ({
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (logoUrl) {
-        handleImageRemove();
-      }
+      handleImageRemove();
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logoUrl]);
+  }, [handleImageRemove]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -334,38 +333,38 @@ const CreateRestaurantDialog = ({
                 <div className="grid gap-4">
                   {(imageFile || logoUrl) && (
                     <div className="group relative mx-auto rounded-full cursor-pointer">
-                      <Tooltip>
-                        <TooltipTrigger className="cursor-pointer" asChild>
-                          <div>
-                            <Avatar className="w-30 h-30 rounded-full">
-                              <AvatarImage
-                                src={
-                                  logoUrl
-                                    ? logoUrl
-                                    : URL.createObjectURL(imageFile!)
-                                }
-                                alt="Restaurant Logo"
-                                className="object-cover"
-                                loading="lazy"
-                                draggable={false}
-                              />
-                            </Avatar>
+                      <div>
+                        <Avatar className="w-30 h-30 rounded-full">
+                          <AvatarImage
+                            src={
+                              logoUrl
+                                ? logoUrl
+                                : URL.createObjectURL(imageFile!)
+                            }
+                            alt="Restaurant Logo"
+                            className="object-cover"
+                            loading="lazy"
+                            draggable={false}
+                          />
+                        </Avatar>
+                        <Tooltip>
+                          <TooltipTrigger className="cursor-pointer" asChild>
                             <Button
                               type="button"
-                              className="bg-black/50 text-foreground/50 group-hover:text-foreground hidden group-hover:flex absolute top-1/2 right-1/2 translate-x-1/2 -translate-y-1/2 rounded-full w-full h-full items-center justify-center hover:bg-black/50"
+                              size="icon"
+                              className={cn(
+                                "absolute top-0 -right-6 rounded-full bg-muted hover:bg-muted/50",
+                                !logoUrl && "hidden",
+                              )}
                               onClick={handleImageRemove}
                               aria-label="Remove Logo"
                             >
-                              <Trash2 className="size-6 text-red-600" />
+                              <Trash2 className="text-red-600" />
                             </Button>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-sm font-semibold">
-                            Click to remove the logo
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
+                          </TooltipTrigger>
+                          <TooltipContent>Remove Logo</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
                   )}
                   <div
@@ -403,7 +402,7 @@ const CreateRestaurantDialog = ({
                             id="restaurant-name"
                             type="text"
                             placeholder="E.g., Restro"
-                            autoComplete="restaurant-name"
+                            autoComplete="off"
                             required
                             {...field}
                           />
@@ -431,7 +430,7 @@ const CreateRestaurantDialog = ({
                             id="slug"
                             type="text"
                             placeholder="E.g., restro"
-                            autoComplete="slug"
+                            autoComplete="off"
                             required
                             {...field}
                             onChange={(e) => {
@@ -471,11 +470,11 @@ const CreateRestaurantDialog = ({
                           Description (optional)
                         </FormLabel>
                         <FormControl>
-                          <Input
+                          <Textarea
                             id="description"
-                            type="text"
+                            className="resize-none min-h-20 max-h-40"
                             placeholder="E.g., Best restaurant in town"
-                            autoComplete="description"
+                            autoComplete="off"
                             {...field}
                           />
                         </FormControl>
