@@ -1231,7 +1231,6 @@ export const getAnalyticsRevenue = asyncHandler(async (req, res) => {
 
   let formatString = "%Y-%m-%d";
   if (groupBy === "week") {
-    // We will leave this in case it's used elsewhere, but week-sliding is preferred now
     formatString = "%m-%d";
   } else if (groupBy === "month") {
     formatString = "%Y-%m";

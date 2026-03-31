@@ -94,6 +94,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
     DashboardAnalytics["salesTrend"]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -174,43 +175,99 @@ export function RevenueChart({ slug }: RevenueChartProps) {
     return salesTrend?.reduce((acc, curr) => acc + (curr.total || 0), 0) || 0;
   }, [salesTrend]);
 
-  const handleExport = () => {
-    if (!salesTrend || salesTrend.length === 0) return;
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const userTimezone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const exportData = salesTrend.map((item) => {
-      let dateString = item._id;
-      if (item._id.includes(":")) {
-        // e.g. "2024-02-28 14:00" -> "Feb 28, 2024 02:00 PM - 02:59 PM"
-        const d = new Date(item._id);
-        const dEnd = new Date(d);
-        dEnd.setHours(d.getHours(), 59);
-        dateString = `${format(d, "MMM dd, yyyy, hh:mm a")} - ${format(dEnd, "hh:mm a")}`;
-      } else if (item._id.includes(" - ")) {
-        // Date range
-        const [start, end] = item._id.split(" - ");
-        if (start && end) {
-          dateString = `${format(new Date(start), "MMM dd, yyyy")} - ${format(new Date(end), "MMM dd, yyyy")}`;
+      const now = new Date();
+      let start = new Date();
+      let end = new Date();
+      let exportGroupBy = "day";
+
+      if (period === "today") {
+        start = startOfDay(now);
+        end = endOfDay(now);
+        exportGroupBy = "hour";
+      } else if (period === "last7d") {
+        end = endOfDay(subDays(now, 1));
+        start = startOfDay(subDays(now, 7));
+        exportGroupBy = "day";
+      } else if (period === "last30d") {
+        end = endOfDay(subDays(now, 1));
+        start = startOfDay(subDays(now, 30));
+        exportGroupBy = "day";
+      } else if (period === "custom") {
+        if (!date?.from) return;
+        start = startOfDay(date.from);
+        end = date.to ? endOfDay(date.to) : endOfDay(date.from);
+
+        const diffInDays = differenceInDays(end, start) + 1;
+        if (diffInDays > 1) {
+          exportGroupBy = "day";
+        } else {
+          exportGroupBy = "hour";
         }
-      } else {
-        // Single day: "2024-02-28" -> "Feb 28, 2024"
-        dateString = format(new Date(item._id), "MMM dd, yyyy");
       }
 
-      return {
-        "Date/Time": dateString,
-        "Total Sales (₹)": item.total,
-        Orders: item.orders,
-      };
-    });
+      // Fetch export data
+      const res = await axios.get<
+        ApiResponse<DashboardAnalytics["salesTrend"]>
+      >(`/restaurant/${slug}/dashboard/analytics/revenue`, {
+        params: {
+          timezone: userTimezone,
+          startDate: format(start, "yyyy-MM-dd'T'HH:mm:ss"),
+          endDate: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
+          groupBy: exportGroupBy,
+        },
+      });
 
-    exportToCsv(
-      exportData,
-      `revenue-${period}${period === "custom" ? "-" + format(date?.from ?? new Date(), "yyyyMMdd") + "-" + format(date?.to ?? new Date(), "yyyyMMdd") : ""}.csv`,
-    );
+      const exportDataTrend = res.data.data || [];
+
+      if (exportDataTrend.length === 0) {
+        toast.info("No data available to export for the selected period");
+        return;
+      }
+
+      const exportData = exportDataTrend.map((item) => {
+        let dateString = item._id;
+        if (item._id.includes(":")) {
+          // e.g. "2024-02-28 14:00" -> "Feb 28, 2024 02:00 PM - 02:59 PM"
+          const d = new Date(item._id);
+          const dEnd = new Date(d);
+          dEnd.setHours(d.getHours(), 59);
+          dateString = `${format(d, "MMM dd, yyyy, hh:mm a")} - ${format(dEnd, "hh:mm a")}`;
+        } else if (item._id.includes(" - ")) {
+          // Date range
+          const [rangeStart, rangeEnd] = item._id.split(" - ");
+          if (rangeStart && rangeEnd) {
+            dateString = `${format(new Date(rangeStart), "MMM dd, yyyy")} - ${format(new Date(rangeEnd), "MMM dd, yyyy")}`;
+          }
+        } else {
+          // Single day: "2024-02-28" -> "Feb 28, 2024"
+          dateString = format(new Date(item._id), "MMM dd, yyyy");
+        }
+
+        return {
+          "Date/Time": dateString,
+          "Total Sales (₹)": item.total,
+          "Total Orders": item.orders,
+        };
+      });
+
+      exportToCsv(
+        exportData,
+        `${slug}-sales-revenue-${period}${period === "custom" ? "-" + format(date?.from ?? new Date(), "yyyyMMdd") + "-" + format(date?.to ?? new Date(), "yyyyMMdd") : ""}.csv`,
+      );
+    } catch (error) {
+      console.error("Failed to export revenue trend:", error);
+      toast.error("Failed to export data. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  // Ensure data exists and calculate required min-width
-  // 45px per bar gives enough breathing room so bars never get too thin.
+  // 45px per bar.
   const chartMinWidth =
     salesTrend && salesTrend.length > 0 ? salesTrend.length * 45 : 0;
 
@@ -223,7 +280,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
       <CardHeader className="flex flex-col md:flex-row items-start justify-between gap-4 border-b pb-4">
         <div>
           <CardTitle className="text-lg">
-            Revenue Trend
+            Revenue Chart
           </CardTitle>
           <CardDescription>
             Total sales of selected period:{" "}
@@ -241,14 +298,14 @@ export function RevenueChart({ slug }: RevenueChartProps) {
                   variant="ghost"
                   size="sm"
                   onClick={handleExport}
-                  disabled={!salesTrend || salesTrend.length === 0}
+                  disabled={!salesTrend || salesTrend.length === 0 || isExporting}
                   className="bg-muted/70 hover:bg-muted/80 border"
                 >
-                  <Download />
+                  {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
                   <span className="sr-only">Export</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Export revenue trend to CSV</TooltipContent>
+              <TooltipContent>{isExporting ? "Exporting..." : "Export revenue trend to CSV"}</TooltipContent>
             </Tooltip>
             <Select
               value={period}
@@ -285,7 +342,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
                 className={cn(
                   "h-7 px-3 rounded-md transition-all gap-2",
                   chartType === "bar"
-                    ? "bg-foreground shadow-sm text-background hover:bg-foreground/90 dark:hover:bg-foreground/90 hover:text-background"
+                    ? "bg-primary shadow-sm text-white hover:bg-primary/90 dark:hover:bg-primary/90 hover:text-white"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -299,7 +356,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
                 className={cn(
                   "h-7 px-3 rounded-md transition-all gap-2",
                   chartType === "area"
-                    ? "bg-foreground shadow-sm text-background hover:bg-foreground/90 dark:hover:bg-foreground/90 hover:text-background"
+                    ? "bg-primary shadow-sm text-white hover:bg-primary/90 dark:hover:bg-primary/90 hover:text-white"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >

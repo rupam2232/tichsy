@@ -40,7 +40,7 @@ import { getOptimizedUrl } from "@/utils/imageOptimizer";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { cn } from "@repo/ui/lib/utils";
 
-export default function ClientPage({from}: {from?: string}) {
+export default function ClientPage({ from }: { from?: string }) {
   const user = useSelector((state: RootState) => state.auth.user);
   const [isOwnedLoading, setIsOwnedLoading] = useState<boolean>(true);
   const [ownedRestaurants, setOwnedRestaurants] = useState<
@@ -255,7 +255,7 @@ export default function ClientPage({from}: {from?: string}) {
                       {ownedRestaurants.map((restaurant, index) => (
                         <Card
                           key={restaurant._id}
-                          className="@container/card"
+                          className="@container/card justify-between relative shadow-xs border-border/70 hover:shadow-md transition-shadow"
                           ref={
                             index === ownedRestaurants.length - 1
                               ? lastOwnedElementRef
@@ -264,7 +264,10 @@ export default function ClientPage({from}: {from?: string}) {
                         >
                           <CardHeader>
                             {restaurant.isArchived && (
-                              <Badge variant="destructive" className="ml-auto">
+                              <Badge
+                                variant="destructive"
+                                className="absolute top-2 right-2"
+                              >
                                 Archived
                               </Badge>
                             )}
@@ -275,7 +278,8 @@ export default function ClientPage({from}: {from?: string}) {
                               {restaurant.description}
                             </CardDescription>
                           </CardHeader>
-                          <div className="flex flex-col items-center w-full gap-4 pb-6">
+
+                          <div className="flex items-center justify-center">
                             <Avatar className="w-15 h-15">
                               <AvatarImage
                                 src={getOptimizedUrl(
@@ -298,6 +302,9 @@ export default function ClientPage({from}: {from?: string}) {
                                   .toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
+                          </div>
+
+                          <div className="flex flex-col items-center w-full gap-4">
                             <CardAction className="self-auto">
                               <Button
                                 variant="outline"
@@ -350,7 +357,7 @@ export default function ClientPage({from}: {from?: string}) {
                       {staffRestaurants.map((staffsrestaurant, index) => (
                         <Card
                           key={staffsrestaurant._id}
-                          className="@container/card"
+                          className="@container/card justify-between relative shadow-xs border-border/70 hover:shadow-md transition-shadow"
                           ref={
                             index === staffRestaurants.length - 1
                               ? lastJoinedElementRef
@@ -359,7 +366,10 @@ export default function ClientPage({from}: {from?: string}) {
                         >
                           <CardHeader>
                             {staffsrestaurant.isArchived && (
-                              <Badge variant="destructive" className="ml-auto">
+                              <Badge
+                                variant="destructive"
+                                className="absolute top-2 right-2"
+                              >
                                 Archived
                               </Badge>
                             )}
@@ -370,7 +380,8 @@ export default function ClientPage({from}: {from?: string}) {
                               {staffsrestaurant.description}
                             </CardDescription>
                           </CardHeader>
-                          <div className="flex flex-col items-center w-full gap-4 pb-6">
+
+                          <div className="flex items-center justify-center">
                             <Avatar className="w-15 h-15">
                               <AvatarImage
                                 src={getOptimizedUrl(
@@ -393,6 +404,9 @@ export default function ClientPage({from}: {from?: string}) {
                                   .toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
+                          </div>
+
+                          <div className="flex flex-col items-center w-full gap-4">
                             <CardAction className="self-auto">
                               <Button
                                 variant="outline"

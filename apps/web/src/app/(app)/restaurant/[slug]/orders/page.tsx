@@ -57,7 +57,10 @@ export default async function page({
     <section className="flex flex-1 flex-col p-4 gap-4 lg:p-6 @container/main">
       <div className="flex flex-wrap items-center sm:items-start justify-between gap-2">
         <OrderTabList />
-        <SearchInput placeholder="Search orders by No., table name, food item name..." className="w-full sm:w-auto sm:min-w-[300px]" />
+        <SearchInput
+          placeholder="Search orders by No, table name, food item name..."
+          className="w-full sm:w-auto sm:min-w-[300px]"
+        />
       </div>
       <OrderList initialOrders={initialOrders} slug={slug} />
     </section>
