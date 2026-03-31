@@ -8,14 +8,21 @@ import { ApiResponse, AllTables } from "@repo/types";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "@/store/authSlice";
 import { cn } from "@repo/ui/lib/utils";
-import ClinetFoodMenu from "@/components/features/menu/food-menu";
+import ClientFoodMenu from "@/components/features/menu/food-menu";
 import { useCart } from "@/hooks/useCart";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import Link from "next/link";
 import { Button } from "@repo/ui/components/button";
-import { Check } from "lucide-react";
+import { Check, Store } from "lucide-react";
 import { RootState } from "@/store/store";
 import CartView, { CartViewHandle } from "@/components/features/cart/cart-view";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
 
 const FoodOrderStepsForStaffs = ({
   step,
@@ -147,16 +154,17 @@ const FoodOrderStepsForStaffs = ({
 
   if (!activeRestaurant || !activeRestaurant.isCurrentlyOpen) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 px-6 custom-scrollbar overflow-y-auto">
-          <div className="flex flex-col items-center justify-center h-full">
-            <h1 className="text-2xl font-bold">Restaurant is closed</h1>
-            <p className="text-muted-foreground mt-2">
-              Please try again later when the restaurant is open
-            </p>
-          </div>
-        </div>
-      </div>
+      <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 p-0!">
+        <EmptyHeader>
+          <EmptyMedia variant="icon" className="size-9">
+            <Store className="size-4" />
+          </EmptyMedia>
+          <EmptyTitle>Restaurant is closed</EmptyTitle>
+          <EmptyDescription>
+            Please try again later when the restaurant is open
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
@@ -213,8 +221,8 @@ const FoodOrderStepsForStaffs = ({
                       className={cn(
                         "rounded-md p-3 flex flex-col items-center justify-center text-sm truncate min-h-25 shadow border",
                         t.isOccupied
-                          ? "bg-red-200 dark:bg-red-100 text-red-900 dark:text-red-700"
-                          : "bg-green-200 dark:bg-green-100 text-green-900 dark:text-green-700",
+                          ? "bg-red-200 text-red-900"
+                          : "bg-green-200 text-green-900",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">
@@ -242,7 +250,7 @@ const FoodOrderStepsForStaffs = ({
             )}
           </>
         )}
-        <ClinetFoodMenu
+        <ClientFoodMenu
           slug={slug}
           tableId={tableId}
           isStaffCreatingOrder={true}

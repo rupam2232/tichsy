@@ -7,7 +7,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@repo/ui/components/avatar";
-import { Badge } from "@repo/ui/components/badge";
 import Link from "next/link";
 import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
@@ -63,16 +62,6 @@ export const RestaurantHeader = ({
             )}
           </div>
         </Link>
-
-        {/* Right: Actions / Status */}
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={restaurant.isCurrentlyOpen ? "success" : "destructive"}
-            className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm"
-          >
-            {restaurant.isCurrentlyOpen ? "Open" : "Closed"}
-          </Badge>
-        </div>
       </div>
     </header>
   );

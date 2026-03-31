@@ -87,9 +87,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             setAuthError({
               title: "Access Denied",
               description:
-                "You do not have permission to view this restaurant's page",
+                "You do not have permission to view this page",
               content:
-                "If you believe this is a mistake, please make sure you are logged into the correct account or contact the restaurant owner",
+                "If you believe this is a mistake, please make sure you are logged into the correct account or contact the owner",
             });
           } else if (axiosError.response.status === 404) {
             setAuthError({

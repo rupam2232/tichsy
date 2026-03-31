@@ -130,9 +130,7 @@ export function SiteHeader() {
           </TooltipTrigger>
           <TooltipContent side="right">
             Toggle Sidebar{" "}
-            <span className="text-[10px]">
-              <Kbd className="text-[11px] font-medium">Ctrl + B</Kbd>
-            </span>
+            <Kbd className="text-[11px] font-medium">Ctrl + B</Kbd>
           </TooltipContent>
         </Tooltip>
         <Separator

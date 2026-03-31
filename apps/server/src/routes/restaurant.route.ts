@@ -26,6 +26,7 @@ import {
   getAnalyticsTrending,
   getAnalyticsCategories,
   getAnalyticsTopTables,
+  toggleStaffArchiveStatus,
 } from "../controllers/restaurant.controller.js";
 import { rateLimit } from "express-rate-limit";
 import { ApiError } from "../utils/ApiError.js";
@@ -143,6 +144,14 @@ router
   .route("/:slug/staff")
   .get(verifyAuth, verifyRestaurantAccess, getAllStaffOfRestaurant)
   .delete(verifyAuth, verifyRestaurantAccess, removeStaffFromRestaurant);
+
+router.patch(
+  "/:slug/staff/toggle-archive-status",
+  verifyAuth,
+  verifyRestaurantAccess,
+  isSubscriptionActive,
+  toggleStaffArchiveStatus
+);
 
 router.post(
   "/:slug/update-logo",

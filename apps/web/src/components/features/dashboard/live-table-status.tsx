@@ -200,8 +200,8 @@ export function LiveTableStatus({ slug }: LiveTableStatusProps) {
                     className={cn(
                       "rounded-lg p-3 flex flex-col items-center justify-center text-center shadow border transition-all cursor-default min-h-[100px] gap-1",
                       t.isOccupied
-                        ? "bg-red-200 dark:bg-red-100 text-red-900 dark:text-red-700"
-                        : "bg-green-200 dark:bg-green-100 text-green-900 dark:text-green-700",
+                        ? "bg-red-200 text-red-900"
+                        : "bg-green-200 text-green-900",
                     )}
                   >
                     <span className="font-medium text-balance text-center text-xs">

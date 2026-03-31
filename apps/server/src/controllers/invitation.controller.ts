@@ -11,7 +11,7 @@ import sendEmail from "../utils/sendEmail.js";
 import { sendInviteSchema } from "@repo/types";
 import { env } from "../env.js";
 import { inviteStaff } from "../templates/emailTemplates.js";
-import { checkStaffLimit } from "../service/subscription.service.js";
+import { checkStaffLimit } from "../service/restaurant.service.js";
 import { createNotification } from "../service/notification.service.js";
 import { blockIfExceedsStarterLimitsInGracePeriod, isUserInGracePeriod } from "../utils/gracePeriod.js";
 

@@ -30,5 +30,6 @@ export type RestaurantStaffData = {
     role: string;
     email: string;
     avatar: string;
+    isArchived: boolean;
   }[];
 };

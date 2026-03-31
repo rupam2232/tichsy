@@ -204,8 +204,8 @@ export default function SelectTable() {
                         table.isArchived
                           ? "bg-muted text-muted-foreground/80"
                           : table.isOccupied
-                            ? "bg-red-200 dark:bg-red-100 text-red-900 dark:text-red-700"
-                            : "bg-green-200 dark:bg-green-100 text-green-900 dark:text-green-700",
+                            ? "bg-red-200 text-red-900"
+                            : "bg-green-200 text-green-900",
                       )}
                     >
                       <span className="font-medium text-xs text-center text-balance">

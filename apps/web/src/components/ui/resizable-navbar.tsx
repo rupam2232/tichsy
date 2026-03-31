@@ -124,15 +124,7 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
       {items.map((item, idx) => (
         <Link
           onMouseEnter={() => setHovered(idx)}
-          onClick={(e) => {
-            if (item.link.startsWith("#")) {
-              e.preventDefault();
-              const element = document.querySelector(item.link);
-              if (element) {
-                element.scrollIntoView({ behavior: "smooth" });
-                window.history.pushState(null, "", window.location.href);
-              }
-            }
+          onClick={() => {
             onItemClick?.();
           }}
           className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300"

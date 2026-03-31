@@ -9,6 +9,7 @@ import {
   canCreateRestaurant,
   canToggleOpeningStatus,
   canUnarchiveRestaurant,
+  canUnarchiveStaff,
 } from "../service/restaurant.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -77,7 +78,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   const ownerId = req.user!._id;
 
   await canCreateRestaurant(req.user!, req.subscription!);
-  await blockIfExceedsStarterLimitsInGracePeriod(ownerId, 'restaurant');
+  await blockIfExceedsStarterLimitsInGracePeriod(ownerId, "restaurant");
 
   // Check if the restaurant already exists
   const escapedName = restaurantName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -374,7 +375,11 @@ export const updateRestaurantDetails = asyncHandler(async (req, res) => {
 
     // Block if adding new categories during grace period
     if (newCategoryCount > currentCategoryCount) {
-      await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'category', req.restaurant!._id);
+      await blockIfExceedsStarterLimitsInGracePeriod(
+        req.user!._id,
+        "category",
+        req.restaurant!._id
+      );
     }
 
     restaurant.categories = categories;
@@ -497,7 +502,11 @@ export const addRestaurantCategory = asyncHandler(async (req, res) => {
   }
 
   await canAddCategory(restaurant, req.subscription!);
-  await blockIfExceedsStarterLimitsInGracePeriod(req.user!._id, 'category', req.restaurant!._id);
+  await blockIfExceedsStarterLimitsInGracePeriod(
+    req.user!._id,
+    "category",
+    req.restaurant!._id
+  );
 
   const categories = restaurant.categories || [];
   // Check if the category already exists
@@ -787,6 +796,55 @@ export const getAllStaffOfRestaurant = asyncHandler(async (req, res) => {
       "Staff members retrieved successfully"
     )
   );
+});
+
+export const toggleStaffArchiveStatus = asyncHandler(async (req, res) => {
+  if (req.restaurantRole !== "owner") {
+    throw new ApiError(
+      403,
+      "Only the owner can toggle restaurant archive status"
+    );
+  }
+
+  const restaurant = req.restaurant;
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  const staff = await RestaurantMember.findOne({
+    userId: req.body.staffId,
+    restaurantId: restaurant._id,
+  });
+
+  if (!staff) {
+    throw new ApiError(404, "Staff not found");
+  }
+
+  // If unarchiving, check subscription limits
+  if (staff.isArchived) {
+    await canUnarchiveStaff(req.subscription!, restaurant);
+    staff.isArchived = false;
+    staff.archivedAt = undefined;
+    staff.archivedReason = undefined;
+  } else {
+    // Archiving is always allowed manually
+    staff.isArchived = true;
+    staff.archivedAt = new Date();
+    staff.archivedReason = req.body?.archivedReason ?? "Archived by owner";
+  }
+
+  await staff.save();
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        staff,
+        `Staff is now ${staff.isArchived ? "archived" : "unarchived"}`
+      )
+    );
 });
 
 export const removeStaffFromRestaurant = asyncHandler(async (req, res) => {

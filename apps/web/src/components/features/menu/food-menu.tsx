@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { AllFoodItems, FoodItem, Table } from "@repo/types";
 import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
-import { Card, CardContent, CardFooter } from "@repo/ui/components/card";
+import { Card, CardContent } from "@repo/ui/components/card";
 import { cn } from "@repo/ui/lib/utils";
 import { FoodImage } from "@/components/shared/food-image";
 import {
@@ -27,7 +27,18 @@ import CustomerFoodDetails from "./customer-food-details";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import VegNonVegTooltip, { NonVegIcon, VegIcon } from "@/components/shared/veg-nonveg-tooltip";
+import VegNonVegTooltip, {
+  NonVegIcon,
+  VegIcon,
+} from "@/components/shared/veg-nonveg-tooltip";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
+import { IconToolsKitchen } from "@tabler/icons-react";
 
 const ClinetFoodMenu = ({
   slug,
@@ -210,27 +221,62 @@ const ClinetFoodMenu = ({
 
   if (isTableDataLoading) {
     return (
-      <div className={cn("p-4 text-center", className)}>
-        <Loader2 className="animate-spin mx-auto" />
-        <p>Please wait while we load the table data...</p>
+      <div
+        className={cn(
+          "flex flex-col flex-1 items-center justify-center",
+          !isStaffCreatingOrder && "min-h-[calc(100vh-(var(--spacing)*16))]",
+        )}
+      >
+        <div
+          className={cn("flex items-center gap-2 p-4 text-center", className)}
+        >
+          <Loader2 className="animate-spin" />
+          <p className="animate-pulse text-sm">
+            Please wait while we load the table data...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!tableDetails && !isStaffCreatingOrder) {
     return (
-      <div className={cn("p-4 text-center text-balance", className)}>
-        Sorry, we couldn&apos;t find your table details. Please refresh the page
-        or scan the QR code again.
+      <div
+        className={cn(
+          "flex flex-col flex-1 items-center justify-center",
+          !isStaffCreatingOrder && "min-h-[calc(100vh-(var(--spacing)*16))]",
+        )}
+      >
+        <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 p-0!">
+          <EmptyHeader>
+            <EmptyTitle>Table not found</EmptyTitle>
+            <EmptyDescription>
+              Sorry, we couldn&apos;t find your table details. Please refresh
+              the page or scan the QR code again.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     );
   }
 
   if (tableDetails?.isOccupied && !isStaffCreatingOrder) {
     return (
-      <div className={cn("p-4 text-center text-balance", className)}>
-        This table is currently occupied. Please try again later. Or contact
-        restaurant staff for assistance.
+      <div
+        className={cn(
+          "flex flex-col flex-1 items-center justify-center",
+          !isStaffCreatingOrder && "min-h-[calc(100vh-(var(--spacing)*16))]",
+        )}
+      >
+        <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 p-0!">
+          <EmptyHeader>
+            <EmptyTitle>Table is occupied</EmptyTitle>
+            <EmptyDescription>
+              Sorry, this table is currently occupied. Please try again later or
+              contact restaurant staff for assistance.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       </div>
     );
   }
@@ -274,14 +320,16 @@ const ClinetFoodMenu = ({
                 className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
                 onClick={() => setTabName("veg")}
               >
-                <VegIcon innerClassName="w-[4px] h-[4px]" />Veg
+                <VegIcon innerClassName="w-[4px] h-[4px]" />
+                Veg
               </TabsTrigger>
               <TabsTrigger
                 value="non-veg"
                 className="font-medium data-[state=active]:font-semibold data-[state=active]:bg-primary! data-[state=active]:text-primary-foreground! data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all duration-200"
                 onClick={() => setTabName("non-veg")}
               >
-                <NonVegIcon innerClassName="w-[4px] h-[4px]" />Non Veg
+                <NonVegIcon innerClassName="w-[4px] h-[4px]" />
+                Non Veg
               </TabsTrigger>
               {restaurantCategories.map((tab, label) => (
                 <TabsTrigger
@@ -414,20 +462,29 @@ const ClinetFoodMenu = ({
                       </h3>
                       {foodItem.hasVariants ? (
                         <p className="text-sm font-medium">
-                          {
-                            typeof foodItem.variants?.find((v) => v.isDefault)?.discountedPrice === "number" ? (
-                              <>
-                                ₹{foodItem.variants?.find((v) => v.isDefault)?.discountedPrice?.toFixed(2)}
-                                <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
-                                  ₹{foodItem.variants?.find((v) => v.isDefault)?.price?.toFixed(2)}
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                ₹{foodItem.variants?.find((v) => v.isDefault)?.price?.toFixed(2) || foodItem.variants?.[0]?.price?.toFixed(2)}
-                              </>
-                            )
-                          }
+                          {typeof foodItem.variants?.find((v) => v.isDefault)
+                            ?.discountedPrice === "number" ? (
+                            <>
+                              ₹
+                              {foodItem.variants
+                                ?.find((v) => v.isDefault)
+                                ?.discountedPrice?.toFixed(2)}
+                              <span className="line-through ml-2 text-xs text-muted-foreground font-normal">
+                                ₹
+                                {foodItem.variants
+                                  ?.find((v) => v.isDefault)
+                                  ?.price?.toFixed(2)}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              ₹
+                              {foodItem.variants
+                                ?.find((v) => v.isDefault)
+                                ?.price?.toFixed(2) ||
+                                foodItem.variants?.[0]?.price?.toFixed(2)}
+                            </>
+                          )}
                         </p>
                       ) : typeof foodItem.discountedPrice === "number" ? (
                         <p className="text-sm font-medium">
@@ -609,26 +666,32 @@ const ClinetFoodMenu = ({
                 ))}
             </div>
           ) : (
-            <Card className="@container/card">
-              <CardFooter className="flex-col gap-4 text-sm flex justify-center">
-                <div className="line-clamp-1 flex gap-2 font-medium text-center text-balance">
-                  No food items found
-                </div>
-              </CardFooter>
-            </Card>
+            <Empty className="animate-in fade-in slide-in-from-top-4 duration-500 flex items-center justify-center mt-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="size-9">
+                  <IconToolsKitchen className="size-4" />
+                </EmptyMedia>
+                <EmptyTitle>No item found</EmptyTitle>
+                <EmptyDescription>
+                  {searchInput
+                    ? "No food item found in the menu with this search"
+                    : "No food item found in the menu with this filter"}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
         </TabsContent>
       </Tabs>
       {!isStaffCreatingOrder && cartItems && cartItems.length > 0 && (
-        <div className="fixed bottom-2 w-[95%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30">
-          <Link
-            href={`/${slug}/cart/?tableId=${tableId}`}
-            className="flex items-center justify-center p-4 font-semibold text-white"
+        <Link href={`/${slug}/cart/?tableId=${tableId}`}>
+          <Button
+            size="lg"
+            className="fixed bottom-4 w-[90%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30"
           >
             View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}
             )
-          </Link>
-        </div>
+          </Button>
+        </Link>
       )}
     </div>
   );

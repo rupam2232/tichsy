@@ -517,16 +517,16 @@ const ClientPage = () => {
   }
 
   return (
-    <section className="@container/main flex flex-1 flex-col px-6 py-4 pt-0">
-      <div className="lg:sticky top-(--header-height) z-2 bg-background/40 pt-2 backdrop-blur-xl">
-        <h1 className="text-2xl font-bold">Restaurant Settings</h1>
-        <p className="text-muted-foreground mb-4 text-sm">
-          Manage your restaurant&apos;s settings and preferences
+    <section className="@container/main flex flex-1 flex-col px-4 lg:px-6 mb-6">
+      <div className="flex flex-col gap-1 py-3">
+        <h1 className="text-2xl font-bold tracking-tight">Restaurant Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your restaurant&apos;s details, settings and preferences
         </p>
       </div>
       <Form {...form}>
         <form
-          className="space-y-4 flex items-start justify-between flex-col lg:flex-row-reverse mt-5"
+          className="space-y-4 flex items-start justify-between flex-col lg:flex-row-reverse mt-3"
           onSubmit={form.handleSubmit(onSubmit, (errors) => {
             toast.error("Failed to update restaurant data. Please try again");
             console.log("Form errors:", errors);

@@ -33,9 +33,9 @@ export default async function page({
 
   return (
     <div className="flex flex-1 flex-col px-4 lg:px-6 @container/main">
-      <div className="flex items-center justify-between py-3">
+      <div className="flex items-center justify-between py-3 gap-2">
         <div className="flex flex-col gap-1">
-          <h3 className="text-2xl font-bold tracking-tight">Dashboard</h3>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Live overview of order metrics, table statuses, and active orders
           </p>
