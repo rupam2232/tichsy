@@ -5,7 +5,7 @@ import { SUBSCRIPTION_PLANS } from "./plans";
  * Format price for display
  */
 function formatPrice(price: number): string {
-  if (price === 0) return "Free forever";
+  if (price === 0) return "Free Forever";
   return price.toString();
 }
 
@@ -15,7 +15,7 @@ function formatPrice(price: number): string {
 export const PLAN_DISPLAYS: Record<SubscriptionPlan, PlanDisplay> = {
   starter: {
     id: "starter",
-    title: "Starter",
+    title: "Free",
     description: "Perfect for new ventures & cozy cafes",
     currency: "₹",
     monthlyPrice: formatPrice(SUBSCRIPTION_PLANS.starter.priceMonthly),

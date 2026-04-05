@@ -1,9 +1,5 @@
 "use client";
 
-import ToggleTheme from "@/components/shared/toggle-theme";
-import { ChevronRightIcon } from "lucide-react";
-import * as Color from "color-bits";
-import Link from "next/link";
 import React, {
   useCallback,
   useEffect,
@@ -11,8 +7,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import * as Color from "color-bits";
 import { cn } from "@repo/ui/lib/utils";
-import Image from "next/image";
 
 // Helper function to convert any CSS color to rgba
 export const getRGBA = (
@@ -46,37 +42,6 @@ export const colorWithOpacity = (color: string, opacity: number): string => {
   return Color.formatRGBA(Color.alpha(Color.parse(color), opacity));
 };
 
-// Tremor Raw focusInput [v0.0.1]
-
-export const focusInput = [
-  // base
-  "focus:ring-2",
-  // ring color
-  "focus:ring-blue-200 focus:dark:ring-blue-700/30",
-  // border color
-  "focus:border-blue-500 focus:dark:border-blue-700",
-];
-
-// Tremor Raw focusRing [v0.0.1]
-
-export const focusRing = [
-  // base
-  "outline outline-offset-2 outline-0 focus-visible:outline-2",
-  // outline color
-  "outline-blue-500 dark:outline-blue-500",
-];
-
-// Tremor Raw hasErrorInput [v0.0.1]
-
-export const hasErrorInput = [
-  // base
-  "ring-2",
-  // border color
-  "border-red-500 dark:border-red-700",
-  // ring color
-  "ring-red-200 dark:ring-red-700/30",
-];
-
 interface FlickeringGridProps extends React.HTMLAttributes<HTMLDivElement> {
   squareSize?: number;
   gridGap?: number;
@@ -92,6 +57,8 @@ interface FlickeringGridProps extends React.HTMLAttributes<HTMLDivElement> {
   fontWeight?: number | string;
   fitText?: boolean;
   textBaseline?: CanvasTextBaseline;
+  maxTextWidth?: number;
+  textVisibleRatio?: number;
 }
 
 export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
@@ -108,6 +75,8 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   fontWeight = 600,
   fitText = false,
   textBaseline = "middle",
+  maxTextWidth,
+  textVisibleRatio,
   ...props
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -150,8 +119,11 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
           maskCtx.font = `${fontWeight} ${fontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           const textWidth = maskCtx.measureText(text).width;
           const availableWidth = width / dpr;
+          const targetWidth = maxTextWidth
+            ? Math.min(availableWidth, maxTextWidth)
+            : availableWidth;
           if (textWidth > 0) {
-            currentFontSize = (availableWidth / textWidth) * fontSize;
+            currentFontSize = (targetWidth / textWidth) * fontSize;
           }
         }
 
@@ -211,6 +183,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       fontWeight,
       fitText,
       textBaseline,
+      maxTextWidth,
     ],
   );
 
@@ -259,8 +232,41 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     const updateCanvasSize = () => {
       const newWidth = width || container.clientWidth;
       const newHeight = height || container.clientHeight;
-      setCanvasSize({ width: newWidth, height: newHeight });
-      gridParams = setupCanvas(canvas, newWidth, newHeight);
+      let calculatedFontSize = fontSize;
+
+      if (fitText && text) {
+        const tempCtx = canvas.getContext("2d");
+        if (tempCtx) {
+          tempCtx.font = `${fontWeight} ${fontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          const textWidth = tempCtx.measureText(text).width;
+          const targetWidth = maxTextWidth
+            ? Math.min(newWidth, maxTextWidth)
+            : newWidth;
+          if (textWidth > 0) {
+            calculatedFontSize = (targetWidth / textWidth) * fontSize;
+          }
+        }
+      }
+
+      let logicalCanvasHeight = newHeight;
+
+      if (textVisibleRatio) {
+        let visualTextHeight = calculatedFontSize;
+        const tempCtx = canvas.getContext("2d");
+        if (tempCtx && text) {
+          tempCtx.font = `${fontWeight} ${calculatedFontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          const metrics = tempCtx.measureText(text);
+          visualTextHeight =
+            metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+        }
+
+        logicalCanvasHeight = visualTextHeight;
+        const croppedHeight = visualTextHeight * textVisibleRatio;
+        container.style.height = `${croppedHeight}px`;
+      }
+
+      setCanvasSize({ width: newWidth, height: logicalCanvasHeight });
+      gridParams = setupCanvas(canvas, newWidth, logicalCanvasHeight);
     };
 
     updateCanvasSize();
@@ -311,12 +317,25 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
     };
-  }, [setupCanvas, updateSquares, drawGrid, width, height, isInView]);
+  }, [
+    setupCanvas,
+    updateSquares,
+    drawGrid,
+    width,
+    height,
+    isInView,
+    textVisibleRatio,
+    maxTextWidth,
+    fontSize,
+    fitText,
+    text,
+    fontWeight,
+  ]);
 
   return (
     <div
       ref={containerRef}
-      className={cn(`h-full w-full ${className}`)}
+      className={cn(`h-full w-full overflow-hidden ${className}`)}
       {...props}
     >
       <canvas
@@ -330,155 +349,3 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     </div>
   );
 };
-
-export function useMediaQuery(query: string) {
-  const [value, setValue] = useState(false);
-
-  useEffect(() => {
-    // Handle initial check and subsequent changes
-    function checkQuery() {
-      const result = window.matchMedia(query);
-      setValue(result.matches);
-    }
-
-    // Check immediately
-    checkQuery();
-
-    // Add resize listener
-    window.addEventListener("resize", checkQuery);
-
-    // Add media query change listener
-    const mediaQuery = window.matchMedia(query);
-    mediaQuery.addEventListener("change", checkQuery);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", checkQuery);
-      mediaQuery.removeEventListener("change", checkQuery);
-    };
-  }, [query]);
-
-  return value;
-}
-
-export const Highlight = ({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => {
-  return (
-    <span
-      className={cn(
-        "p-1 py-0.5 font-medium dark:font-semibold text-secondary",
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
-};
-
-export const BLUR_FADE_DELAY = 0.15;
-
-const footerLinks = [
-  {
-    title: "Product",
-    links: [
-      { id: 1, title: "Features", url: "/#features" },
-      { id: 2, title: "Pricing", url: "/pricing" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { id: 6, title: "Terms of Service", url: "/terms" },
-      { id: 7, title: "Privacy Policy", url: "/privacy" },
-    ],
-  },
-  {
-    title: "Socials",
-    links: [
-      { id: 3, title: "LinkedIn", url: "https://linkedin.com/in/rupam2232" },
-      { id: 4, title: "X/Twitter", url: "https://x.com/rupam2232" },
-      { id: 5, title: "Github", url: "https://github.com/rupam2232/tichsy" },
-    ],
-  },
-];
-
-export default function Footer() {
-  const tablet = useMediaQuery("(max-width: 1024px)");
-
-  return (
-    <footer id="footer" className="w-full pb-0 pt-10">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between p-10">
-        <div className="flex flex-col items-start justify-start gap-y-5 md:max-w-xs mx-0">
-          <Link href="/" className="flex items-center gap-1">
-            <Image
-              loading="eager"
-              src="/black-transparent-icon.svg"
-              className="block dark:hidden"
-              alt="logo"
-              width={30}
-              height={30}
-            />
-            <Image
-              loading="eager"
-              src="/white-transparent-icon.svg"
-              className="hidden dark:block"
-              alt="logo"
-              width={30}
-              height={30}
-            />
-            <p className="text-xl font-bold tracking-tight text-foreground">
-              Tichsy
-            </p>
-          </Link>
-          <p className="text-muted-foreground text-sm">
-            The modern POS solution for forward-thinking restaurants. Streamline
-            orders, manage tables, and grow your business.
-          </p>
-          <ToggleTheme />
-        </div>
-        <div className="pt-5 md:w-1/2">
-          <div className="flex flex-wrap gap-4 items-start justify-between md:flex-row gap-y-5 lg:pl-10">
-            {footerLinks.map((column, columnIndex) => (
-              <ul key={columnIndex} className="flex flex-col gap-y-2">
-                <li className="mb-2 text-sm font-semibold">{column.title}</li>
-                {column.links.map((link) => (
-                  <li
-                    key={link.id}
-                    className="group inline-flex cursor-pointer items-center justify-start gap-1 text-[15px]/snug text-muted-foreground"
-                  >
-                    <Link href={link.url}>{link.title}</Link>
-                    <div className="flex size-4 items-center justify-center border border-border rounded translate-x-0 transform opacity-0 transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:opacity-100">
-                      <ChevronRightIcon className="h-4 w-4 " />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="w-full h-48 md:h-64 relative mt-10 z-0">
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-background/20 to-background z-10 from-40%" />
-        <div className="absolute inset-0 mx-6">
-          <FlickeringGrid
-            text="TICHSY"
-            fontSize={140}
-            fitText={true}
-            className="w-full"
-            squareSize={2}
-            gridGap={tablet ? 2 : 3}
-            color="#6B7280"
-            maxOpacity={0.3}
-            flickerChance={0.1}
-            textBaseline="bottom"
-          />
-        </div>
-      </div>
-    </footer>
-  );
-}

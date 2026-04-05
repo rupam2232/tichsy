@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { cn } from "@repo/ui/lib/utils";
 
 export interface PlanProps {
   id: string;
@@ -166,8 +167,15 @@ export function PricingTable({ plans, onPlanSelect }: PricingTableSixProps) {
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      INR / {isYearly ? "year" : "month"} {" "}
-                      <span className="text-xs">(inclusive of processing fees)</span>
+                      INR / {isYearly ? "year" : "month"}{" "}
+                      <span
+                        className={cn(
+                          "text-xs",
+                          plan.monthlyPrice === 0 ? "hidden" : "block",
+                        )}
+                      >
+                        (inclusive of processing fees)
+                      </span>
                     </motion.span>
                   </AnimatePresence>
                 </div>

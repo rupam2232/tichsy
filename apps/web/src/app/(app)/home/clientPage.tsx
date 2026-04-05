@@ -217,7 +217,7 @@ export default function ClientPage({ from }: { from?: string }) {
             ? `Welcome to Tichsy, ${user?.firstName ?? "User"}!`
             : `Welcome back, ${user?.firstName ?? "User"}!`}
         </p>
-        <div className="px-4 lg:px-6">
+        <div className={cn("px-4 lg:px-6 hidden", (ownedRestaurants.length > 0 || staffRestaurants.length > 0) && "block")}>
           <CreateRestaurantDialog
             setOwnersRestaurant={setOwnedRestaurants}
             isLoading={isOwnedLoading && isJoinedLoading}

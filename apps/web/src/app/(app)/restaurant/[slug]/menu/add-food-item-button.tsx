@@ -29,13 +29,17 @@ export default function AddFoodItemButton({ slug }: { slug: string }) {
     [activeRestaurant, categories, dispatch],
   );
 
-  if (activeRestaurant?.userRole !== "owner") return null;
-
   const handleAfterCreate: React.Dispatch<
     React.SetStateAction<AllFoodItems | null>
-  > = () => {
-    router.refresh();
-  };
+  > = useCallback(() => {
+    // Delay router.refresh() slightly so window.history.back() completes first.
+    // This ensures data is fetched for the correct route (/menu) instead of (/menu?create=true)
+    setTimeout(() => {
+      router.refresh();
+    }, 200);
+  }, [router]);
+
+  if (activeRestaurant?.userRole !== "owner") return null;
 
   return (
     <CreateUpdateFoodItem

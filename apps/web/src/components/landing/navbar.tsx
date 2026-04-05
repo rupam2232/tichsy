@@ -24,12 +24,20 @@ export default function NavbarComp() {
   const router = useRouter();
   const navItems = [
     {
+      name: "How it works",
+      link: "/#how-it-works",
+    },
+    {
       name: "Features",
       link: "/#features",
     },
     {
       name: "Pricing",
       link: "/pricing",
+    },
+    {
+      name: "FAQ",
+      link: "/#faq",
     },
   ];
 
@@ -51,7 +59,7 @@ export default function NavbarComp() {
       {/* Desktop Navigation */}
       <NavBody>
         <NavbarLogo />
-        <NavItems items={navItems} />
+        <NavItems items={navItems} className="static" />
         <div className="flex items-center gap-4">
           {authenticated ? (
             <NavbarButton
@@ -77,7 +85,7 @@ export default function NavbarComp() {
                 variant="secondary"
                 className="shadow-xs hover:bg-primary-foreground/10 font-medium hover:translate-none"
               >
-                Sign In
+                Sign in
               </NavbarButton>
               <NavbarButton
                 href="/signup"
@@ -135,7 +143,7 @@ export default function NavbarComp() {
                   href="/signin"
                   as={Link}
                   variant="secondary"
-                  className="w-full text-primary-foreground shadow-xs bg-secondary/60 hover:bg-muted font-medium hover:translate-none flex justify-center items-center"
+                  className="shadow-xs hover:bg-primary-foreground/10 font-medium hover:translate-none"
                 >
                   Sign in
                 </NavbarButton>

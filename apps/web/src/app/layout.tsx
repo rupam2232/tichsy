@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   ),
-  title: "Tichsy | QR Menu Ordering & POS for Restaurants",
+  title: "Tichsy - QR Menu Ordering & POS for Restaurants",
   description:
-    "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
+    "Tichsy helps restaurants take orders using table QR codes. Customers scan, browse the menu, and place orders instantly while staff receive orders in real time.",
   keywords: [
   "restaurant pos system",
   "restaurant pos software",
@@ -44,6 +44,8 @@ export const metadata: Metadata = {
   "restaurant pos india",
   "pos for cafes",
   "cafe pos system",
+  "free pos system for cafe india",
+  "restaurant billing software india",
   "restaurant qr menu system",
   "restaurant qr code ordering india",
   "restaurant online ordering system",
@@ -76,7 +78,7 @@ export const metadata: Metadata = {
     url: process.env.NEXT_PUBLIC_APP_URL,
     title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
-      "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
+      "Tichsy helps restaurants take orders using table QR codes. Customers scan, browse the menu, and place orders instantly while staff receive orders in real time.",
     siteName: "Tichsy",
     images: [
       {
@@ -91,7 +93,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
-      "Tichsy helps restaurants accept orders using table QR codes. Customers scan the QR, browse the menu, and place orders instantly while staff receive orders in real time and manage service smoothly.",
+      "Tichsy helps restaurants take orders using table QR codes. Customers scan, browse the menu, and place orders instantly while staff receive orders in real time.",
     images: ["/og-image-01.png"],
     creator: "@rupam2232",
   },

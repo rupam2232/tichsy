@@ -1,5 +1,5 @@
-import Footer from "@/components/features/landing/footer";
-import Navbar from "@/components/features/landing/navbar";
+import Footer from "@/components/landing/footer";
+import Navbar from "@/components/landing/navbar";
 
 export default function Layout({
   children,
@@ -7,10 +7,10 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <main>
-    <Navbar />
-    {children}
-    <Footer />
+    <main className=" overflow-x-clip">
+      <Navbar />
+      {children}
+      <Footer />
     </main>
   );
 }
