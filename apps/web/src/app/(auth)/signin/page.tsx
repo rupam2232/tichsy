@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function SigninPage() {
   return (
-    <section className="flex min-h-svh flex-col items-center justify-center bg-muted">
+    <section className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-primary/70 to-background">
       <div className="w-full max-w-md">
         <Suspense
           fallback={

@@ -79,7 +79,7 @@ export default async function RestaurantPage({ params }: Props) {
     <div className="container mx-auto px-4 py-10 max-w-4xl">
       <Card className="overflow-hidden shadow-lg border-border/50 pt-0">
         {/* Hero Section with Gradient */}
-        <div className="h-56 bg-gradient-to-r from-primary/30 via-primary/20 to-primary/5 relative">
+        <div className="h-56 bg-gradient-to-t from-primary/60 via-primary/30 to-primary/10 relative">
           <div className="absolute inset-0 -z-10" />
           <div className="absolute -bottom-16 left-8 md:left-12">
             <div className="relative rounded-full p-1 bg-background shadow-xl">
@@ -106,18 +106,9 @@ export default async function RestaurantPage({ params }: Props) {
         <CardContent className="pt-20 px-8 pb-10 space-y-10">
           {/* Header / Title Section */}
           <div className="space-y-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
-                {restaurant.restaurantName}
-              </h1>
-
-              <Badge
-                variant={restaurant.isCurrentlyOpen ? "success" : "destructive"}
-                className="px-4 py-1.5 text-sm uppercase tracking-wide font-semibold shadow-sm"
-              >
-                {restaurant.isCurrentlyOpen ? "Open Now" : "Closed"}
-              </Badge>
-            </div>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tighter font-bold bg-clip-text text-transparent mx-auto bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)] lg:leading-tight max-w-4xl pb-4">
+              {restaurant.restaurantName}
+            </h1>
 
             <div className="flex flex-wrap items-center gap-2">
               {restaurant.categories?.map((cat, index) => (
@@ -136,7 +127,7 @@ export default async function RestaurantPage({ params }: Props) {
             {/* Left Column: Description & Address */}
             <div className="md:col-span-2 space-y-8">
               <div className="space-y-3">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-foreground/90">
+                <h2 className="text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
                   <Store className="size-5" />
                   About Us
                 </h2>
@@ -147,7 +138,7 @@ export default async function RestaurantPage({ params }: Props) {
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-foreground/90">
+                <h2 className="text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
                   <MapPin className="size-5" />
                   Location
                 </h2>
@@ -160,8 +151,8 @@ export default async function RestaurantPage({ params }: Props) {
             {/* Right Column: Hours & Info */}
             <div className="md:col-span-1">
               <div className="bg-muted/30 rounded-2xl p-6 space-y-5 border border-border/50">
-                <h3 className="font-bold text-lg flex items-center gap-2 text-foreground">
-                  <Clock className="size-5" />
+                <h3 className="font-medium text-lg flex items-center gap-2 tracking-tighter lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
+                  <Clock className="size-5 text-foreground" />
                   Opening Hours
                 </h3>
 

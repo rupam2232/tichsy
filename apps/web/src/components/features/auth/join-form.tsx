@@ -169,7 +169,7 @@ export function JoinForm({
   return (
     <Card
       className={cn(
-        "overflow-hidden flex flex-col md:flex-row shadow-md border-border/50 bg-card/50 backdrop-blur-sm p-0!",
+        "overflow-hidden flex flex-col md:flex-row shadow-md border-border/50 backdrop-blur-sm p-0!",
         className,
       )}
       {...props}
