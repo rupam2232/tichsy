@@ -56,10 +56,15 @@ export const restaurantLogoUpload = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload logo to Cloudinary");
   }
 
-  await TemporaryMedia.create({
-    userId: req.user!._id,
-    mediaUrl: uploadResponse.secure_url,
-  });
+  try {
+    await TemporaryMedia.create({
+      userId: req.user!._id,
+      mediaUrl: uploadResponse.secure_url,
+    });
+  } catch {
+    await cloudinary.delete(uploadResponse.secure_url);
+    throw new ApiError(500, "Failed to upload logo");
+  }
 
   // If restaurantId is provided, update the restaurant's logoUrl
   if (restaurantId && restaurant) {
@@ -235,7 +240,16 @@ export const foodItemImageUpload = asyncHandler(async (req, res) => {
     });
   });
 
-  await Promise.all(tempMediaPromises);
+  try {
+    await Promise.all(tempMediaPromises);
+  } catch {
+    const deletePromises = imageUrls.map((url) => {
+      return cloudinary.delete(url);
+    });
+
+    await Promise.all(deletePromises);
+    throw new ApiError(500, "Failed to upload images");
+  }
 
   if (foodItemId && foodItem) {
     // Add the new image URLs to the food item's images array
