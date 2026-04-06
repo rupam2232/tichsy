@@ -143,7 +143,7 @@ export default function NavbarComp() {
                   href="/signin"
                   as={Link}
                   variant="secondary"
-                  className="shadow-xs hover:bg-primary-foreground/10 font-medium hover:translate-none"
+                  className="w-full shadow-xs hover:bg-primary-foreground/10 font-medium hover:translate-none"
                 >
                   Sign in
                 </NavbarButton>
