@@ -93,7 +93,7 @@ export default function NavbarComp() {
                 variant="primary"
                 className="bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
               >
-                Try for Free
+                Start for Free
               </NavbarButton>
             </>
           )}
@@ -154,7 +154,7 @@ export default function NavbarComp() {
                   variant="primary"
                   className="w-full bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 font-medium hover:translate-none"
                 >
-                  Try for Free
+                  Start for Free
                 </NavbarButton>
               </>
             )}

@@ -9,9 +9,13 @@ function ScrollArea({
   className,
   children,
   viewportClassName,
+  scrollbarClassName,
+  scrollbarThumbClassName,
   ...props
 }: {
   viewportClassName?: string
+  scrollbarClassName?: string
+  scrollbarThumbClassName?: string
 } & React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
   return (
     <ScrollAreaPrimitive.Root
@@ -25,7 +29,7 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      <ScrollBar thumbClassName={scrollbarThumbClassName} className={scrollbarClassName} />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

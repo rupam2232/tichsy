@@ -3,7 +3,7 @@ import { BrowserMockup } from "@/components/ui/browser-mockup";
 import { Phone } from "@/components/ui/phone";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@repo/ui/lib/utils";
-import { FadeUp } from "@/components/shared/fade-up";
+import { FadeIn, FadeUp } from "@/components/shared/fade-up";
 
 type MockupType = "browser" | "phone";
 
@@ -160,7 +160,7 @@ const HowItWorks = () => {
                 isEven ? "lg:flex-row" : "lg:flex-row-reverse",
               )}
             >
-              <FadeUp delay={0} duration={0.8} yOffset={40}>
+              <FadeIn delay={0.2} duration={0.8}>
                 <div
                   className={cn(
                     "flex flex-col gap-12 lg:gap-20 items-center",
@@ -196,7 +196,7 @@ const HowItWorks = () => {
                     )}
                   </div>
                 </div>
-              </FadeUp>
+              </FadeIn>
             </div>
           );
         })}

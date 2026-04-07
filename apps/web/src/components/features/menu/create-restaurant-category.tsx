@@ -31,15 +31,14 @@ import { AxiosError } from "axios";
 import { ApiResponse } from "@repo/types";
 import { signOut } from "@/store/authSlice";
 import { useRouter } from "next/navigation";
+import { setNewCategory } from "@/store/restaurantSlice";
 
 const CreateRestaurantCategory = ({
-  setCategories,
   categories,
   restaurantSlug,
   isLoading = false,
   setIsLoading,
 }: {
-  setCategories?: React.Dispatch<React.SetStateAction<string[]>>;
   categories: string[];
   restaurantSlug: string;
   isLoading: boolean;
@@ -68,9 +67,7 @@ const CreateRestaurantCategory = ({
         `/restaurant/${restaurantSlug}/categories`,
         data,
       );
-      if (setCategories) {
-        setCategories((prev) => [...prev, data.category]);
-      }
+      dispatch(setNewCategory(data.category));
       toast.success(response.data.message || "Category created successfully");
       form.reset();
       closeDialog.current?.click();

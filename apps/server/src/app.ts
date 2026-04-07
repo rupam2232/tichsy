@@ -18,9 +18,24 @@ import cartRoute from "./routes/cart.route.js";
 import subscriptionRoute from "./routes/subscription.route.js";
 import notificationRoute from "./routes/notification.route.js";
 import invitationRoute from "./routes/invitation.route.js";
+import { rateLimit } from "express-rate-limit";
 
 // Create Express app instance
 const app = express();
+
+// Global rate limiting to prevent API abuse
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // limit each IP to 500 requests per 15-minute window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again after 15 minutes",
+  },
+});
+
+app.use(globalLimiter);
 
 // Parse incoming JSON requests with a size limit
 app.use(express.json({ limit: "16kb" }));
@@ -60,19 +75,19 @@ app.use(
   })
 );
 
-app.use("/api/v1/user", userRoute);
-app.use("/api/v1/auth", authRoute);
-app.use("/api/v1/restaurant", restaurantRoute);
-app.use("/api/v1/table", tableRoute);
-app.use("/api/v1/media", mediaRoute);
-app.use("/api/v1/food-item", foodItemRoute);
-app.use("/api/v1/order", orderRoute);
-app.use("/api/v1/otp", otpRoute);
-app.use("/api/v1/payment", paymentRoute);
-app.use("/api/v1/cart", cartRoute);
-app.use("/api/v1/subscription", subscriptionRoute);
-app.use("/api/v1/notification", notificationRoute);
-app.use("/api/v1/invitation", invitationRoute);
+app.use("/v1/user", userRoute);
+app.use("/v1/auth", authRoute);
+app.use("/v1/restaurant", restaurantRoute);
+app.use("/v1/table", tableRoute);
+app.use("/v1/media", mediaRoute);
+app.use("/v1/food-item", foodItemRoute);
+app.use("/v1/order", orderRoute);
+app.use("/v1/otp", otpRoute);
+app.use("/v1/payment", paymentRoute);
+app.use("/v1/cart", cartRoute);
+app.use("/v1/subscription", subscriptionRoute);
+app.use("/v1/notification", notificationRoute);
+app.use("/v1/invitation", invitationRoute);
 
 // Global error handler middleware
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

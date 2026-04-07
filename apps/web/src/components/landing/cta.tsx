@@ -1,6 +1,6 @@
 import { Button } from "@repo/ui/components/button";
 import Link from "next/link";
-import { Glow } from "./glow";
+import { Glow } from "../ui/glow";
 import { FadeUp } from "@/components/shared/fade-up";
 
 export default function CTA() {

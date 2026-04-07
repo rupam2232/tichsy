@@ -107,7 +107,7 @@ export default function FoodItemVariants({
             });
             append({
               variantName: "",
-              price: 0,
+              price: 1,
               discountedPrice: undefined,
               description: "",
               isDefault: true,

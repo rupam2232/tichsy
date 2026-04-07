@@ -7,7 +7,7 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className=" overflow-x-clip">
+    <main className="overflow-x-clip">
       <Navbar />
       {children}
       <Footer />

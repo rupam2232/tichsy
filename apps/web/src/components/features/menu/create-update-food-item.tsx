@@ -37,8 +37,6 @@ type CreateUpdateFoodItemProps = {
     React.SetStateAction<FoodItemDetails | null>
   >; // Optional prop to update food item details after creation or update
   setAllFoodItems: React.Dispatch<React.SetStateAction<AllFoodItems | null>>; // Optional prop to update all food items after creation or update
-  categories?: string[]; // Optional prop to pass categories for the restaurant
-  setCategories?: React.Dispatch<React.SetStateAction<string[]>>; // Optional prop to update categories after creation or update
   setTabName?: (tabName: string) => void; // Optional prop to set the current tab name
 };
 
@@ -50,8 +48,6 @@ const CreateUpdateFoodItem = ({
   restaurantSlug,
   setFoodItemDetails, // Optional prop to update food item details after creation or update
   setAllFoodItems, // Optional prop to update all food items after creation or update
-  categories = [], // Optional prop to pass categories for the restaurant
-  setCategories, // Optional prop to update categories after creation or update
   setTabName, // Optional prop to set the current tab name
 }: CreateUpdateFoodItemProps) => {
   const MAX_IMAGE_SIZE = 1 * 1024 * 1024; // 1MB
@@ -699,8 +695,8 @@ const CreateUpdateFoodItem = ({
 
                   <FoodItemBasicInfo
                     form={form}
-                    categories={categories}
-                    setCategories={setCategories}
+                    // categories={categories}
+                    // setCategories={setCategories}
                     restaurantSlug={restaurantSlug}
                     foodItemDetails={foodItemDetails}
                     formLoading={formLoading}

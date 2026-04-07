@@ -58,6 +58,11 @@ const restaurantsSlice = createSlice({
     ) {
       state.activeRestaurant = action.payload;
     },
+    setNewCategory(state, action: PayloadAction<string>) {
+      if (state.activeRestaurant) {
+        state.activeRestaurant.categories?.push(action.payload);
+      }
+    },
   },
 });
 
@@ -66,5 +71,6 @@ export const {
   addRestaurant,
   updateRestaurant,
   setActiveRestaurant,
+  setNewCategory,
 } = restaurantsSlice.actions;
 export default restaurantsSlice.reducer;

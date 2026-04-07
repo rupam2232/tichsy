@@ -1,135 +1,109 @@
-# Turborepo starter
+# Tichsy
 
-This Turborepo starter is maintained by the Turborepo core team.
+Tichsy is a QR-based restaurant ordering system that lets customers scan, browse the menu, and place orders instantly from their table.
 
-## Using this example
+This repository is a TypeScript monorepo powered by Turborepo. It contains the production web application, backend APIs, shared UI components, shared domain contracts, and pricing/subscription logic.
 
-Run the following command:
+## What Tichsy does
 
-```sh
-npx create-turbo@latest
+- Enables table-side ordering via QR links.
+- Supports restaurant operations: menu, tables, orders, payments, and notifications.
+- Provides subscription tiers with plan-based limits and lifecycle handling.
+- Shares contracts and business logic across frontend and backend to reduce drift.
+
+## Monorepo Architecture
+
+### Applications
+
+- `apps/web` - Next.js frontend for customers and restaurant operators.
+- `apps/server` - Express + MongoDB backend APIs, sockets, and background jobs.
+
+### Packages
+
+- `packages/ui` - Shared React components, hooks, and styling primitives.
+- `packages/types` - Shared Zod schemas and TypeScript interfaces.
+- `packages/pricing` - Subscription plans, limits, and display metadata.
+- `packages/eslint-config` - Shared ESLint configurations.
+- `packages/typescript-config` - Shared TypeScript configuration presets.
+
+## Workspace Map
+
+| Workspace | Role | README |
+| --- | --- | --- |
+| `apps/web` | Frontend application | [apps/web/README.md](apps/web/README.md) |
+| `apps/server` | Backend application | [apps/server/README.md](apps/server/README.md) |
+| `packages/ui` | Shared UI library | [packages/ui/README.md](packages/ui/README.md) |
+| `packages/types` | Shared contracts | [packages/types/README.md](packages/types/README.md) |
+| `packages/pricing` | Subscription logic | [packages/pricing/README.md](packages/pricing/README.md) |
+| `packages/eslint-config` | Lint configuration | [packages/eslint-config/README.md](packages/eslint-config/README.md) |
+| `packages/typescript-config` | TS config presets | [packages/typescript-config/README.md](packages/typescript-config/README.md) |
+
+## Core Flows
+
+- Customer ordering flow: QR scan -> menu browsing -> cart -> order placement -> order tracking.
+- Operator flow: authentication -> restaurant setup -> table/menu management -> live order operations.
+- Subscription flow: plan preview -> plan purchase/upgrade -> webhook validation -> usage-limit enforcement.
+
+## Tech Stack
+
+- Monorepo and orchestration: Turborepo, npm workspaces.
+- Frontend: Next.js 15, React 19, Redux Toolkit, Socket.IO client.
+- Backend: Express 5, Mongoose, Socket.IO, node-cron.
+- Shared tooling: TypeScript, ESLint, Prettier, Zod.
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 18 or newer
+- npm 10.9.0 or compatible
+- MongoDB instance for the backend
+
+### Install dependencies
+
+```bash
+npm install
 ```
 
-## What's inside?
+### Start all workspaces in development mode
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```bash
+npm run dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Start only one app
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```bash
+npm run dev -w=apps/web
+npm run dev -w=apps/server
 ```
 
-### Develop
+### Quality checks
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+```bash
+npm run lint
+npm run check-types
+npm run build
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Root Scripts
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Starts all workspace dev processes via Turbo |
+| `npm run build` | Builds all apps and packages |
+| `npm run start` | Runs start scripts after dependency builds |
+| `npm run lint` | Runs lint checks across workspaces |
+| `npm run check-types` | Runs TypeScript checks across workspaces |
+| `npm run format` | Formats TypeScript and Markdown files |
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+## Collaboration
 
-### Remote Caching
+- Keep package responsibilities isolated.
+- Place reusable domain types and validation contracts in `packages/types`.
+- Place subscription business rules in `packages/pricing`.
+- Keep app-specific presentation and API orchestration inside each app.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## License
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+This project is private and intended for internal development.

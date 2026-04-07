@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     siteName: "Tichsy",
     images: [
       {
-        url: "/og-image-01.png",
+        url: "/tichsy-og.png",
         width: 1200,
         height: 630,
         alt: "Tichsy Preview",
@@ -94,7 +94,7 @@ export const metadata: Metadata = {
     title: "Tichsy – QR Menu Ordering & POS for Restaurants",
     description:
       "Tichsy helps restaurants take orders using table QR codes. Customers scan, browse the menu, and place orders instantly while staff receive orders in real time.",
-    images: ["/og-image-01.png"],
+    images: ["/tichsy-og.png"],
     creator: "@rupam2232",
   },
   icons: {

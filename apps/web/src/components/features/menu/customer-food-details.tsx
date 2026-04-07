@@ -27,7 +27,7 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@repo/ui/components/carousel";
-import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
 import { useCart } from "@/hooks/useCart";
 import { Label } from "@repo/ui/components/label";
@@ -448,7 +448,7 @@ const CustomerFoodDetails = ({
       <DrawerContent className="w-full h-full data-[vaul-drawer-direction=bottom]:max-h-[85vh]">
         <DrawerTitle className="sr-only">Food Item Details</DrawerTitle>
         <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full relative">
-          <ScrollArea className="h-full pt-3">
+          <ScrollArea className="h-full pt-3" scrollbarClassName="hidden" scrollbarThumbClassName="hidden">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="animate-spin" />
@@ -468,12 +468,12 @@ const CustomerFoodDetails = ({
                               <CarouselContent
                                 setCarouselCount={setCarouselCount}
                                 setCarouselCurrent={setCarouselCurrent}
-                                className="aspect-square ml-0"
+                                className="aspect-square ml-0 space-x-4"
                               >
                                 {foodItemDetails.imageUrls.map((url, index) => (
                                   <CarouselItem
                                     key={index}
-                                    className="relative rounded-xl"
+                                    className="relative rounded-xl pl-0"
                                   >
                                     <Avatar className="h-full w-full rounded-lg">
                                       <AvatarImage
@@ -665,8 +665,7 @@ const CustomerFoodDetails = ({
                 <p>No details available for this food item.</p>
               </div>
             )}
-            <div className="h-30"></div>
-            <ScrollBar className="w-1 z-20" />
+            <div className="h-30" />
           </ScrollArea>
           {!isLoading && (
             <Card

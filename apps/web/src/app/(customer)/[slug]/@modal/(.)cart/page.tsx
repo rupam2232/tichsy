@@ -15,7 +15,7 @@ import {
 } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
-import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
+import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { cn } from "@repo/ui/lib/utils";
 import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/hooks/useCart";
@@ -23,7 +23,10 @@ import { fetchRestaurantMetadata } from "@/utils/fetchRestaurantMetadata";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { addOrder } from "@/store/orderHistorySlice";
-import CartView, { CartViewHandle, OrderSuccessData } from "@/components/features/cart/cart-view";
+import CartView, {
+  CartViewHandle,
+  OrderSuccessData,
+} from "@/components/features/cart/cart-view";
 import { ApiResponse } from "@repo/types";
 
 const CheckoutModalPage = () => {
@@ -88,22 +91,22 @@ const CheckoutModalPage = () => {
     >
       <DrawerTrigger className="hidden">Cart</DrawerTrigger>
       <DrawerContent className="w-full h-full data-[vaul-drawer-direction=bottom]:max-h-[85vh]">
-        <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full">
+        <div className="w-full md:mx-auto md:w-2xl lg:w-3xl h-full relative">
           <DrawerTitle className="px-6 pb-2 border-b text-lg">Cart</DrawerTitle>
-          <ScrollArea className="h-[calc(100%-28vh)]">
-            <div className="px-6 py-4 pb-20">
+          <ScrollArea className="h-full" scrollbarClassName="hidden" scrollbarThumbClassName="hidden">
+            <div className="px-6 py-4">
               <CartView
                 ref={cartRef}
                 slug={restaurantSlug}
                 tableId={tableId}
                 onSuccess={onOrderSuccess}
               />
+              <div className="h-50" />
             </div>
-            <ScrollBar className="z-9" />
           </ScrollArea>
         </div>
         <DrawerFooter className="sticky bottom-0 left-0 right-0 p-4 border-t backdrop-blur-lg bg-background/40 w-full md:mx-auto md:w-2xl lg:w-3xl">
-        <div className="h-8 w-full bg-gradient-to-t from-background to-transparent absolute top-0 left-0 right-0 -translate-y-full" />
+          <div className="h-8 w-full bg-gradient-to-t from-background to-transparent absolute top-0 left-0 right-0 -translate-y-full" />
           <Button
             className="w-full transition-colors"
             disabled={

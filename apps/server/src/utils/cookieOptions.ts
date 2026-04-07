@@ -7,7 +7,7 @@ export const getCookieOptions = (): CookieOptions => {
   return {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? ("none" as const) : ("strict" as const),
+    sameSite: isProd ? ("lax" as const) : ("strict" as const),
     ...(cookieDomain ? { domain: cookieDomain } : {}),
   };
 };

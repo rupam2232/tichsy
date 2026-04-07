@@ -127,8 +127,8 @@ export default async function RestaurantPage({ params }: Props) {
             {/* Left Column: Description & Address */}
             <div className="md:col-span-2 space-y-8">
               <div className="space-y-3">
-                <h2 className="text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
-                  <Store className="size-5" />
+                <h2 className="flex items-center gap-2 text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
+                  <Store className="size-5 text-foreground" />
                   About Us
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-lg">
@@ -138,8 +138,8 @@ export default async function RestaurantPage({ params }: Props) {
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
-                  <MapPin className="size-5" />
+                <h2 className="flex items-center gap-2 text-xl md:text-2xl tracking-tighter font-medium lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
+                  <MapPin className="size-5 text-foreground" />
                   Location
                 </h2>
                 <p className="text-muted-foreground text-lg">
@@ -152,7 +152,7 @@ export default async function RestaurantPage({ params }: Props) {
             <div className="md:col-span-1">
               <div className="bg-muted/30 rounded-2xl p-6 space-y-5 border border-border/50">
                 <h3 className="font-medium text-lg flex items-center gap-2 tracking-tighter lg:leading-tight bg-clip-text text-transparent bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.55)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
-                  <Clock className="size-5 text-foreground" />
+                  <Clock className="size-4 text-foreground" />
                   Opening Hours
                 </h3>
 

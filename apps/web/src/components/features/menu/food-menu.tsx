@@ -686,7 +686,7 @@ const ClinetFoodMenu = ({
         <Link href={`/${slug}/cart/?tableId=${tableId}`}>
           <Button
             size="lg"
-            className="fixed bottom-4 w-[90%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30"
+            className="fixed bottom-4 w-[90%] sm:w-1/3 left-1/2 sm:right-4 sm:left-auto -translate-x-1/2 sm:translate-x-0 rounded-md bg-primary z-30 hover:bg-primary"
           >
             View Cart ({cartItems.reduce((acc, item) => acc + item.quantity, 0)}
             )

@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"tsup src/index.ts --out-dir dist --format esm --clean --watch\" \"nodemon --delay 3 --watch dist --ignore dist/**/*.map --ignore public -r dotenv/config dist/index.js\"",
+    "dev": "concurrently \"tsc --watch --preserveWatchOutput\" \"nodemon --delay 3 --watch dist --ignore dist/**/*.map --ignore public -r dotenv/config dist/index.js\"",
     "start": "node -r dotenv/config dist/index.js",
     "build": "tsup src/index.ts --out-dir dist --format esm --clean",
     "format": "prettier --write .",

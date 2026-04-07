@@ -512,14 +512,14 @@ const FoodDetails = ({
                   <CarouselContent
                     setCarouselCount={setCarouselCount}
                     setCarouselCurrent={setCarouselCurrent}
-                    className="aspect-square ml-0"
+                    className="aspect-square ml-0 space-x-4"
                   >
                     {foodItemDetails.imageUrls &&
                     foodItemDetails.imageUrls.length > 0 ? (
                       foodItemDetails.imageUrls.map((url, index) => (
                         <CarouselItem
                           key={index}
-                          className="relative rounded-xl"
+                          className="relative rounded-xl pl-0"
                         >
                           <Avatar className="h-full w-full rounded-lg">
                             <AvatarImage

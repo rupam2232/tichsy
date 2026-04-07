@@ -37,14 +37,14 @@ import { cn } from "@repo/ui/lib/utils";
 import { NonVegIcon, VegIcon } from "@/components/shared/veg-nonveg-tooltip";
 import CreateRestaurantCategory from "../create-restaurant-category";
 import { UseFormReturn, useWatch } from "react-hook-form";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { z } from "zod";
 import { FoodItemDetails, foodItemSchema } from "@repo/types";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store/store";
 
 interface FoodItemBasicInfoProps {
   form: UseFormReturn<z.infer<typeof foodItemSchema>>;
-  categories: string[];
-  setCategories?: React.Dispatch<React.SetStateAction<string[]>>;
   restaurantSlug: string;
   foodItemDetails?: FoodItemDetails | null;
   formLoading: boolean;
@@ -53,13 +53,14 @@ interface FoodItemBasicInfoProps {
 
 export default function FoodItemBasicInfo({
   form,
-  categories,
-  setCategories,
   restaurantSlug,
   foodItemDetails,
   formLoading,
   setFormLoading,
 }: FoodItemBasicInfoProps) {
+  const activeRestaurant = useSelector(
+    (state: RootState) => state.restaurantsSlice.activeRestaurant,
+  );
 
   const discountedPrice = useWatch({
     control: form.control,
@@ -72,7 +73,7 @@ export default function FoodItemBasicInfo({
   });
 
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
-
+  const categories = useMemo(() => activeRestaurant?.categories ?? [], [activeRestaurant]);
   return (
     <>
       <FormField
@@ -249,7 +250,6 @@ export default function FoodItemBasicInfo({
                           isLoading={formLoading}
                           setIsLoading={setFormLoading}
                           restaurantSlug={restaurantSlug}
-                          setCategories={setCategories}
                           categories={categories}
                         />
                         <Button

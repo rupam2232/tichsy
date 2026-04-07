@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js server to Azure Web App - tichsy
+name: Build and deploy Node.js server to Azure Web App - Tichsy
 
 on:
   push:
@@ -63,6 +63,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: deploy
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -77,5 +78,5 @@ jobs:
         with:
           app-name: 'tichsy'
           slot-name: 'Production'
-          package: .
+          package: ./deploy
           

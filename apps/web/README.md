@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Web App
 
-## Getting Started
+Frontend application for Tichsy, built with Next.js.
 
-First, run the development server:
+The web app serves two primary experiences:
+
+- Restaurant operator experience for managing setup, menu, tables, billing, and operations.
+- Customer experience for QR-based menu browsing, ordering, and order tracking.
+
+## Tech Stack
+
+- Next.js 15 (App Router)
+- React 19
+- Redux Toolkit
+- React Hook Form + Zod validation
+- Socket.IO client
+
+## Application Areas
+
+- `src/app/(auth)` - sign-in, sign-up, and account recovery routes.
+- `src/app/(app)` - authenticated operator flows such as home, billing, restaurant, notifications, and settings.
+- `src/app/(customer)` - customer QR and order journey.
+- `src/app/(public)` - public pages.
+- `src/store` - global application state.
+- `src/components` - feature and shared UI composition.
+- `src/context/SocketContext.tsx` - realtime connection lifecycle.
+
+## Environment Variables
+
+Create `apps/web/.env.local`:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SERVER_BASE_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_SOCKET_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+
+## Run Locally
+
+From the repository root:
+
+```bash
+turbo run dev --filter=web
+```
+
+Or from this workspace:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app runs on `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Starts Next.js in dev mode on port 3000 |
+| `npm run build` | Creates a production build |
+| `npm run start` | Runs the production server |
+| `npm run lint` | Runs ESLint with zero warning budget |
+| `npm run check-types` | Runs TypeScript type checks |
 
-## Learn More
+## Integration Notes
 
-To learn more about Next.js, take a look at the following resources:
+- API calls use `NEXT_PUBLIC_SERVER_BASE_URL`.
+- Server-side Axios helpers forward cookies for authenticated SSR requests.
+- Socket connections use `NEXT_PUBLIC_SOCKET_BASE_URL` with credentials enabled.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Related Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Root overview: [../../README.md](../../README.md)
+- Backend APIs: [../server/README.md](../server/README.md)
+- Shared contracts: [../../packages/types/README.md](../../packages/types/README.md)
+- Shared pricing logic: [../../packages/pricing/README.md](../../packages/pricing/README.md)
+- Shared UI package: [../../packages/ui/README.md](../../packages/ui/README.md)
