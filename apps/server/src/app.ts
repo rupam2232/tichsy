@@ -23,6 +23,9 @@ import { rateLimit } from "express-rate-limit";
 // Create Express app instance
 const app = express();
 
+// Trust the reverse proxy so rate limiting identifies the real user IP
+app.set("trust proxy", 1);
+
 // Global rate limiting to prevent API abuse
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
