@@ -134,7 +134,6 @@ export interface Order extends Document {
   paymentAttempts?: Types.ObjectId[]; // Optional array of payment attempt IDs
   isPaid: boolean; // Whether the order is paid
   notes?: string; // Optional notes for the order
-  couponUsed?: Types.ObjectId; // Optional reference to the coupon code used
   externalOrderId?: string; // Optional external/third-party order ID
   externalPlatform?: string; // Optional name of the external platform (e.g., Zomato, Swiggy)
   kitchenStaffId?: Types.ObjectId; // Optional reference to the kitchen staff handling the order
@@ -232,10 +231,6 @@ const orderSchema: Schema<Order> = new Schema(
       default: false,
     },
     notes: String,
-    couponUsed: {
-      type: Schema.Types.ObjectId,
-      ref: "Coupon",
-    },
     externalOrderId: {
       type: String,
       immutable: true,

@@ -8,8 +8,6 @@ import { canRestaurantRecieveOrders } from "../service/order.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { razorpay } from "../utils/razorpay.js";
-import { Payment } from "../models/payment.model.js";
 import { startSession } from "mongoose";
 import { io } from "../socket/index.js";
 import { OrderNoCounter } from "../models/orderNoCounter.model.js";
@@ -163,8 +161,6 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       });
     }
 
-    const currency = "INR"; // Default currency for payments, can be changed based on requirements
-
     // Calculate total amount from food items
     const subtotal = foodItems.reduce(
       (acc, item) => acc + (item.finalPrice || 0) * item.quantity,
@@ -241,141 +237,51 @@ export const createOrder = asyncHandler(async (req, res, next) => {
       createdAt: order[0].createdAt,
     };
 
-    // If the payment method is online, we can initiate the payment process here
-    if (paymentMethod === "online") {
-      const payment = await Payment.create(
-        [
-          {
+    await session.commitTransaction();
+    session.endSession();
+    io?.to(`restaurant_${restaurant._id}`).emit("newOrder", {
+      order: socketIoOrderData,
+      message: "A new order has been placed",
+    });
+
+    // Send in-app notifications to owner and staff
+    const staffMembers = await RestaurantMember.find({
+      restaurantId: restaurant._id,
+      isArchived: false,
+    })
+      .select("userId")
+      .lean();
+
+    const notificationRecipients = [
+      restaurant.ownerId,
+      ...staffMembers.map((sm) => sm.userId),
+    ];
+
+    await Promise.all(
+      notificationRecipients.map((recipientId) =>
+        createNotification({
+          recipient: recipientId,
+          type: "order",
+          title: `New Order #${order[0].orderNo}`,
+          message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
+          mergeKey: `new_order_${restaurant.slug}`,
+          pluralTitle: "{count} New Orders",
+          pluralMessage: `You have {count} new orders waiting`,
+          data: {
             orderId: order[0]._id,
-            method: paymentMethod,
-            status: "pending", // Initial status for new payments
-            subtotal,
-            totalAmount,
-            discountAmount,
-            taxAmount,
-            tipAmount: 0, // Assuming no tip for now, can be updated later
+            orderNo: order[0].orderNo,
+            imageUrl: restaurant.logoUrl,
+            restaurantSlug: restaurant.slug,
           },
-        ],
-        { session }
+        })
+      )
+    );
+
+    res
+      .status(201)
+      .json(
+        new ApiResponse(201, { order: order[0] }, "Order created successfully")
       );
-      // Razorpay integration to create a payment order
-      const paymentResponse = await razorpay.orders.create({
-        amount: payment[0].totalAmount * 100, // Amount in paise
-        currency: currency,
-        receipt: `Receipt #${order[0]._id!.toString()}`,
-        notes: {
-          orderId: order[0]._id!.toString(),
-          restaurantSlug: restaurant.slug,
-        },
-      });
-      if (!paymentResponse || !paymentResponse.id) {
-        throw new ApiError(500, "Failed to create payment order");
-      }
-      payment[0].paymentGateway = "Razorpay"; // Set the payment gateway
-      payment[0].gatewayOrderId = paymentResponse.id; // Store the Razorpay order ID
-      const paymentData = await payment[0].save({ session });
-      // Update the order with the payment ID
-      order[0].paymentAttempts = order[0].paymentAttempts || []; // Ensure paymentAttempts is an array
-      order[0].paymentAttempts.push(paymentData._id as Types.ObjectId); // Add the payment ID to the order's payment attempts
-      await order[0].save({ session });
-      await session.commitTransaction();
-      session.endSession();
-      io?.to(`restaurant_${restaurant._id}`).emit("newOrder", {
-        order: socketIoOrderData,
-        message: "A new order has been placed",
-      });
-
-      // Send in-app notifications to staff (owner already gets ownerId in second block)
-      const staffMembers = await RestaurantMember.find({
-        restaurantId: restaurant._id,
-        isArchived: false,
-      })
-        .select("userId")
-        .lean();
-
-      const notificationRecipients = staffMembers.map((sm) => sm.userId);
-
-      await Promise.all(
-        notificationRecipients.map((recipientId) =>
-          createNotification({
-            recipient: recipientId,
-            type: "order",
-            title: `New Order #${order[0].orderNo}`,
-            message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
-            mergeKey: `new_order_${restaurant.slug}`,
-            pluralTitle: "{count} New Orders",
-            pluralMessage: `You have {count} new orders waiting`,
-            data: {
-              orderId: order[0]._id,
-              orderNo: order[0].orderNo,
-              imageUrl: restaurant.logoUrl,
-              restaurantSlug: restaurant.slug,
-            },
-          })
-        )
-      );
-
-      res
-        .status(201)
-        .json(
-          new ApiResponse(
-            201,
-            { order: order[0], paymentData: paymentResponse },
-            "Order created successfully"
-          )
-        );
-    } else {
-      // For cash payments
-      await session.commitTransaction();
-      session.endSession();
-      io?.to(`restaurant_${restaurant._id}`).emit("newOrder", {
-        order: socketIoOrderData,
-        message: "A new order has been placed",
-      });
-
-      // Send in-app notifications to owner and staff
-      const staffMembers = await RestaurantMember.find({
-        restaurantId: restaurant._id,
-        isArchived: false,
-      })
-        .select("userId")
-        .lean();
-
-      const notificationRecipients = [
-        restaurant.ownerId,
-        ...staffMembers.map((sm) => sm.userId),
-      ];
-
-      await Promise.all(
-        notificationRecipients.map((recipientId) =>
-          createNotification({
-            recipient: recipientId,
-            type: "order",
-            title: `New Order #${order[0].orderNo}`,
-            message: `New order from ${customerName || "Customer"} for ₹${order[0].totalAmount}`,
-            mergeKey: `new_order_${restaurant.slug}`,
-            pluralTitle: "{count} New Orders",
-            pluralMessage: `You have {count} new orders waiting`,
-            data: {
-              orderId: order[0]._id,
-              orderNo: order[0].orderNo,
-              imageUrl: restaurant.logoUrl,
-              restaurantSlug: restaurant.slug,
-            },
-          })
-        )
-      );
-
-      res
-        .status(201)
-        .json(
-          new ApiResponse(
-            201,
-            { order: order[0] },
-            "Order created successfully"
-          )
-        );
-    }
   } catch (error) {
     if (session.inTransaction()) {
       await session.abortTransaction();
@@ -1286,21 +1192,6 @@ export const updateOrder = asyncHandler(async (req, res, next) => {
     order.totalAmount = totalAmount;
 
     await order.save({ session });
-
-    await Payment.updateMany(
-      {
-        orderId: order._id,
-        status: "pending", // Update only pending payments
-      },
-      {
-        subtotal,
-        totalAmount,
-        discountAmount,
-        taxAmount,
-        tipAmount: 0, // Assuming no tip for now, can be updated later
-      },
-      { session }
-    );
 
     await session.commitTransaction();
     session.endSession();

@@ -18,7 +18,7 @@ export const createOrderSchema = z.object({
     )
     .min(1, "At least one food item is required"),
   paymentMethod: z
-    .enum(["online", "cash"], "Invalid payment method"),
+    .enum(["cash"], "Only cash payment is allowed"),
   notes: z
     .string("Notes must be a string")
     .optional(),
