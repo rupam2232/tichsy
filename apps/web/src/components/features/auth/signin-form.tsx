@@ -160,7 +160,7 @@ export function SigninForm({
                     </p>
                   </div>
 
-                  <div className="relative">
+                  <div className="relative flex justify-center w-full">
                     {googleLoginLoading ? (
                       <Button
                         type="button"

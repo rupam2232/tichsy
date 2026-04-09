@@ -295,7 +295,7 @@ export function SignupForm({
                     </p>
                   </div>
 
-                  <div className="relative">
+                  <div className="relative flex justify-center w-full">
                     {googleSignupLoading ? (
                       <Button
                         disabled

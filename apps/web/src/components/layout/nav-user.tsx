@@ -78,9 +78,9 @@ export function NavUser() {
       toast.error("You are not logged in");
       return;
     }
+    const toastId = toast.loading("Logging out...");
     try {
       setisLogoutBtnLoading(true);
-      const toastId = toast.loading("Logging out...");
       const response = await axios.post("/auth/signout");
       if (!response.data.success) {
         toast.error("Error logging out", { id: toastId });
@@ -95,6 +95,7 @@ export function NavUser() {
       toast.error(
         axiosError.response?.data.message ||
           "Error logging out. Please try again",
+        { id: toastId },
       );
     } finally {
       setisLogoutBtnLoading(false);
@@ -200,7 +201,7 @@ export function NavUser() {
               <AlertDialogTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="!text-red-600 data-[variant=destructive]:*:[svg]:!text-red-600 w-full justify-start hover:bg-destructive/20 dark:hover:bg-destructive/30 px-2 py-1.5 h-auto"
+                  className="!text-red-600 data-[variant=destructive]:*:[svg]:!text-red-600 w-full justify-start hover:bg-destructive/20 dark:hover:bg-destructive/20 px-2 py-1.5 h-auto"
                 >
                   <IconLogout />
                   Log out

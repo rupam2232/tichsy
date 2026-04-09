@@ -122,8 +122,8 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-11 px-1 backdrop-blur-sm bg-background/70 rounded-t-2xl">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+    <header className="@container/header flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) sticky top-0 z-11 px-1 backdrop-blur-sm bg-background/70 rounded-t-2xl">
+      <div className="flex w-full items-center px-4 lg:px-6">
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarTrigger className="-ml-1" />
@@ -135,34 +135,34 @@ export function SiteHeader() {
         </Tooltip>
         <Separator
           orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4 bg-zinc-400"
+          className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
         />
-        {pathname.startsWith("/restaurant/") ? (
-          <div className="text-base font-medium flex items-center space-x-2">
-            <Avatar className="w-7 h-7">
-              <AvatarImage
-                src={getOptimizedUrl(
-                  activeRestaurant?.logoUrl,
-                  150,
-                  150,
-                  "r_max",
-                )}
-                alt={`${activeRestaurant?.restaurantName} Logo`}
-                className="object-cover"
-                loading="lazy"
-                draggable={false}
-              />
-              <AvatarFallback className="text-xs font-medium">
-                {activeRestaurant?.restaurantName
-                  ?.split(" ")
-                  .map((word) => word[0])
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex items-center">
-              <span className="hidden sm:block line-clamp-1">
+        <div className="flex items-center gap-2 justify-between flex-1 min-w-0">
+          {pathname.startsWith("/restaurant/") ? (
+            <div className="text-base font-medium flex items-center gap-0 space-x-2 min-w-0">
+              <Avatar className="w-7 h-7">
+                <AvatarImage
+                  src={getOptimizedUrl(
+                    activeRestaurant?.logoUrl,
+                    150,
+                    150,
+                    "r_max",
+                  )}
+                  alt={`${activeRestaurant?.restaurantName} Logo`}
+                  className="object-cover"
+                  loading="lazy"
+                  draggable={false}
+                />
+                <AvatarFallback className="text-xs font-medium">
+                  {activeRestaurant?.restaurantName
+                    ?.split(" ")
+                    .map((word) => word[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden sm:block truncate shrink">
                 {activeRestaurant?.restaurantName}
               </span>
               {activeRestaurant?.userRole === "owner" && (
@@ -171,60 +171,60 @@ export function SiteHeader() {
                   className="mx-2 data-[orientation=vertical]:h-5 bg-zinc-400"
                 />
               )}
-            </div>
-            {activeRestaurant?.userRole === "owner" && (
-              <Select
-                disabled={isLoading}
-                value={isRestaurantOpen ? "open" : "closed"}
-                defaultValue={isRestaurantOpen ? "open" : "closed"}
-                onValueChange={handleToggleRestaurantStatus}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="text-sm font-medium cursor-pointer"
+              {activeRestaurant?.userRole === "owner" && (
+                <Select
+                  disabled={isLoading}
+                  value={isRestaurantOpen ? "open" : "closed"}
+                  defaultValue={isRestaurantOpen ? "open" : "closed"}
+                  onValueChange={handleToggleRestaurantStatus}
                 >
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent align="center" position="popper">
-                  <SelectItem value="open" className="cursor-pointer">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    Open
-                  </SelectItem>
-                  <SelectItem value="closed" className="cursor-pointer">
-                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                    Closed
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        ) : (
-          <h3 className="text-base font-medium">{pageTitle.current}</h3>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          <NotificationBell />
-          <div className="md:flex items-center gap-2 hidden">
-            {currentTime ? (
-              <span className="text-sm text-gray-500">
-                {`${currentTime
-                  .toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                  })
-                  .toUpperCase()}`}
-                {`, `}
-                {`${currentTime.toLocaleDateString("en-US", {
-                  weekday: "short",
-                  year: "numeric",
-                  month: "long",
-                  day: "2-digit",
-                })}`}
-              </span>
-            ) : (
-              <span className="text-sm text-gray-500">Loading time...</span>
-            )}
+                  <SelectTrigger
+                    size="sm"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent align="center" position="popper">
+                    <SelectItem value="open" className="cursor-pointer">
+                      <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                      Open
+                    </SelectItem>
+                    <SelectItem value="closed" className="cursor-pointer">
+                      <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                      Closed
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          ) : (
+            <h3 className="text-base font-medium">{pageTitle.current}</h3>
+          )}
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <div className="@2xl/header:flex items-center gap-2 hidden">
+              {currentTime ? (
+                <span className="text-sm text-gray-500 text-nowrap">
+                  {`${currentTime
+                    .toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    })
+                    .toUpperCase()}`}
+                  {`, `}
+                  {`${currentTime.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "long",
+                    day: "2-digit",
+                  })}`}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">Loading time...</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

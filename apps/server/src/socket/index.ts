@@ -36,20 +36,22 @@ export function setupSocketIO(server: http.Server) {
     socket.data.accessToken = accessToken;
     socket.data.refreshToken = refreshToken;
 
-    let decoded: accessTokenUser | null = null;
-
     if (accessToken) {
       try {
-        decoded = jwt.verify(accessToken, env.ACCESS_TOKEN_SECRET) as accessTokenUser;
-
+        socket.data.decodedAccessToken = jwt.verify(
+          accessToken,
+          env.ACCESS_TOKEN_SECRET
+        ) as accessTokenUser;
         // Join user-specific room
-        socket.join(`user_${decoded._id}`);
-        console.log(`User ${decoded._id} joined their personal room`);
+        socket.join(`user_${socket.data.decodedAccessToken._id}`);
+        console.log(
+          `User ${socket.data.decodedAccessToken._id} joined their personal room`
+        );
 
         // Mark as Online if a refresh token exists
         if (refreshToken) {
           DeviceSession.findOneAndUpdate(
-            { userId: decoded._id, refreshToken },
+            { userId: socket.data.decodedAccessToken._id, refreshToken },
             { $set: { isOnline: true, lastActiveAt: new Date() } }
           ).catch((err) => console.error("Error setting device online:", err));
         }
@@ -67,7 +69,13 @@ export function setupSocketIO(server: http.Server) {
           .select("_id ownerId")
           .lean();
         if (!restaurant) return socket.disconnect();
-        if (!decoded || typeof decoded !== "object" || !decoded._id || !restaurant._id) {
+        const decoded = socket.data.decodedAccessToken;
+        if (
+          !decoded ||
+          typeof decoded !== "object" ||
+          !decoded._id ||
+          !restaurant._id
+        ) {
           return;
         }
 
@@ -144,7 +152,9 @@ export function setupSocketIO(server: http.Server) {
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
-      if (refreshToken && decoded?._id) {
+      const refreshToken = socket.data.refreshToken;
+      const decoded = socket.data.decodedAccessToken;
+      if (refreshToken && decoded && decoded._id) {
         DeviceSession.findOneAndUpdate(
           { userId: decoded._id, refreshToken },
           { $set: { isOnline: false, lastActiveAt: new Date() } }
