@@ -608,10 +608,6 @@ const TableDetails = ({
 
               <TableQRCode
                 qrCodeData={`${window.location.origin}/${tableDetails?.restaurantDetails?.slug}/menu?tableId=${tableDetails.qrSlug}`}
-                qrCodeImage={tableDetails.restaurantDetails.logoUrl?.replace(
-                  "/upload/",
-                  "/upload/r_max/",
-                )}
                 qrCodeName={tableDetails.tableName + "-qrcode"}
                 tableSlug={table.qrSlug}
               />

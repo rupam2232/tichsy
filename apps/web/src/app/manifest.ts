@@ -5,8 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Tichsy – QR Menu Ordering & POS for Restaurants",
     short_name: "Tichsy",
     description:
-      "Tichsy is a QR code ordering system and POS platform for restaurants. Customers scan table QR codes, browse the menu and place orders instantly.",
-    start_url: "/",
+      "Tichsy helps restaurants take orders using table QR codes. Customers scan, browse the menu, and place orders instantly while staff receive orders in real time.",
+    start_url: "/home",
     display: "standalone",
     background_color: "#171717",
     theme_color: "#171717",
