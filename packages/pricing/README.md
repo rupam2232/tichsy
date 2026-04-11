@@ -1,49 +1,56 @@
-# @repo/pricing
+<div align="center">
+  <h1>@repo/pricing</h1>
+  <p><strong>Shared Subscription & Limits Authority for Tichsy</strong></p>
 
-Shared subscription pricing and plan-limit definitions for Tichsy.
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+</div>
 
-This package is the source of truth for plan capabilities, limits, and billing amounts used by both backend and frontend applications.
+---
 
-## Exports
+This package serves as the **Single Source of Truth** for plan capabilities, operational limits, feature gates, and billing mechanics. Because pricing models apply to both API enforcement in the backend and UI rendering in the frontend, all subscription logic is centralized here.
 
-- `SUBSCRIPTION_PLANS` - plan configuration map for `starter`, `medium`, and `pro`
-- `GRACE_PERIOD_DAYS` - grace window before downgrade processing
-- `PLAN_DISPLAYS` - marketing-oriented plan metadata for UI rendering
-- `getAllPlans()` - helper that returns display-ready plan objects
-- Type exports from `types.ts` including plan and billing contracts
+## 📦 Package Exports
 
-## Plan Snapshot
+| Export | Purpose |
+| --- | --- |
+| `SUBSCRIPTION_PLANS` | Configuration map for `starter`, `medium`, and `pro` thresholds. |
+| `GRACE_PERIOD_DAYS` | Integer representing the grace window allowed before processing a downgrade. |
+| `PLAN_DISPLAYS` | Marketing-oriented metadata needed strictly for UI rendering of pricing tables. |
+| `getAllPlans()` | Function returning a formatted, display-ready list of plan capabilities. |
+| `types.ts` | Complete TS interfaces for internal subscription contracts. |
 
-- `starter`: free tier with strict limits
-- `medium`: paid tier with expanded limits and lower constraints than pro
-- `pro`: highest limits for multi-restaurant operations
+## 📊 Plan Snapshot
 
-## Usage
+- **`starter`**: A completely free tier with strict operational limits for small trials.
+- **`medium`**: A paid tier granting expanded limits but keeping constraints simpler than Pro.
+- **`pro`**: The highest limits crafted to facilitate heavy loads and multi-restaurant operations.
+
+## 💻 Usage Example
 
 ```ts
 import { SUBSCRIPTION_PLANS, GRACE_PERIOD_DAYS } from "@repo/pricing";
 
-const starterLimits = SUBSCRIPTION_PLANS.starter;
-const graceDays = GRACE_PERIOD_DAYS;
+// API usage limit enforcement logic
+const restaurantMaxTables = SUBSCRIPTION_PLANS.starter.limits.maxTables;
+const paymentGrace = GRACE_PERIOD_DAYS;
 ```
 
-## Scripts
+## 🛠 Internal Scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run build` | Bundles package to CJS, ESM, and type declarations |
-| `npm run dev` | Watches and rebuilds on source changes |
-| `npm run lint` | Runs ESLint with zero warning budget |
-| `npm run type-check` | Runs TypeScript checks |
+| `npm run build` | Bundles package into CJS, ESM, and generates type definitions |
+| `npm run dev` | Watches source and rebuilds on change |
+| `npm run lint` | Runs strict ESLint checks |
+| `npm run type-check` | Emits pure TypeScript diagnostics |
 
-## Consumer Guidance
+## 💡 Consumer Guidance
 
-- Keep all subscription thresholds and billing values here.
-- Do not duplicate plan values in app code.
-- Import from this package in both `apps/server` and `apps/web` for consistency.
+1. **Strict Centralization:** Do NOT duplicate or hard-code threshold numbers, pricing dollars, or plan boundaries inside either the Client or the Server apps. Let this package feed the numbers outward.
+2. **Consistent Imports:** By using the exact same constants, the Node.js API guarantees that the limits it enforces flawlessly match the limits the React App displays to the user.
 
-## Related Documentation
+## 📚 Related Documentation
 
-- Root overview: [../../README.md](../../README.md)
-- Backend app: [../../apps/server/README.md](../../apps/server/README.md)
-- Frontend app: [../../apps/web/README.md](../../apps/web/README.md)
+- [Monorepo Root](../../README.md)
+- [Backend Server App](../../apps/server/README.md)
+- [Frontend React App](../../apps/web/README.md)

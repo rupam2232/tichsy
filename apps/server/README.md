@@ -1,56 +1,54 @@
-# Server App
+<div align="center">
+  <h1>Tichsy Server</h1>
+  <p><strong>Express + MongoDB Backend Service</strong></p>
 
-Backend service for Tichsy, built with Express and MongoDB.
+  [![Express](https://img.shields.io/badge/Express_5-000000?style=for-the-badge&logo=express&logoColor=white)](#)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](#)
+  [![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white)](#)
+  [![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](#)
+</div>
 
-This service powers authentication, restaurant operations, menu management, orders, payments, subscriptions, invitations, notifications, media uploads, and realtime updates.
+---
 
-## Tech Stack
+The core backend service powering Tichsy.
 
-- Express 5
-- Mongoose (MongoDB)
-- Socket.IO
-- node-cron
-- Zod runtime validation
-- Razorpay and Resend integrations
+This service is the heart of our **Real-Time QR Ordering** system. Utilizing `Socket.io`, it powers seamless, instant updates between customers placing orders via QR codes on their phones and restaurant staff managing the live POS dashboard. 
 
-## API Base Path
+Built on Express and MongoDB, it also handles authentication, restaurant operations, dynamic menu management, payments, and subscription limits.
 
-All routes are mounted under:
+## 🔌 API Base Path
+All REST APIs are mounted under: `/v1`
 
-`/api/v1`
+## 🛣 Route Modules
 
-## Route Groups
+| Group | Functionality |
+| --- | --- |
+| `/auth` | Signup, signin, Google auth, password recovery, signout |
+| `/user` | Profile and account settings |
+| `/restaurant`| Restaurant lifecycle, staff, analytics, archive/unarchive |
+| `/table` | Table creation and QR-linked table operations |
+| `/food-item` | Menu items, variants, add-ons, limits |
+| `/order` | Order creation, updates, and status lifecycle |
+| `/payment` | Payment verification and Razorpay webhook processing |
+| `/subscription`| Subscription plans, history, generation of receipts |
+| `/notification`| Centralized real-time server notification operations |
+| `/media` | Cloudinary uploads and deletions |
+| `/otp` | Secure OTP generation |
+| `/invitation`| Staff email invite flows |
 
-- `/auth` - signup, signin, google auth, password recovery, signout
-- `/user` - profile and account settings
-- `/restaurant` - restaurant lifecycle, staff, analytics, archive/unarchive
-- `/table` - table and QR-linked table operations
-- `/media` - upload and delete media assets
-- `/food-item` - menu items, variants, add-ons, image limits
-- `/order` - order creation, updates, and status lifecycle
-- `/otp` - OTP generation and verification
-- `/payment` - payment verification and webhook processing
-- `/cart` - cart lifecycle operations
-- `/subscription` - subscription details, preview, creation, history, receipt download
-- `/notification` - user notification operations
-- `/invitation` - staff invitation send/accept/revoke flow
+## ⚙️ Core Runtime Components
+1. **HTTP REST API Server:** Serves app logic and integrations.
+2. **Socket.IO Real-time Engine:** Manages authenticated user and dedicated restaurant rooms.
+3. **Cron Jobs:** Subscription expiry reminders and downgrade lifecycle handling.
 
-## Runtime Components
+## 🛡 Security & Middleware Highlights
+- **Auth Layer:** Complete JWT token flow (access/refresh) + device session invalidation checks.
+- **RBAC & Authorization:** Strict restaurant-level middleware (owner vs staff validation).
+- **Subscription Checks:** Restrict features at middleware level when usage-limits are hit.
+- **OTP Gateway:** Email-linked operations gate.
 
-- HTTP API server
-- Socket.IO server with authenticated user and restaurant rooms
-- Subscription cron job for expiry reminders and lifecycle handling
-
-## Middleware Highlights
-
-- Authentication middleware with token refresh and device session checks
-- OTP verification middleware for sensitive auth flows
-- Restaurant access middleware for owner/staff authorization
-- Subscription checks for plan enforcement in production
-
-## Environment Variables
-
-Create `apps/server/.env`:
+## 🔑 Environment Variables
+Create a file at `apps/server/.env` based on this template:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/tichsy
@@ -62,9 +60,9 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 APP_LOGO_URL=https://your-cdn/logo.png
-APP_NAME=tichsy
+FRONTEND_URL=http://localhost:3000
 
-COOKIE_DOMAIN=
+COOKIE_DOMAIN=localhost
 ACCESS_TOKEN_EXPIRY=1
 ACCESS_TOKEN_SECRET=your_access_token_secret
 REFRESH_TOKEN_EXPIRY=30
@@ -72,51 +70,40 @@ REFRESH_TOKEN_SECRET=your_refresh_token_secret
 JWT_SECRET_KEY=your_jwt_secret
 
 CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+CLOUDINARY_MAIN_FOLDER_NAME=tichsy
 
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
 
-FRONTEND_URL=http://localhost:3000
 RESEND_API_KEY=your_resend_api_key
 ```
+> **Notes:** `CORS_ORIGIN` accepts comma-separated lists. Token expiry settings accept values in Days.
 
-Notes:
+## 🚀 Run Locally
 
-- `CORS_ORIGIN` accepts a comma-separated list.
-- `COOKIE_DOMAIN` is optional and usually set for production domains.
-- `ACCESS_TOKEN_EXPIRY` and `REFRESH_TOKEN_EXPIRY` are interpreted as days.
-
-## Run Locally
-
-From repository root:
-
+From repository root (recommended):
 ```bash
-turbo run dev --filter=backend
+npx turbo run dev --filter=@repo/server
 ```
 
 Or from this workspace:
-
 ```bash
 npm run dev
 ```
+> Default server URL is **`http://localhost:8000`**
 
-Default server URL is `http://localhost:8000`.
-
-## Scripts
+## 📜 Scripts
 
 | Command | Description |
 | --- | --- |
 | `npm run dev` | TypeScript watch build + nodemon on compiled output |
-| `npm run build` | Compiles TypeScript to `dist` |
-| `npm run start` | Runs compiled server from `dist` |
-| `npm run lint` | Runs ESLint |
-| `npm run check-types` | Runs TypeScript checks with no emit |
-| `npm run format` | Formats files with Prettier |
+| `npm run build` | Compiles `.ts` into `dist` |
+| `npm run start` | Boots compiled output from `dist` |
+| `npm run lint` | ESLint rules check |
+| `npm run check-types`| Pure TypeScript configuration check |
 
-## Related Documentation
-
-- Root overview: [../../README.md](../../README.md)
-- Frontend app: [../web/README.md](../web/README.md)
-- Shared pricing rules: [../../packages/pricing/README.md](../../packages/pricing/README.md)
-- Shared contracts: [../../packages/types/README.md](../../packages/types/README.md)
+## 📚 Related Documentation
+- [Monorepo Root](../../README.md)
+- [Frontend App](../web/README.md)
+- [Pricing Rules](../../packages/pricing/README.md)
