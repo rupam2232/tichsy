@@ -10,7 +10,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string("Invalid Google client ID").min(1),
   GOOGLE_CLIENT_SECRET: z.string("Invalid Google client secret").min(1),
   APP_LOGO_URL: z.url("Invalid app logo URL"),
-  APP_NAME: z.string("Invalid app name").min(1),
+  CLOUDINARY_MAIN_FOLDER_NAME: z.string("Invalid app name").default("tichsy"),
   COOKIE_DOMAIN: z.string("Invalid cookie domain").min(1).optional(),
   ACCESS_TOKEN_EXPIRY: z.string("Invalid access token expiry").transform(Number),
   ACCESS_TOKEN_SECRET: z.string("Invalid access token secret").min(1),
@@ -21,7 +21,7 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string("Invalid Razorpay key secret").min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string("Invalid Razorpay webhook secret").min(1),
   JWT_SECRET_KEY: z.string("Invalid JWT secret key").min(1),
-  FRONTEND_URL: z.string("Invalid frontend URL").trim().default("http://localhost:3000"),
+  FRONTEND_URL: z.string("Invalid frontend URL").trim().default("https://tichsy.app"),
   RESEND_API_KEY: z.string("Invalid Resend API key").min(1),
 });
 

@@ -82,9 +82,9 @@ export default function Footer() {
 
   return (
     <footer id="footer" className="pt-30">
-      <FadeUp delay={0} duration={0.8} yOffset={40}>
+      <FadeUp delay={0} duration={0.8} yOffset={40} className="container mx-auto px-4">
         <div
-          className="container mx-auto flex flex-col md:flex-row md:items-start md:justify-between p-10"
+          className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-start md:justify-between py-10"
           ref={containerRef}
         >
           <div className="flex flex-col items-start justify-start gap-y-3 md:max-w-xs mx-0">
@@ -139,13 +139,13 @@ export default function Footer() {
         </div>
       </FadeUp>
       <div className="w-full relative z-0 overflow-hidden pt-4">
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-background/30 to-background z-10 from-40% pointer-events-none" />
+        <div className="absolute w-full h-17 top-4 bg-gradient-to-t from-transparent to-background z-10 from-40% pointer-events-none" />
         <FlickeringGrid
           text="TICHSY"
           fontSize={140}
           fitText={true}
           maxTextWidth={maxGridWidth}
-          textVisibleRatio={0.8}
+          textVisibleRatio={0.7}
           className="w-full"
           squareSize={2}
           gridGap={tablet ? 2 : 3}

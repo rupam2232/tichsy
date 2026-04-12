@@ -1,78 +1,78 @@
-# Web App
+<div align="center">
+  <h1>Tichsy Web App</h1>
+  <p><strong>Next.js Frontend Application</strong></p>
 
-Frontend application for Tichsy, built with Next.js.
+  [![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](#)
+  [![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](#)
+  [![Redux](https://img.shields.io/badge/Redux-593D88?style=for-the-badge&logo=redux&logoColor=white)](#)
+  [![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](#)
+</div>
+
+---
+
+The frontend application for Tichsy.
 
 The web app serves two primary experiences:
+- **Restaurant Operator Experience:** For managing setup, menu, tables, billing, and operations.
+- **Customer Experience:** For QR-based menu browsing, ordering, and real-time order tracking.
 
-- Restaurant operator experience for managing setup, menu, tables, billing, and operations.
-- Customer experience for QR-based menu browsing, ordering, and order tracking.
+## 🗂 Application Architecture
 
-## Tech Stack
+| Path / Folder | Purpose |
+| --- | --- |
+| `src/app/(auth)` | Sign-in, sign-up, and account recovery routes |
+| `src/app/(app)` | Authenticated operator flows (home, billing, restaurant, settings) |
+| `src/app/(customer)` | Customer QR and order journey |
+| `src/app/(public)` | Public marketing and landing pages |
+| `src/store` | Global Redux application state |
+| `src/components` | Feature modules and UI composition |
+| `src/context/SocketContext.tsx` | Real-time WebSocket lifecycle connection |
 
-- Next.js 15 (App Router)
-- React 19
-- Redux Toolkit
-- React Hook Form + Zod validation
-- Socket.IO client
-
-## Application Areas
-
-- `src/app/(auth)` - sign-in, sign-up, and account recovery routes.
-- `src/app/(app)` - authenticated operator flows such as home, billing, restaurant, notifications, and settings.
-- `src/app/(customer)` - customer QR and order journey.
-- `src/app/(public)` - public pages.
-- `src/store` - global application state.
-- `src/components` - feature and shared UI composition.
-- `src/context/SocketContext.tsx` - realtime connection lifecycle.
-
-## Environment Variables
+## ⚙️ Environment Variables
 
 Create `apps/web/.env.local`:
 
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SERVER_BASE_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_SERVER_BASE_URL=http://localhost:8000/v1
 NEXT_PUBLIC_SOCKET_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
 NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
 
-## Run Locally
+## 🚀 Run Locally
 
-From the repository root:
-
+From the repository root (recommended):
 ```bash
-turbo run dev --filter=web
+npx turbo run dev --filter=@repo/web
 ```
 
-Or from this workspace:
-
+Or directly from this workspace:
 ```bash
 npm run dev
 ```
 
-The app runs on `http://localhost:3000`.
+The app will start on **http://localhost:3000**.
 
-## Scripts
+## 📜 Scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Starts Next.js in dev mode on port 3000 |
+| `npm run dev` | Starts Next.js in dev mode |
 | `npm run build` | Creates a production build |
 | `npm run start` | Runs the production server |
-| `npm run lint` | Runs ESLint with zero warning budget |
-| `npm run check-types` | Runs TypeScript type checks |
+| `npm run lint` | Runs ESLint |
+| `npm run check-types`| Runs full TypeScript type checks |
 
-## Integration Notes
+## 🔗 Integration Notes
 
-- API calls use `NEXT_PUBLIC_SERVER_BASE_URL`.
-- Server-side Axios helpers forward cookies for authenticated SSR requests.
-- Socket connections use `NEXT_PUBLIC_SOCKET_BASE_URL` with credentials enabled.
+- All backend API calls securely use the `NEXT_PUBLIC_SERVER_BASE_URL`.
+- Socket connections (via Socket.io) utilize `NEXT_PUBLIC_SOCKET_BASE_URL` with credentials enabled.
 
-## Related Documentation
+## 📚 Related Documentation
 
-- Root overview: [../../README.md](../../README.md)
-- Backend APIs: [../server/README.md](../server/README.md)
-- Shared contracts: [../../packages/types/README.md](../../packages/types/README.md)
-- Shared pricing logic: [../../packages/pricing/README.md](../../packages/pricing/README.md)
-- Shared UI package: [../../packages/ui/README.md](../../packages/ui/README.md)
+- [Monorepo Root](../../README.md)
+- [Backend Server App](../server/README.md)
+- [Shared UI Package](../../packages/ui/README.md)
+- [Shared Types](../../packages/types/README.md)
+- [Pricing Rules](../../packages/pricing/README.md)

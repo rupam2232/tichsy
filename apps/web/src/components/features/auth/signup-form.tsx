@@ -34,7 +34,6 @@ import {
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
-import { GoogleLogin } from "@react-oauth/google";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { signIn, signOut } from "@/store/authSlice";
@@ -55,6 +54,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import GoogleLoginButton from "./google-login-button";
 
 export function SignupForm({
   className,
@@ -104,44 +104,6 @@ export function SignupForm({
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   });
-
-  const handleGoogleLogin = async (idToken: string) => {
-    if (!idToken) {
-      toast.error("Google signup failed. Please try again.");
-      return;
-    }
-    setGoogleSignupLoading(true);
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const response = await axios.post("/auth/google", { idToken, timezone });
-      dispatch(signIn(response.data.data));
-      toast.success(response.data.message || "Sign up successful!");
-      if (
-        response.data?.message &&
-        response.data.message.toLowerCase().includes("sign up")
-      ) {
-        router.replace("/home?from=signup");
-      } else {
-        router.replace(redirectTo);
-      }
-      if (setDrawerOpen) {
-        setDrawerOpen(false);
-      }
-    } catch (error) {
-      dispatch(signOut());
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(
-        axiosError.response?.data.message ||
-          "Google sign up failed. Please try again.",
-      );
-      console.error(
-        axiosError.response?.data.message ||
-          "An error occurred during Google sign up",
-      );
-    } finally {
-      setGoogleSignupLoading(false);
-    }
-  };
 
   const sendOtp = async () => {
     if (isSendingOtp) {
@@ -295,42 +257,15 @@ export function SignupForm({
                     </p>
                   </div>
 
-                  <div className="relative">
-                    {googleSignupLoading ? (
-                      <Button
-                        disabled
-                        className="w-full font-normal bg-white text-black border-zinc-400 border rounded-[4px] py-4.5"
-                      >
-                        <Loader2 className="animate-spin !h-5 !w-5" />
-                        Signing up with Google...
-                      </Button>
-                    ) : (
-                      <GoogleLogin
-                        onSuccess={async (credentialResponse) => {
-                          if (!credentialResponse.credential) {
-                            toast.error(
-                              "Google signup failed. Please try again.",
-                            );
-                            return;
-                          }
-                          // Handle the Google signup with the credential
-                          handleGoogleLogin(credentialResponse.credential);
-                        }}
-                        onError={() => {
-                          toast.error(
-                            "Google signup failed. Please try again.",
-                          );
-                        }}
-                        logo_alignment="center"
-                        text="signup_with"
-                        useOneTap={true}
-                        auto_select={true}
-                      />
-                    )}
-                    {(googleSignupLoading || emailSignupLoading) && (
-                      <div className="absolute inset-0 z-10 bg-white opacity-50 cursor-not-allowed" />
-                    )}
-                  </div>
+                  <GoogleLoginButton
+                    formRef={form}
+                    redirectTo={redirectTo}
+                    setDrawerOpen={setDrawerOpen}
+                    buttonText="Sign up with Google"
+                    mode="signup"
+                    googleLoginLoading={googleSignupLoading}
+                    setGoogleLoginLoading={setGoogleSignupLoading}
+                  />
                   <div className="after:border-ring relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                     <span className="bg-card text-muted-foreground relative z-10 px-2">
                       Or continue with

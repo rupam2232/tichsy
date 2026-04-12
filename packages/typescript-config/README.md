@@ -1,44 +1,56 @@
-# @repo/typescript-config
+<div align="center">
+  <h1>@repo/typescript-config</h1>
+  <p><strong>Shared TypeScript Presets for Tichsy</strong></p>
 
-Shared TypeScript configuration presets for Tichsy workspaces.
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+</div>
 
-This package keeps compiler behavior consistent across apps and internal libraries.
+---
 
-## Available Presets
+A centralized package for TypeScript compiler configuration (`tsconfig.json`) across the Tichsy monorepo. This guarantees that compiler strictness, target emit versions, and module resolution strategies are unified across all workspaces.
 
-- `base.json` - strict baseline configuration for Node and browser targets
-- `nextjs.json` - Next.js app preset extending `base.json`
-- `react-library.json` - React library preset extending `base.json`
+## 📦 Available Presets
 
-## Usage
+| Preset | Purpose |
+| --- | --- |
+| `base.json` | The strict baseline for vanilla Node environments and packages. |
+| `nextjs.json` | Next.js app preset extending `base.json` with React/DOM typing. |
+| `react-library.json` | React library preset designed for packages that build UI. |
 
-Example `tsconfig.json` in a Next.js app:
+## 💻 Usage Example
 
+Instead of maintaining a massive `tsconfig.json` in each folder, extend one of these presets and only define paths/includes local to that specific workspace.
+
+**Example in a Next.js app (`apps/web/tsconfig.json`):**
 ```json
 {
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src", "next-env.d.ts"]
+  "include": ["src", "next-env.d.ts"],
+  "exclude": ["node_modules"]
 }
 ```
 
-Example in a package:
-
+**Example in a standard package (`packages/types/tsconfig.json`):**
 ```json
 {
   "extends": "@repo/typescript-config/base.json",
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
 ```
 
-## Guidance
+## 💡 Consumer Guidance
 
-- Prefer preset extension over duplicating compiler options.
-- Keep workspace-specific options local while preserving strict defaults from shared presets.
+1. **Always Extend:** Never duplicate compiler options (like `strict: true` or `target`) into local `tsconfig.json` files. Let the preset handle it.
+2. **Keep Includes Local:** Only define `include`, `exclude`, and specific alias `paths` in the app-local TSConfigs, as these inherently depend on the folder structure of that specific app.
 
-## Related Documentation
+## 📚 Related Documentation
 
-- Root overview: [../../README.md](../../README.md)
-- ESLint config package: [../eslint-config/README.md](../eslint-config/README.md)
+- [Monorepo Root](../../README.md)
+- [ESLint Config Package](../eslint-config/README.md)

@@ -1,9 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@400;500;600&family=Playfair+Display:wght@400;600&family=Kalam:wght@400;700&family=Nunito:wght@600;700&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
+
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../../../components/**/*.{ts,tsx}";
 @source "../**/*.{ts,tsx}";
-
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 

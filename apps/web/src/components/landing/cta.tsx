@@ -7,7 +7,7 @@ export default function CTA() {
   return (
     <section id="cta" className="mx-auto container px-4 pt-30">
       <FadeUp delay={0.2} duration={0.8} yOffset={40}>
-        <div className="relative group overflow-hidden rounded-3xl px-4 sm:px-16 py-16 text-center">
+        <div className="max-w-6xl mx-auto relative group overflow-hidden rounded-3xl px-4 sm:px-16 py-16 text-center">
           <div className="mx-auto mb-10 z-10 relative">
             <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tighter font-geist mx-auto lg:leading-tight max-w-3xl mb-4">
               Start Letting Customers Order From Their Table

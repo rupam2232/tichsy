@@ -180,21 +180,16 @@ export default function ClientPage({ from }: { from?: string }) {
   );
 
   useEffect(() => {
-    if (!user) {
-      setIsOwnedLoading(false);
-      setIsJoinedLoading(false);
-      dispatch(signOut());
-      router.push("/signin");
-    } else {
-      fetchOwnedRestaurants();
-    }
-  }, [user, ownedPage, dispatch, router, fetchOwnedRestaurants]);
+    fetchOwnedRestaurants();
+  }, [fetchOwnedRestaurants]);
 
   useEffect(() => {
     if (user) {
       fetchJoinedRestaurants();
+    } else {
+      setIsJoinedLoading(false);
     }
-  }, [user, joinedPage, fetchJoinedRestaurants]);
+  }, [user, fetchJoinedRestaurants]);
 
   useEffect(() => {
     const combined = [...ownedRestaurants, ...staffRestaurants];
@@ -217,7 +212,13 @@ export default function ClientPage({ from }: { from?: string }) {
             ? `Welcome to Tichsy, ${user?.firstName ?? "User"}!`
             : `Welcome back, ${user?.firstName ?? "User"}!`}
         </p>
-        <div className={cn("px-4 lg:px-6 hidden", (ownedRestaurants.length > 0 || staffRestaurants.length > 0) && "block")}>
+        <div
+          className={cn(
+            "px-4 lg:px-6 hidden",
+            (ownedRestaurants.length > 0 || staffRestaurants.length > 0) &&
+              "block",
+          )}
+        >
           <CreateRestaurantDialog
             setOwnersRestaurant={setOwnedRestaurants}
             isLoading={isOwnedLoading && isJoinedLoading}

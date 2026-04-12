@@ -17,7 +17,7 @@ class cloudinaryOptions {
       }
       const response = await this.cloudinary.uploader.upload(localPath, {
         resource_type: "auto",
-        asset_folder: `${env.APP_NAME}/${folder}`,
+        asset_folder: `${env.CLOUDINARY_MAIN_FOLDER_NAME}/${folder}`,
       });
       // Remove the local file after uploading
       fs.unlinkSync(localPath);
@@ -28,7 +28,10 @@ class cloudinaryOptions {
     }
   }
 
-  async delete(mediaUrl: string, resourceType: string = "image"): Promise<{result: string}> {
+  async delete(
+    mediaUrl: string,
+    resourceType: string = "image"
+  ): Promise<{ result: string }> {
     try {
       const lastSegment = mediaUrl?.split("/")?.pop();
       const publicId = lastSegment ? lastSegment.split(".")[0] : "";
