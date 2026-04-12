@@ -12,10 +12,6 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@react-pdf/renderer": "^4.3.2",
     "bcrypt": "^6.0.0",

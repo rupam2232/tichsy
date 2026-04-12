@@ -24,6 +24,11 @@ import { createNotification } from "../service/notification.service.js";
 import { DeviceInfo, parseDeviceInfo } from "../utils/deviceParser.js";
 
 const options = getCookieOptions();
+const googleOAuth2Client = new OAuth2Client(
+  env.GOOGLE_CLIENT_ID,
+  env.GOOGLE_CLIENT_SECRET,
+  "postmessage"
+);
 
 // --- HELPER FUNCTIONS ---
 
@@ -342,14 +347,28 @@ export const google = async (
   try {
     session.startTransaction();
     const deviceId = req.cookies.deviceId || crypto.randomUUID();
-    const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+    if (!req.body || (!req.body.code && !req.body.credential))
+      throw new ApiError(
+        400,
+        "Please provide a Google authorization code or credential to continue"
+      );
 
-    if (!req?.body?.idToken)
-      throw new ApiError(400, "Please provide a Google ID token to continue");
+    if (req.body.code && req.body.credential)
+      throw new ApiError(
+        400,
+        "Please provide either a Google authorization code or credential to continue"
+      );
 
-    const { idToken } = req.body;
-    const ticket = await client.verifyIdToken({
-      idToken,
+    const { code, credential } = req.body;
+
+    let tokens;
+    if (code) {
+      tokens = (await googleOAuth2Client.getToken(code)).tokens;
+      if (!tokens.id_token) throw new ApiError(400, "Invalid Google ID token");
+    }
+
+    const ticket = await googleOAuth2Client.verifyIdToken({
+      idToken: tokens?.id_token ?? credential,
       audience: env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
