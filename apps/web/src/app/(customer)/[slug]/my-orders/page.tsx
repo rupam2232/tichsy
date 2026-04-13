@@ -21,7 +21,7 @@ export async function generateMetadata({
 
   const title = `My Orders | ${restaurant.restaurantName}`;
   const description = `View your order history and track active orders at ${restaurant.restaurantName}.`;
-  const ogImageUrl = buildOgImageUrl(slug, "my-orders");
+  const ogImageUrl = buildOgImageUrl(slug);
 
   return {
     title,

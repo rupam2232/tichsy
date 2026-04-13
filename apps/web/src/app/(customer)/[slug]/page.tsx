@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description =
     restaurant.description ||
     `Welcome to ${restaurant.restaurantName}. Browse the menu, place orders from your table, and track them in real time.`;
-  const ogImageUrl = buildOgImageUrl(slug, "overview");
+  const ogImageUrl = buildOgImageUrl(slug);
 
   return {
     title,

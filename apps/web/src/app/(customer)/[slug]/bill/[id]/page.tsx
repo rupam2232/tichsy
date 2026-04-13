@@ -21,7 +21,7 @@ export async function generateMetadata({
 
   const title = `Bill | ${restaurant.restaurantName}`;
   const description = `View and print your bill from ${restaurant.restaurantName}.`;
-  const ogImageUrl = buildOgImageUrl(slug, "bill");
+  const ogImageUrl = buildOgImageUrl(slug);
 
   return {
     title,

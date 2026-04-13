@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   const title = `Menu | ${restaurant.restaurantName}`;
   const description = `Explore the full menu at ${restaurant.restaurantName}. Browse categories, view dishes, and place your order instantly from your table.`;
-  const ogImageUrl = buildOgImageUrl(slug, "menu");
+  const ogImageUrl = buildOgImageUrl(slug);
 
   return {
     title,
