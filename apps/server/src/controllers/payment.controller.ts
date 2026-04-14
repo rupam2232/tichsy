@@ -3,29 +3,23 @@ import {
   validateWebhookSignature,
 } from "razorpay/dist/utils/razorpay-utils.js";
 import { razorpay } from "../utils/razorpay.js";
-import { io } from "../socket/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { Subscription } from "../models/subscription.model.js";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
 import { startSession } from "mongoose";
 import {
   SUBSCRIPTION_PLANS,
   SubscriptionPlan,
 } from "../config/subscriptionPlans.js";
-import {
-  calculateSubscriptionExpiryDate,
-  extendSubscriptionExpiryDate,
-} from "../utils/subscriptionUtils.js";
 import { verifyPaymentSchema } from "@repo/types";
-import { createNotification } from "../service/notification.service.js";
 import { env } from "../env.js";
 import { Payments } from "razorpay/dist/types/payments.js";
-import sendEmail from "../utils/sendEmail.js";
-import { subscriptionActivateSuccess } from "../templates/emailTemplates.js";
 import { User } from "../models/user.model.js";
-import { formatInTimeZone } from "date-fns-tz";
+import {
+  activateSubscription,
+  handlePostActivationSideEffects,
+} from "../service/subscription.service.js";
 
 interface RazorpayWebhookBody {
   event: string;
@@ -36,11 +30,29 @@ interface RazorpayWebhookBody {
   };
 }
 
+const refundPayment = async (
+  paymentId: string,
+  amount: string | number,
+  reason: string
+) => {
+  try {
+    await razorpay.payments.refund(paymentId, {
+      amount: amount,
+      speed: "normal",
+      notes: {
+        reason,
+      },
+    });
+  } catch (error) {
+    console.error("Error refunding payment:", error);
+  }
+};
+
 export const razorpayWebhook = asyncHandler(async (req, res, next) => {
   if (!req.body) {
     throw new ApiError(400, "Webhook body is required");
   }
-  // Start a MongoDB session for transaction
+
   const session = await startSession();
   try {
     session.startTransaction();
@@ -67,249 +79,158 @@ export const razorpayWebhook = asyncHandler(async (req, res, next) => {
       throw new ApiError(400, "Invalid webhook payload");
     }
 
-    if (
-      webhookEvent !== "payment.captured" &&
-      webhookEvent !== "payment.failed"
-    ) {
+    if (webhookEvent !== "payment.captured") {
       await session.commitTransaction();
       session.endSession();
       res
         .status(200)
-        .json(new ApiResponse(200, true, "Event not relevant for processing"));
+        .json(new ApiResponse(200, null, "Event not relevant for processing"));
       return;
-    } else if (webhookEvent === "payment.captured") {
-      if (paymentEntity.status !== "captured") {
-        throw new ApiError(400, "Payment status is not captured");
-      }
-      if (paymentEntity.notes?.paymentType !== "subscription") {
-        razorpay.payments.refund(paymentEntity.id, {
-          amount: paymentEntity.amount,
-          speed: "normal",
-          notes: {
-            reason:
-              "Payment received for invalid payment type - refund initiated",
-          },
-        });
-        await session.commitTransaction();
-        session.endSession();
-        res
-          .status(200)
-          .json(new ApiResponse(200, true, "Payment type is invalid"));
-        return;
-      }
+    }
 
-      const {
-        userId,
-        plan: planName,
-        period: periodNote,
-        amount: expectedTotalAmount,
-        action,
-        taxAmount,
-        currentEndDate,
-      } = paymentEntity.notes;
-
-      if (!userId || !planName) {
-        throw new ApiError(400, "Missing userId or plan in payment notes");
-      }
-
-      const user = await User.findById(userId)
-        .select("email firstName _id")
-        .lean();
-      if (!user) {
-        throw new ApiError(404, "User not found");
-      }
-
-      const period = periodNote ?? "monthly";
-      if (period !== "monthly" && period !== "yearly") {
-        razorpay.payments.refund(paymentEntity.id, {
-          amount: paymentEntity.amount,
-          speed: "normal",
-          notes: {
-            reason: "Payment received for invalid period - refund initiated",
-          },
-        });
-        throw new ApiError(400, "Invalid period selected");
-      }
-      const plan = planName as SubscriptionPlan;
-      if (!SUBSCRIPTION_PLANS[plan]) {
-        razorpay.payments.refund(paymentEntity.id, {
-          amount: paymentEntity.amount,
-          speed: "normal",
-          notes: {
-            reason: "Payment received for invalid plan - refund initiated",
-          },
-        });
-        throw new ApiError(400, "Invalid plan selected");
-      }
-
-      // Verification: Checking if paid amount matches the amount calculated earlier and put in notes
-      // If notes.amount exists, use it. Otherwise fall back to standard plan price
-      let expectedAmountPaise = 0;
-
-      if (expectedTotalAmount) {
-        expectedAmountPaise = Math.round(Number(expectedTotalAmount) * 100);
-      } else {
-        // Fallback if no specific amount in notes (legacy/direct call)
-        const basePrice =
-          period === "yearly"
-            ? SUBSCRIPTION_PLANS[plan].priceYearly
-            : SUBSCRIPTION_PLANS[plan].priceMonthly;
-        expectedAmountPaise = Math.round(basePrice * 100);
-      }
-
-      // Check if the amount paid matches the expected amount exactly
-      if (paymentEntity.amount !== expectedAmountPaise) {
-        razorpay.payments.refund(paymentEntity.id, {
-          amount: paymentEntity.amount,
-          speed: "normal",
-          notes: {
-            reason:
-              "Payment amount does not match expected amount - refund initiated",
-          },
-        });
-        throw new ApiError(
-          400,
-          "Payment amount does not match the plan selected"
-        );
-      }
-
-      const existingHistory = await SubscriptionHistory.exists({
-        transactionId: paymentEntity.id,
-      }).session(session);
-
-      if (existingHistory) {
-        await session.commitTransaction();
-        session.endSession();
-        res
-          .status(200)
-          .json(new ApiResponse(200, true, "Webhook already processed"));
-        return;
-      }
-
-      let subscription = await Subscription.findOne({
-        userId: userId,
-      }).session(session);
-
-      const daysToAdd = period === "monthly" ? 30 : 365;
-
-      if (subscription) {
-        subscription.isSubscriptionActive = true;
-        subscription.plan = plan;
-        subscription.period = period;
-
-        // For renewals: extend from current end date instead of starting fresh
-        if (action === "renew" && currentEndDate) {
-          const baseDate = new Date(currentEndDate);
-          subscription.subscriptionEndDate = extendSubscriptionExpiryDate(
-            baseDate,
-            daysToAdd
-          );
-        } else {
-          // New subscription or upgrade: start from now
-          subscription.subscriptionStartDate = new Date();
-          subscription.subscriptionEndDate =
-            calculateSubscriptionExpiryDate(daysToAdd);
-        }
-
-        await subscription.save({ session });
-      } else {
-        const [newSubscription] = await Subscription.create(
-          [
-            {
-              userId: userId,
-              isSubscriptionActive: true,
-              plan: plan,
-              period: period,
-              subscriptionStartDate: new Date(),
-              subscriptionEndDate: calculateSubscriptionExpiryDate(daysToAdd),
-            },
-          ],
-          { session }
-        );
-        subscription = newSubscription;
-      }
-
-      if (!subscription) {
-        throw new ApiError(500, "Failed to create or update subscription");
-      }
-
-      await SubscriptionHistory.create(
-        [
-          {
-            userId: subscription.userId,
-            plan: subscription.plan,
-            period: period,
-            amount: paymentEntity.amount / 100,
-            subscriptionStartDate: subscription.subscriptionStartDate,
-            subscriptionEndDate: subscription.subscriptionEndDate,
-            transactionId: paymentEntity.id,
-            paymentGateway: "Razorpay",
-            action: action || "create",
-            subtotal: paymentEntity.notes.subtotal
-              ? Number(paymentEntity.notes.subtotal)
-              : 0,
-            discountAmount: paymentEntity.notes.discountAmount
-              ? Number(paymentEntity.notes.discountAmount)
-              : 0,
-            discountReason: paymentEntity.notes.discountReason,
-            taxAmount: taxAmount ? Number(taxAmount) : 0,
-            totalAmount: paymentEntity.amount / 100,
-          },
-        ],
-        { session }
+    if (paymentEntity.status !== "captured") {
+      throw new ApiError(400, "Payment status is not captured");
+    }
+    if (paymentEntity.notes?.paymentType !== "subscription") {
+      refundPayment(
+        paymentEntity.id,
+        paymentEntity.amount,
+        "Payment received for invalid payment type - refund initiated"
       );
+      await session.commitTransaction();
+      session.endSession();
+      res
+        .status(200)
+        .json(new ApiResponse(200, null, "Payment type is invalid"));
+      return;
+    }
 
-      if (io) {
-        io.to(`user_${userId}`).emit("subscription_success", {
-          plan: plan,
-          period: period,
-          amount: paymentEntity.amount / 100,
-          currency: paymentEntity.currency,
-          productName: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${period})`,
-          action: action || "create",
-        });
-      }
+    // Fetch order notes (set server-side, tamper-proof)
+    const order = await razorpay.orders.fetch(paymentEntity.order_id);
+    const orderNotes = order.notes as Record<string, string>;
 
-      await createNotification({
-        recipient: userId,
-        type: "billing",
-        title:
-          action === "renew"
-            ? "Subscription Renewed"
-            : "Subscription Activated",
-        message:
-          action === "renew"
-            ? `Your ${plan} plan has been successfully renewed.`
-            : `Your ${plan} plan has been successfully activated.`,
-        data: {
-          paymentId: paymentEntity.id,
-          plan,
-          period,
-        },
-      });
+    const {
+      userId,
+      plan: planName,
+      period: periodNote,
+      totalAmount: expectedTotalAmount,
+      action,
+      taxAmount,
+      currentEndDate,
+    } = orderNotes;
 
-      sendEmail(
-        user.email,
-        subscriptionActivateSuccess({
-          USER_NAME: user.firstName,
-          PLAN_NAME: plan,
-          AMOUNT: (paymentEntity.amount / 100).toString(),
-          PERIOD: period,
-          TRANSACTION_ID: paymentEntity.id,
-          TRANSACTION_DATE: formatInTimeZone(
-            new Date(),
-            user.timezone || "Asia/Kolkata",
-            "dd MMMM yyyy"
-          ),
-        })
+    if (!userId || !planName) {
+      throw new ApiError(400, "Missing userId or plan in payment notes");
+    }
+
+    const user = await User.findById(userId)
+      .select("email firstName _id timezone")
+      .lean();
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const period = periodNote ?? "monthly";
+    if (period !== "monthly" && period !== "yearly") {
+      refundPayment(
+        paymentEntity.id,
+        paymentEntity.amount,
+        "Payment received for invalid period - refund initiated"
+      );
+      throw new ApiError(400, "Invalid period selected");
+    }
+    const plan = planName as SubscriptionPlan;
+    if (!SUBSCRIPTION_PLANS[plan]) {
+      refundPayment(
+        paymentEntity.id,
+        paymentEntity.amount,
+        "Payment received for invalid plan - refund initiated"
+      );
+      throw new ApiError(400, "Invalid plan selected");
+    }
+
+    // Verification: Checking if paid amount matches the amount calculated earlier and put in notes
+    // If notes.totalAmount exists, use it. Otherwise fall back to standard plan price
+    let expectedAmountPaise = 0;
+
+    if (expectedTotalAmount) {
+      expectedAmountPaise = Math.round(Number(expectedTotalAmount) * 100);
+    } else {
+      // Fallback if no specific amount in notes (legacy/direct call)
+      const basePrice =
+        period === "yearly"
+          ? SUBSCRIPTION_PLANS[plan].priceYearly
+          : SUBSCRIPTION_PLANS[plan].priceMonthly;
+      expectedAmountPaise = Math.round(basePrice * 100);
+    }
+
+    // Check if the amount paid matches the expected amount exactly
+    if (paymentEntity.amount !== expectedAmountPaise) {
+      refundPayment(
+        paymentEntity.id,
+        paymentEntity.amount,
+        "Payment amount does not match expected amount - refund initiated"
+      );
+      throw new ApiError(
+        400,
+        "Payment amount does not match the plan selected"
       );
     }
+
+    const existingHistory = await SubscriptionHistory.exists({
+      transactionId: paymentEntity.id,
+    }).session(session);
+
+    if (existingHistory) {
+      await session.commitTransaction();
+      session.endSession();
+      res
+        .status(200)
+        .json(new ApiResponse(200, null, "Webhook already processed"));
+      return;
+    }
+
+    await activateSubscription({
+      userId,
+      plan,
+      period: period as "monthly" | "yearly",
+      action: action || "create",
+      currentEndDate,
+      transactionId: paymentEntity.id,
+      paymentGateway: "Razorpay",
+      subtotal: orderNotes.subtotal ? Number(orderNotes.subtotal) : 0,
+      discountAmount: orderNotes.discountAmount
+        ? Number(orderNotes.discountAmount)
+        : 0,
+      discountReason: orderNotes.discountReason || "",
+      taxAmount: taxAmount ? Number(taxAmount) : 0,
+      totalAmount: paymentEntity.amount / 100,
+      session,
+    });
+
     // Commit transaction to save all changes atomically
     await session.commitTransaction();
     session.endSession();
+
+    // Post-activation side effects (socket, notification, email) - non-transactional
+    handlePostActivationSideEffects({
+      userId,
+      plan,
+      period,
+      action: action || "create",
+      totalAmount: paymentEntity.amount / 100,
+      currency: paymentEntity.currency,
+      transactionId: paymentEntity.id,
+      user: {
+        email: user.email,
+        firstName: user.firstName,
+        timezone: user.timezone,
+      },
+    });
+
     res
       .status(200)
-      .json(new ApiResponse(200, true, "Webhook processed successfully"));
+      .json(new ApiResponse(200, null, "Webhook processed successfully"));
   } catch (error) {
     // Rollback transaction on error
     if (session.inTransaction()) {
@@ -335,7 +256,7 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Payment verification failed");
   }
 
-  res
-    .status(200)
+      res
+        .status(200)
     .json(new ApiResponse(200, true, "Payment verified successfully"));
 });

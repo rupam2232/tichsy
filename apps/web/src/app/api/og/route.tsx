@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import type { RestaurantMinimalInfo } from "@repo/types";
+import { getOptimizedUrl } from "@/utils/imageOptimizer";
 
 export const runtime = "edge";
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
       return new Response("Restaurant not found", { status: 404 });
     }
 
-    const { restaurantName, description, address, isCurrentlyOpen, logoUrl } =
+    const { restaurantName, description, address, logoUrl, openingTime, closingTime } =
       restaurant;
 
     return new ImageResponse(
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
             fontFamily: "Inter, sans-serif",
             color: "white",
             overflow: "hidden",
-            backgroundImage: `radial-gradient(rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.3) 65%, rgba(0,0,0,0.5)), url(http://localhost:3000/food-background-01.png)`,
+            backgroundImage: `radial-gradient(rgba(0,0,0,0.6) 25%, rgba(0,0,0,0.3) 65%, rgba(0,0,0,0.5)), url(${process.env.NEXT_PUBLIC_APP_URL}/food-background-01.png)`,
             textShadow: "0 6px 30px rgba(0,0,0,0.7)",
           }}
         >
@@ -97,11 +98,11 @@ export async function GET(request: NextRequest) {
                 {logoUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={logoUrl}
+                    src={getOptimizedUrl(logoUrl, 160, 160)}
                     alt={restaurantName}
+                    width={80}
+                    height={80}
                     style={{
-                      width: 80,
-                      height: 80,
                       objectFit: "cover",
                       borderRadius: "100%",
                     }}
@@ -146,8 +147,8 @@ export async function GET(request: NextRequest) {
               >
                 {address ? `📍 ${address}` : ""}
                 <br />
-                {isCurrentlyOpen !== undefined ? (
-                  <span>🕒 {isCurrentlyOpen ? "Open Now" : "Closed"}</span>
+                {openingTime && closingTime ? (
+                  <span>🕒 {openingTime} - {closingTime}</span>
                 ) : (
                   ""
                 )}

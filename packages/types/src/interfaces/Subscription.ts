@@ -7,3 +7,12 @@ export interface CurrentSubscription {
   subscriptionEndDate?: string;
   period?: "monthly" | "yearly";
 }
+
+export interface SubscriptionSuccessEvent {
+  plan: string;
+  period: string;
+  amount: number;
+  currency: string;
+  productName: string;
+  action: "create" | "renew" | "upgrade" | "downgrade";
+}

@@ -21,7 +21,7 @@ export async function generateMetadata({
 
   const title = `Cart | ${restaurant.restaurantName}`;
   const description = `Review and confirm your order at ${restaurant.restaurantName}.`;
-  const ogImageUrl = buildOgImageUrl(slug, "cart");
+  const ogImageUrl = buildOgImageUrl(slug);
 
   return {
     title,

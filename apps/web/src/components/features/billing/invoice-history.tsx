@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@repo/ui/components/table";
 import { Badge } from "@repo/ui/components/badge";
-import { CalendarDays, Download, ReceiptText } from "lucide-react";
+import { CalendarDays, Download, Loader2, ReceiptText } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { ScrollArea, ScrollBar } from "@repo/ui/components/scroll-area";
 
@@ -37,6 +37,10 @@ interface InvoiceHistoryProps {
   description?: string;
   invoices: InvoiceItem[];
   onDownload?: (invoiceId: string) => void;
+  isReceiptDownloading?: {
+    receiptId: string;
+    isDownloading: boolean;
+  };
 }
 
 export function InvoiceHistory({
@@ -45,6 +49,7 @@ export function InvoiceHistory({
   description = "Your past invoices and payment receipts.",
   invoices,
   onDownload,
+  isReceiptDownloading,
 }: InvoiceHistoryProps) {
   if (!invoices) return null;
 
@@ -122,7 +127,10 @@ export function InvoiceHistory({
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[320px] min-w-0">
-                    <span title={inv.description || "Invoice"} className="truncate">
+                    <span
+                      title={inv.description || "Invoice"}
+                      className="truncate"
+                    >
                       {inv.description || "Invoice"}
                     </span>
                   </TableCell>
@@ -147,8 +155,14 @@ export function InvoiceHistory({
                           : onDownload?.(inv.id)
                       }
                       aria-label={`Download invoice ${inv.id}`}
+                      disabled={isReceiptDownloading?.isDownloading}
                     >
-                      <Download className="h-3.5 w-3.5" />
+                      {isReceiptDownloading?.isDownloading &&
+                      isReceiptDownloading?.receiptId === inv.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
                       <span className="sr-only">Download</span>
                     </Button>
                   </TableCell>

@@ -1,18 +1,22 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "@/utils/axiosInstance";
-import { CurrentSubscription, ApiResponse } from "@repo/types";
+import { CurrentSubscription, ApiResponse, SubscriptionSuccessEvent } from "@repo/types";
 import { AxiosError } from "axios";
 
 export interface SubscriptionState {
   currentSubscription: CurrentSubscription | null;
   loading: boolean;
   error: string | null;
+  isRazorpayOpen: boolean;
+  pendingSuccessEvent: SubscriptionSuccessEvent | null; 
 }
 
 const initialState: SubscriptionState = {
   currentSubscription: null,
   loading: false,
   error: null,
+  isRazorpayOpen: false,
+  pendingSuccessEvent: null,
 };
 
 export const fetchSubscriptionDetails = createAsyncThunk(
@@ -47,6 +51,13 @@ const subscriptionSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    // UI synchronization reducers
+    setRazorpayOpen(state, action: PayloadAction<boolean>) {
+      state.isRazorpayOpen = action.payload;
+    },
+    setPendingSuccessEvent(state, action: PayloadAction<SubscriptionSuccessEvent | null>) {
+      state.pendingSuccessEvent = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -68,5 +79,10 @@ const subscriptionSlice = createSlice({
   },
 });
 
-export const { setSubscription, clearSubscription } = subscriptionSlice.actions;
+export const { 
+  setSubscription, 
+  clearSubscription, 
+  setRazorpayOpen, 
+  setPendingSuccessEvent 
+} = subscriptionSlice.actions;
 export default subscriptionSlice.reducer;

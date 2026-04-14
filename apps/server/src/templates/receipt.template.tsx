@@ -9,22 +9,12 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { SubscriptionHistory } from "../models/subscriptionHistory.model.js";
-import path from "path";
 import { formatInTimeZone } from "date-fns-tz";
 import { env } from "../env.js";
 
-const fontPath = path.join(
-  process.cwd(),
-  "src",
-  "fonts",
-  "Noto_Sans",
-  "static",
-  "NotoSans-Medium.ttf"
-);
-
 Font.register({
   family: "NotoSans",
-  src: fontPath,
+  src: "https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyDPA99d.ttf",
 });
 
 interface ReceiptProps {
@@ -49,8 +39,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 4,
   },
   title: {
@@ -108,7 +98,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#F3F4F6",
   },
   col1: { width: "50%" },
-  col2: { width: "25%", textAlign: "right" },
+  col2: { width: "25%", textAlign: "center" },
   col3: { width: "25%", textAlign: "right" },
   textSm: { fontSize: 10 },
   textBase: { fontSize: 12 },
@@ -177,7 +167,7 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
               <Image src={env.APP_LOGO_URL} style={styles.logo} />
               <Text style={styles.title}>Tichsy</Text>
             </View>
-            <Text style={styles.subtitle}>Payment Receipt</Text>
+            <Text style={styles.subtitle}>Subscription Invoice</Text>
           </View>
           <View style={[styles.statusBadge, styles.statusPaid]}>
             <Text>PAID</Text>
@@ -256,8 +246,8 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
                 {subscription.plan
                   ? subscription.plan.charAt(0).toUpperCase() +
                     subscription.plan.slice(1)
-                  : "Plan"}{" "}
-                Subscription
+                  : "Unknown"}{" "}
+                Plan
               </Text>
             </View>
             <View style={styles.col2}>
@@ -302,7 +292,7 @@ export const ReceiptTemplate = ({ subscription, user }: ReceiptProps) => {
             <Text style={[styles.textBase, styles.textBold]}>TOTAL</Text>
             <View style={[styles.textBase, styles.textBold]}>
               {formatCurrency(
-                subscription.totalAmount || (subscription.amount as number)
+                subscription.totalAmount
               )}
             </View>
           </View>

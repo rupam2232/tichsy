@@ -9,17 +9,16 @@ export interface SubscriptionHistory extends Document {
   userId: Types.ObjectId;
   plan?: "starter" | "medium" | "pro";
   period?: "monthly" | "yearly";
-  amount: number;
   subscriptionStartDate?: Date;
   subscriptionEndDate?: Date;
   transactionId?: string;
   paymentGateway?: string;
   action?: "create" | "renew" | "upgrade";
+  totalAmount: number;
   subtotal?: number;
   discountAmount?: number;
   discountReason?: string;
   taxAmount?: number;
-  totalAmount?: number;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -46,10 +45,10 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
       enum: ["monthly", "yearly"],
       immutable: true,
     },
-    amount: {
+    totalAmount: {
       type: Number,
       default: 0,
-      required: [true, "Amount is required"],
+      required: [true, "Total amount is required"],
       immutable: true,
     },
     subscriptionStartDate: {
@@ -91,10 +90,6 @@ const subscriptionHistorySchema: Schema<SubscriptionHistory> = new Schema(
     taxAmount: {
       type: Number,
       default: 0,
-      immutable: true,
-    },
-    totalAmount: {
-      type: Number,
       immutable: true,
     },
     createdAt: {

@@ -4,21 +4,14 @@ import { getOptimizedUrl } from "./imageOptimizer";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 /**
- * Supported OG image page types.
- */
-export type OgPage = "overview" | "menu" | "cart" | "my-orders" | "bill" | "order";
-
-/**
  * Builds a URL to the dynamic OG image API endpoint.
  */
 export function buildOgImageUrl(
   slug: string,
-  page: OgPage,
   extraParams?: Record<string, string>,
 ): URL {
   const url = new URL("/api/og", APP_URL);
   url.searchParams.set("slug", slug);
-  url.searchParams.set("page", page);
   if (extraParams) {
     for (const [key, value] of Object.entries(extraParams)) {
       url.searchParams.set(key, value);

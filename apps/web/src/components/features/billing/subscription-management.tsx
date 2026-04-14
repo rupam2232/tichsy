@@ -37,8 +37,8 @@ export function SubscriptionManagement({
       <Card>
         <CardHeader className="px-4 pb-4 sm:px-6 sm:pb-6">
           <CardTitle className="flex items-center gap-2 text-lg sm:gap-3 sm:text-xl">
-            <div className="bg-muted rounded-lg p-1.5 sm:p-2">
-              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="bg-muted ring-border/50 rounded-md p-1 ring-1 sm:p-1.5">
+              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
             </div>
             Current Subscription
           </CardTitle>

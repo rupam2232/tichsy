@@ -153,6 +153,7 @@ export default function Footer() {
           maxOpacity={0.3}
           flickerChance={0.1}
           textBaseline="bottom"
+          textOnly={true}
         />
       </div>
     </footer>

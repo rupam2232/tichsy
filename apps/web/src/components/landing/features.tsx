@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, LayoutGrid, Power, Users, Zap } from "lucide-react";
+import { BarChart3, LayoutGrid, Power, Users, Zap, Download } from "lucide-react";
 import { IconQrcode, IconRadar, IconToolsKitchen } from "@tabler/icons-react";
 import BorderGlow from "@/components/ui/border-glow";
 import { FadeUp } from "@/components/shared/fade-up";
@@ -61,6 +61,12 @@ export default function Features() {
         "Track orders, revenue, popular items and more to understand your business better.",
       icon: <BarChart3 />,
     },
+    {
+      title: "Export Data",
+      description:
+        "Easily download your revenue and sales data to share with accountants or use in spreadsheets.",
+      icon: <Download />,
+    },
   ];
   return (
     <section
@@ -81,13 +87,17 @@ export default function Features() {
       </FadeUp>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 rounded-md max-w-6xl mx-auto">
-        {features.map((feature) => (
-          <FeatureCard
+        {features.map((feature, index) => (
+          <div 
             key={feature.title}
-            title={feature.title}
-            description={feature.description}
-            icon={feature.icon}
-          />
+            className={index === features.length - 1 ? "sm:col-span-2 md:col-span-1" : ""}
+          >
+            <FeatureCard
+              title={feature.title}
+              description={feature.description}
+              icon={feature.icon}
+            />
+          </div>
         ))}
       </div>
     </section>
@@ -95,7 +105,7 @@ export default function Features() {
 }
 
 const FeatureCard = ({ title, description, icon }: FeatureCardProps) => (
-  <FadeUp delay={0.2} duration={0.8} yOffset={40}>
+  <FadeUp delay={0.2} duration={0.8} yOffset={40} className="h-full">
     <BorderGlow
       edgeSensitivity={30}
       darkGlowColor="155 80 50"
@@ -109,6 +119,7 @@ const FeatureCard = ({ title, description, icon }: FeatureCardProps) => (
       animated={false}
       darkColors={["#34d399", "#10b981", "#059669"]}
       lightColors={["#34d399", "#10b981", "#059669"]}
+      className="h-full"
     >
       <div className="p-6 flex flex-col gap-y-5">
         <div className="flex items-center gap-2 [&>svg]:size-4">{icon}</div>

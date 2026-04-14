@@ -59,6 +59,7 @@ interface FlickeringGridProps extends React.HTMLAttributes<HTMLDivElement> {
   textBaseline?: CanvasTextBaseline;
   maxTextWidth?: number;
   textVisibleRatio?: number;
+  textOnly?: boolean;
 }
 
 export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
@@ -77,6 +78,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   textBaseline = "middle",
   maxTextWidth,
   textVisibleRatio,
+  textOnly = false,
   ...props
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -101,23 +103,17 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     ) => {
       ctx.clearRect(0, 0, width, height);
 
-      // Create a separate canvas for the text mask
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = width;
-      maskCanvas.height = height;
-      const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
-      if (!maskCtx) return;
-
-      // Draw text on mask canvas
-      if (text) {
-        maskCtx.save();
-        maskCtx.scale(dpr, dpr);
-        maskCtx.fillStyle = "white";
+      // Helper function to draw the text masking path
+      const drawTextAt = (targetCtx: CanvasRenderingContext2D) => {
+        if (!text) return;
+        targetCtx.save();
+        targetCtx.scale(dpr, dpr);
+        targetCtx.fillStyle = "white";
 
         let currentFontSize = fontSize;
         if (fitText) {
-          maskCtx.font = `${fontWeight} ${fontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-          const textWidth = maskCtx.measureText(text).width;
+          targetCtx.font = `${fontWeight} ${fontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          const textWidth = targetCtx.measureText(text).width;
           const availableWidth = width / dpr;
           const targetWidth = maxTextWidth
             ? Math.min(availableWidth, maxTextWidth)
@@ -127,8 +123,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
           }
         }
 
-        const metrics = maskCtx.measureText(text);
-
+        const metrics = targetCtx.measureText(text);
         const x = width / (2 * dpr);
         let y = height / (2 * dpr);
 
@@ -138,39 +133,78 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
           y = metrics.actualBoundingBoxAscent;
         }
 
-        maskCtx.font = `${fontWeight} ${currentFontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-        maskCtx.textAlign = "center";
+        targetCtx.font = `${fontWeight} ${currentFontSize}px "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        targetCtx.textAlign = "center";
+        targetCtx.textBaseline = "alphabetic";
+        targetCtx.fillText(text, x, y);
+        targetCtx.restore();
+      };
 
-        // We handle baseline manually
-        maskCtx.textBaseline = "alphabetic";
-        maskCtx.fillText(text, x, y);
-        maskCtx.restore();
-      }
+      if (textOnly) {
+        ctx.save();
+        for (let i = 0; i < cols; i++) {
+          for (let j = 0; j < rows; j++) {
+            const opacity = squares[i * rows + j];
+            const finalOpacity = opacity ? Math.min(1, opacity * 3 + 0.4) : 0;
+            if (finalOpacity <= 0) continue;
 
-      // Draw flickering squares with optimized RGBA colors
-      for (let i = 0; i < cols; i++) {
-        for (let j = 0; j < rows; j++) {
-          const x = i * (squareSize + gridGap) * dpr;
-          const y = j * (squareSize + gridGap) * dpr;
-          const squareWidth = squareSize * dpr;
-          const squareHeight = squareSize * dpr;
+            const x = i * (squareSize + gridGap) * dpr;
+            const y = j * (squareSize + gridGap) * dpr;
+            const squareWidth = squareSize * dpr;
+            const squareHeight = squareSize * dpr;
 
-          const maskData = maskCtx.getImageData(
-            x,
-            y,
-            squareWidth,
-            squareHeight,
-          ).data;
-          const hasText = maskData.some(
-            (value, index) => index % 4 === 0 && value > 0,
-          );
+            ctx.fillStyle = colorWithOpacity(memoizedColor, finalOpacity);
+            ctx.fillRect(x, y, squareWidth, squareHeight);
+          }
+        }
 
-          const opacity = squares[i * rows + j];
-          const finalOpacity =
-            hasText && opacity ? Math.min(1, opacity * 3 + 0.4) : opacity;
+        if (text) {
+          ctx.globalCompositeOperation = "destination-in";
+          drawTextAt(ctx);
+        }
+        ctx.restore();
+      } else {
+        for (let i = 0; i < cols; i++) {
+          for (let j = 0; j < rows; j++) {
+            const opacity = squares[i * rows + j];
+            if ((opacity ?? 0) <= 0) continue;
 
-          ctx.fillStyle = colorWithOpacity(memoizedColor, finalOpacity ?? 0);
-          ctx.fillRect(x, y, squareWidth, squareHeight);
+            const x = i * (squareSize + gridGap) * dpr;
+            const y = j * (squareSize + gridGap) * dpr;
+            const squareWidth = squareSize * dpr;
+            const squareHeight = squareSize * dpr;
+
+            ctx.fillStyle = colorWithOpacity(memoizedColor, opacity ?? 0);
+            ctx.fillRect(x, y, squareWidth, squareHeight);
+          }
+        }
+
+        if (text) {
+          const offCanvas = document.createElement("canvas");
+          offCanvas.width = width;
+          offCanvas.height = height;
+          const offCtx = offCanvas.getContext("2d");
+          if (offCtx) {
+            for (let i = 0; i < cols; i++) {
+              for (let j = 0; j < rows; j++) {
+                const opacity = squares[i * rows + j];
+                const finalOpacity = opacity ? Math.min(1, opacity * 3 + 0.4) : 0;
+                if (finalOpacity <= 0) continue;
+
+                const x = i * (squareSize + gridGap) * dpr;
+                const y = j * (squareSize + gridGap) * dpr;
+                const squareWidth = squareSize * dpr;
+                const squareHeight = squareSize * dpr;
+
+                offCtx.fillStyle = colorWithOpacity(memoizedColor, finalOpacity);
+                offCtx.fillRect(x, y, squareWidth, squareHeight);
+              }
+            }
+
+            offCtx.globalCompositeOperation = "destination-in";
+            drawTextAt(offCtx);
+            ctx.drawImage(offCanvas, 0, 0);
+          }
         }
       }
     },
@@ -184,6 +218,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       fitText,
       textBaseline,
       maxTextWidth,
+      textOnly,
     ],
   );
 
