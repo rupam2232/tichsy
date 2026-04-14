@@ -84,6 +84,47 @@ interface RevenueChartProps {
   slug: string;
 }
 
+function getRevenueDateRange(
+  period: "today" | "last7d" | "last30d" | "custom",
+  date?: DateRange,
+  isExport = false
+) {
+  const now = new Date();
+  let start = new Date();
+  let end = new Date();
+  let groupBy = "day";
+
+  if (period === "today") {
+    start = startOfDay(now);
+    end = endOfDay(now);
+    groupBy = "hour";
+  } else if (period === "last7d") {
+    end = endOfDay(subDays(now, 1));
+    start = startOfDay(subDays(now, 7));
+    groupBy = "day";
+  } else if (period === "last30d") {
+    end = endOfDay(subDays(now, 1));
+    start = startOfDay(subDays(now, 30));
+    groupBy = isExport ? "day" : "week-sliding";
+  } else if (period === "custom") {
+    if (!date?.from) return null;
+    start = startOfDay(date.from);
+    end = date.to ? endOfDay(date.to) : endOfDay(date.from);
+
+    const diffInDays = differenceInDays(end, start) + 1;
+    if (isExport) {
+      groupBy = diffInDays > 1 ? "day" : "hour";
+    } else {
+      if (diffInDays >= 60) groupBy = "month-sliding";
+      else if (diffInDays >= 14) groupBy = "week-sliding";
+      else if (diffInDays > 1) groupBy = "day";
+      else groupBy = "hour";
+    }
+  }
+
+  return { start, end, groupBy };
+}
+
 export function RevenueChart({ slug }: RevenueChartProps) {
   const [chartType, setChartType] = useState<"area" | "bar">("bar");
   const [period, setPeriod] = useState<
@@ -106,49 +147,17 @@ export function RevenueChart({ slug }: RevenueChartProps) {
         const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         setTimeZone(userTimezone);
 
-        const now = new Date();
-        let start = new Date();
-        let end = new Date();
-        let groupBy = "day";
-
-        if (period === "today") {
-          start = startOfDay(now);
-          end = endOfDay(now);
-          groupBy = "hour";
-        } else if (period === "last7d") {
-          // Last 7 days, excluding today
-          end = endOfDay(subDays(now, 1));
-          start = startOfDay(subDays(now, 7));
-          groupBy = "day";
-        } else if (period === "last30d") {
-          // Last 30 days, excluding today
-          end = endOfDay(subDays(now, 1));
-          start = startOfDay(subDays(now, 30));
-          groupBy = "week-sliding";
-        } else if (period === "custom") {
-          if (!date?.from) return; // Wait for valid selection
-          start = startOfDay(date.from);
-          end = date.to ? endOfDay(date.to) : endOfDay(date.from);
-
-          const diffInDays = differenceInDays(end, start) + 1;
-          if (diffInDays >= 60) {
-            groupBy = "month-sliding";
-          } else if (diffInDays >= 14) {
-            groupBy = "week-sliding";
-          } else if (diffInDays > 1) {
-            groupBy = "day";
-          } else {
-            groupBy = "hour";
-          }
-        }
+        const range = getRevenueDateRange(period, date, false);
+        if (!range) return; // Wait for valid custom date
+        const { start, end, groupBy } = range;
 
         const res = await axios.get<
           ApiResponse<DashboardAnalytics["salesTrend"]>
         >(`/restaurant/${slug}/dashboard/analytics/revenue`, {
           params: {
             timezone: userTimezone,
-            startDate: format(start, "yyyy-MM-dd'T'HH:mm:ss"),
-            endDate: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
             groupBy,
           },
         });
@@ -180,35 +189,9 @@ export function RevenueChart({ slug }: RevenueChartProps) {
       setIsExporting(true);
       const userTimezone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      const now = new Date();
-      let start = new Date();
-      let end = new Date();
-      let exportGroupBy = "day";
-
-      if (period === "today") {
-        start = startOfDay(now);
-        end = endOfDay(now);
-        exportGroupBy = "hour";
-      } else if (period === "last7d") {
-        end = endOfDay(subDays(now, 1));
-        start = startOfDay(subDays(now, 7));
-        exportGroupBy = "day";
-      } else if (period === "last30d") {
-        end = endOfDay(subDays(now, 1));
-        start = startOfDay(subDays(now, 30));
-        exportGroupBy = "day";
-      } else if (period === "custom") {
-        if (!date?.from) return;
-        start = startOfDay(date.from);
-        end = date.to ? endOfDay(date.to) : endOfDay(date.from);
-
-        const diffInDays = differenceInDays(end, start) + 1;
-        if (diffInDays > 1) {
-          exportGroupBy = "day";
-        } else {
-          exportGroupBy = "hour";
-        }
-      }
+      const range = getRevenueDateRange(period, date, true);
+      if (!range) return;
+      const { start, end, groupBy: exportGroupBy } = range;
 
       // Fetch export data
       const res = await axios.get<
@@ -216,8 +199,8 @@ export function RevenueChart({ slug }: RevenueChartProps) {
       >(`/restaurant/${slug}/dashboard/analytics/revenue`, {
         params: {
           timezone: userTimezone,
-          startDate: format(start, "yyyy-MM-dd'T'HH:mm:ss"),
-          endDate: format(end, "yyyy-MM-dd'T'HH:mm:ss"),
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
           groupBy: exportGroupBy,
         },
       });
@@ -291,7 +274,7 @@ export function RevenueChart({ slug }: RevenueChartProps) {
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-auto">
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

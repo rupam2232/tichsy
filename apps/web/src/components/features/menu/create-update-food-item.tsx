@@ -695,8 +695,6 @@ const CreateUpdateFoodItem = ({
 
                   <FoodItemBasicInfo
                     form={form}
-                    // categories={categories}
-                    // setCategories={setCategories}
                     restaurantSlug={restaurantSlug}
                     foodItemDetails={foodItemDetails}
                     formLoading={formLoading}

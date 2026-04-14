@@ -20,7 +20,6 @@ import {
 import { Loader2 } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import {
-  format,
   startOfDay,
   startOfWeek,
   startOfMonth,
@@ -99,8 +98,8 @@ export function TrendingItems({ slug }: TrendingItemsProps) {
         >(`/restaurant/${slug}/dashboard/analytics/trending`, {
           params: {
             timezone: userTimezone,
-            startDate: format(start, "yyyy-MM-dd"),
-            endDate: format(end, "yyyy-MM-dd"),
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
           },
         });
         setTopFoodItems(res.data.data || []);

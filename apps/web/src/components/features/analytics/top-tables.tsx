@@ -19,7 +19,6 @@ import {
 } from "@repo/ui/components/select";
 import { Loader2 } from "lucide-react";
 import {
-  format,
   startOfDay,
   startOfWeek,
   startOfMonth,
@@ -112,8 +111,8 @@ export function TopTables({ slug }: TopTablesProps) {
         >(`/restaurant/${slug}/dashboard/analytics/top-tables`, {
           params: {
             timezone: userTimezone,
-            startDate: format(start, "yyyy-MM-dd"),
-            endDate: format(end, "yyyy-MM-dd"),
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
           },
         });
         setTopTables(res.data.data || []);

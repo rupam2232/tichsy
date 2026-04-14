@@ -65,13 +65,15 @@ export function NotificationListener() {
     }
   }, [router]);
 
+  // Fetch initial notifications
   useEffect(() => {
     if (!user?._id) return;
-
-    // Fetch initial notifications
     dispatch(fetchNotifications({ page: 1, limit: 10 }));
+  }, [user?._id, dispatch]);
 
-    if (!socket) return;
+  // Handle real-time socket subscriptions
+  useEffect(() => {
+    if (!user?._id || !socket) return;
 
     const handleNewNotification = (notification: Notification) => {
       dispatch(addNotification(notification));

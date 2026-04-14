@@ -22,7 +22,7 @@ export default function AddFoodItemButton({ slug }: { slug: string }) {
     // This ensures data is fetched for the correct route (/menu) instead of (/menu?create=true)
     setTimeout(() => {
       router.refresh();
-    }, 200);
+    }, 50);
   }, [router]);
 
   if (activeRestaurant?.userRole !== "owner") return null;

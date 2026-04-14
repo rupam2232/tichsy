@@ -18,7 +18,6 @@ import {
 } from "@repo/ui/components/select";
 import { Loader2 } from "lucide-react";
 import {
-  format,
   startOfWeek,
   startOfMonth,
   startOfDay,
@@ -85,8 +84,8 @@ export function TopCategories({ slug }: TopCategoriesProps) {
         >(`/restaurant/${slug}/dashboard/analytics/categories`, {
           params: {
             timezone: userTimezone,
-            startDate: format(start, "yyyy-MM-dd"),
-            endDate: format(end, "yyyy-MM-dd"),
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
           },
         });
 
