@@ -58,7 +58,7 @@ export const PaymentSuccessDialog = forwardRef<
   {
     title = "Congratulations!",
     subtitle = "Your payment was successful.",
-    currencySymbol = "$",
+    currencySymbol = "₹",
     price,
     productName,
     proceedButtonText = "Proceed",
@@ -94,20 +94,38 @@ export const PaymentSuccessDialog = forwardRef<
     }),
     [setOpenState],
   );
-  const [confettiActive, setConfettiActive] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [animationsReady, setAnimationsReady] = useState(false);
 
   useEffect(() => {
-    if (openState) {
-      setConfettiActive(true);
-      const t = setTimeout(() => setConfettiActive(false), 2200);
-      return () => clearTimeout(t);
+    if (!openState) {
+      setConfettiKey(0);
+      setAnimationsReady(false);
+      return;
     }
-    setConfettiActive(false);
+
+    // Small delay for entrance effect before starting animations
+    const animTimer = setTimeout(() => {
+      setAnimationsReady(true);
+      setConfettiKey(1);
+    }, 100);
+
+    // Infinite Confetti Loop: Generates a new fresh wave of confetti every 2400ms
+    const confettiTimer = setInterval(() => {
+      setConfettiKey((prev) => prev + 1);
+    }, 6000);
+
+    return () => {
+      clearTimeout(animTimer);
+      clearInterval(confettiTimer);
+    };
   }, [openState]);
 
   const confetti: ConfettiPiece[] = useMemo(() => {
     const pieces: ConfettiPiece[] = [];
     const colors = ["--primary", "--accent", "--secondary"];
+    const offset = confettiKey === -1 ? 1 : 0;
+    
     for (let i = 0; i < 42; i++) {
       const startX = Math.random() * 100;
       const drift = (Math.random() - 0.5) * 24; // -12% to +12%
@@ -115,14 +133,14 @@ export const PaymentSuccessDialog = forwardRef<
         id: i,
         x: startX,
         xEnd: Math.max(0, Math.min(100, startX + drift)),
-        delay: Math.random() * 0.4,
+        delay: Math.random() * 0.4 + offset,
         rotation: Math.random() * 360,
         size: 6 + Math.round(Math.random() * 6),
         colorVar: colors[i % colors.length]!,
       });
     }
     return pieces;
-  }, []);
+  }, [confettiKey]);
 
   return (
     <Dialog open={openState} onOpenChange={setOpenState}>
@@ -139,7 +157,11 @@ export const PaymentSuccessDialog = forwardRef<
                 className="absolute inset-0 -z-10 mx-auto size-20 rounded-full blur-xl"
                 style={{ background: "var(--primary)", opacity: 0.12 }}
                 initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.12 }}
+                animate={
+                  animationsReady
+                    ? { scale: 1, opacity: 0.12 }
+                    : { scale: 0.9, opacity: 0 }
+                }
                 transition={{ duration: 0.5, ease: "easeOut" }}
               />
               <div className="relative">
@@ -149,20 +171,28 @@ export const PaymentSuccessDialog = forwardRef<
                 <motion.span
                   className="absolute inset-0 rounded-full border-2 border-primary/30"
                   initial={{ scale: 0.9, opacity: 0.5 }}
-                  animate={{ scale: 1.25, opacity: 0 }}
+                  animate={
+                    animationsReady
+                      ? { scale: 1.25, opacity: 0 }
+                      : { scale: 0.9, opacity: 0 }
+                  }
                   transition={{
                     duration: 1.2,
-                    repeat: Infinity,
+                    repeat: animationsReady ? Infinity : 0,
                     ease: "easeOut",
                   }}
                 />
                 <motion.span
                   className="absolute inset-0 rounded-full border-2 border-accent/30"
                   initial={{ scale: 0.9, opacity: 0.5 }}
-                  animate={{ scale: 1.6, opacity: 0 }}
+                  animate={
+                    animationsReady
+                      ? { scale: 1.6, opacity: 0 }
+                      : { scale: 0.9, opacity: 0 }
+                  }
                   transition={{
                     duration: 1.6,
-                    repeat: Infinity,
+                    repeat: animationsReady ? Infinity : 0,
                     ease: "easeOut",
                     delay: 0.2,
                   }}
@@ -183,7 +213,11 @@ export const PaymentSuccessDialog = forwardRef<
               <motion.div
                 className="text-4xl font-semibold tracking-tight"
                 initial={{ y: 6, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                animate={
+                  animationsReady
+                    ? { y: 0, opacity: 1 }
+                    : { y: 6, opacity: 0 }
+                }
                 transition={{ type: "spring", stiffness: 280, damping: 22 }}
               >
                 {currencySymbol}
@@ -220,8 +254,9 @@ export const PaymentSuccessDialog = forwardRef<
           </div>
 
           <AnimatePresence>
-            {confettiActive && (
+            {confettiKey > 0 && (
               <motion.div
+                key={confettiKey}
                 className="pointer-events-none absolute inset-0"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

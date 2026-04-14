@@ -5,7 +5,7 @@ import {
   previewSubscription,
   getSubscriptionDetails,
   getSubscriptionHistory,
-  downloadReceipt,
+  downloadInvoice,
 } from "../controllers/subscription.controller.js";
 
 const router = Router();
@@ -15,6 +15,6 @@ router.get("/", getSubscriptionDetails);
 router.post("/create", createSubscription);
 router.post("/preview", previewSubscription);
 router.get("/history", getSubscriptionHistory);
-router.get("/history/:id/receipt", downloadReceipt);
+router.get("/history/:id/invoice", downloadInvoice);
 
 export default router;

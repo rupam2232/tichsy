@@ -41,7 +41,9 @@ export const calculateSubscriptionExpiryDate = (
 ): Date => {
   const nowInServerTime = new Date();
   const nowInTimeZone = toZonedTime(nowInServerTime, timeZone);
-  const endDateInTimeZone = addDays(nowInTimeZone, daysToAdd);
+  // Subtract 1 because the payment day counts as day 1.
+  // e.g. 30-day plan paid on April 12 → day 1 = April 12, day 30 = May 11.
+  const endDateInTimeZone = addDays(nowInTimeZone, daysToAdd - 1);
 
   // Set to end of the day in the given timezone
   const endOfDayInTimeZone = set(endDateInTimeZone, {
@@ -72,16 +74,18 @@ export const extendSubscriptionExpiryDate = (
 ): Date => {
   const now = new Date();
 
-  // If no base date or base date is in the past, start from now
-  const effectiveBase = baseDate && isAfter(baseDate, now) ? baseDate : now;
+  // If no base date or base date is in the past, it acts as a fresh purchase starting today.
+  if (!baseDate || !isAfter(baseDate, now)) {
+    return calculateSubscriptionExpiryDate(daysToAdd, timeZone);
+  }
 
-  const baseInTimeZone = toZonedTime(effectiveBase, timeZone);
+  const baseInTimeZone = toZonedTime(baseDate, timeZone);
   const endDateInTimeZone = addDays(baseInTimeZone, daysToAdd);
 
-  // Set to end of the day in the given timezone
+  // Ensure it hits the end of the day in the given timezone
   const endOfDayInTimeZone = set(endDateInTimeZone, {
     hours: 23,
-    minutes: 59,
+    minutes: 58,
     seconds: 0,
     milliseconds: 0,
   });

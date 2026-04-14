@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { plans } from "@/lib/billing-config";
 import axios from "@/utils/axiosInstance";
 import { toast } from "sonner";
+import { setRazorpayOpen } from "@/store/subscriptionSlice";
 import {
   Loader2,
   Check,
@@ -140,7 +141,6 @@ export default function ClientPage({
       if (verifyResponse.data.success) {
         toast.success(verifyResponse.data.message || "Payment Successful");
         router.replace("/billing");
-        router.refresh();
       } else {
         toast.error(
           verifyResponse.data.message || "Payment Verification Failed",
@@ -153,6 +153,8 @@ export default function ClientPage({
         axiosError.response?.data.message ||
           "Payment verification failed. Please try again later.",
       );
+    } finally {
+      dispatch(setRazorpayOpen(false));
     }
   };
 
@@ -160,16 +162,24 @@ export default function ClientPage({
     if (!user || !previewData) return;
 
     try {
-      const res = await loadRazorpayScript();
-      if (!res) {
-        toast.error("Razorpay SDK failed to load");
-        return;
-      }
       setProcessing(true);
       const response = await axios.post("/subscription/create", {
         plan: planId,
         period: period,
       });
+
+      // Free upgrade: proration credit fully covered the cost
+      if (response.data.data?.freeUpgrade) {
+        toast.success(response.data.message || "Plan upgraded successfully!");
+        router.replace("/billing");
+        return;
+      }
+
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast.error("Razorpay SDK failed to load");
+        return;
+      }
 
       if (!response.data.data || !response.data.data.id) {
         toast.error("Invalid response from server");
@@ -181,7 +191,7 @@ export default function ClientPage({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: data.amount,
         currency: data.currency,
-        name: `Tichsy ${selectedPlan?.title}`,
+        name: "Tichsy",
         description: selectedPlan?.description,
         image: process.env.NEXT_PUBLIC_APP_URL + "/light-icon.svg",
         order_id: data.id,
@@ -200,14 +210,23 @@ export default function ClientPage({
         modal: {
           backdropclose: true,
           confirm_close: true,
+          ondismiss: function () {
+            dispatch(setRazorpayOpen(false));
+          },
         },
       };
 
       const rzp = new window.Razorpay(options);
-      rzp.open();
-      rzp.on("payment.failed", function () {
-        toast.error("Payment Failed");
-      });
+      dispatch(setRazorpayOpen(true));
+      try {
+        rzp.open();
+        rzp.on("payment.failed", function () {
+          toast.error("Payment Failed");
+        });
+      } catch (error) {
+        dispatch(setRazorpayOpen(false));
+        throw error; // Let the outer catch handle it
+      }
     } catch (error) {
       console.error("Subscription failed:", error);
       const axiosError = error as AxiosError<ApiResponse>;
@@ -267,9 +286,7 @@ export default function ClientPage({
             <Button variant="outline" onClick={() => router.push("/billing")}>
               Back to Billing
             </Button>
-            <Button onClick={() => router.push("/home")}>
-              Go to Home
-            </Button>
+            <Button onClick={() => router.push("/home")}>Go to Home</Button>
           </CardFooter>
         </Card>
       </section>
@@ -277,7 +294,7 @@ export default function ClientPage({
   }
 
   return (
-    <section className="container max-w-5xl mx-auto py-8 px-4 sm:px-6">
+    <section className="container @container/main max-w-5xl mx-auto py-8 px-4 sm:px-6">
       <div className="mb-6 flex md:flex-col gap-2 items-center md:items-start">
         <Button variant="ghost" onClick={() => router.back()}>
           <ChevronLeft />
@@ -294,9 +311,9 @@ export default function ClientPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 @4xl/main:grid-cols-12 gap-8">
         {/* Left Column: Plan Details */}
-        <div className="md:col-span-7 lg:col-span-8 space-y-6">
+        <div className="@4xl/main:col-span-8 space-y-6">
           <Card className="border-border/60 shadow-sm">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -346,8 +363,8 @@ export default function ClientPage({
         </div>
 
         {/* Right Column: Order Summary */}
-        <div className="md:col-span-5 lg:col-span-4">
-          <div className="sticky top-6">
+        <div className="@4xl/main:col-span-4">
+          <div className="sticky top-[calc(var(--header-height)+1rem)]">
             <Card className="shadow-sm border-border pb-0">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -390,7 +407,7 @@ export default function ClientPage({
                 </div>
 
                 {previewData?.action === "renew" && (
-                  <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md text-center">
                     This renewal will add {period === "yearly" ? "365" : "30"}{" "}
                     days to your current subscription end date.
                   </p>
@@ -407,6 +424,11 @@ export default function ClientPage({
                       <Loader2 className="animate-spin" />
                       Processing...
                     </>
+                  ) : previewData?.totalAmount === 0 ? (
+                    <>
+                      <Check />
+                      Upgrade Free
+                    </>
                   ) : (
                     <>
                       <LockKeyhole />
@@ -416,28 +438,22 @@ export default function ClientPage({
                   )}
                 </Button>
 
-                <div className="flex items-center justify-center gap-4 pt-2 grayscale opacity-70">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Lock className="h-3 w-3" />
-                    Secure payment via Razorpay
-                  </span>
-                </div>
+                {previewData && previewData.totalAmount > 0 && (
+                  <div className="flex items-center justify-center gap-4 pt-2 grayscale opacity-70">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Lock className="h-3 w-3" />
+                      Secure payment via Razorpay
+                    </span>
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="bg-muted/30 py-3 pb-4 text-xs text-muted-foreground text-center block border-t">
                 By clicking &#34;Pay Now&#34;, you agree to our{" "}
-                <Link
-                  href="/terms"
-                  target="_blank"
-                  className="underline hover:text-primary"
-                >
+                <Link href="/terms" className="underline hover:text-primary">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link
-                  href="/privacy"
-                  target="_blank"
-                  className="underline hover:text-primary"
-                >
+                <Link href="/privacy" className="underline hover:text-primary">
                   Privacy Policy
                 </Link>
               </CardFooter>

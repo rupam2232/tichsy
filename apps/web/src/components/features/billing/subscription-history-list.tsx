@@ -20,19 +20,22 @@ import {
 interface SubscriptionHistoryItem {
   _id: string;
   createdAt: string;
-  amount: number;
+  totalAmount: number;
   plan: string;
   period?: string;
   transactionId: string;
   status?: string;
   paymentGateway?: string;
-  totalAmount?: number;
   action?: string;
 }
 
 export function SubscriptionHistoryList() {
   const [history, setHistory] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isReceiptDownloading, setIsReceiptDownloading] = useState({
+    receiptId: "",
+    isDownloading: false,
+  });
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -53,12 +56,10 @@ export function SubscriptionHistoryList() {
                   year: "numeric",
                 })
               : "-",
-            amount: `₹${(item.totalAmount || item.amount).toFixed(2)}`,
-            status: item.amount === 0 ? "free" : "paid",
+            amount: `₹${item.totalAmount.toFixed(2)}`,
+            status: item.totalAmount === 0 ? "free" : "paid",
             description: item.plan
-              ? item.amount === 0
-                ? `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan (Free)`
-                : `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan - ${item.period ?? "monthly"}`
+              ? `${item.plan.charAt(0).toUpperCase() + item.plan.slice(1)} plan - ${item.period ?? "monthly"}`
               : "",
             invoiceUrl: "",
           }),
@@ -86,9 +87,10 @@ export function SubscriptionHistoryList() {
 
   const handleDownload = useCallback(async (invoiceId: string) => {
     try {
+      setIsReceiptDownloading({ receiptId: invoiceId, isDownloading: true });
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const response = await axios.get(
-        `/subscription/history/${invoiceId}/receipt`,
+        `/subscription/history/${invoiceId}/invoice`,
         {
           params: { timezone: timeZone },
           responseType: "blob",
@@ -102,7 +104,7 @@ export function SubscriptionHistoryList() {
 
       // Extract filename from content-disposition if possible, or use default
       const contentDisposition = response.headers["content-disposition"];
-      let fileName = `receipt-${invoiceId}.pdf`;
+      let fileName = `invoice-${invoiceId}.pdf`;
       if (contentDisposition) {
         const matches = /filename=([^;]+)/.exec(contentDisposition);
         if (matches && matches[1]) {
@@ -118,10 +120,12 @@ export function SubscriptionHistoryList() {
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Failed to download receipt:", error);
-      toast.error("Failed to download receipt. Please try again.");
+      console.error("Failed to download invoice:", error);
+      toast.error("Failed to download invoice. Please try again");
+    } finally {
+      setIsReceiptDownloading({ receiptId: "", isDownloading: false });
     }
-  }, [])
+  }, []);
 
   if (loading) {
     return (
@@ -154,6 +158,7 @@ export function SubscriptionHistoryList() {
         title="Subscription History"
         description="View your recent transactions and download invoices."
         onDownload={handleDownload}
+        isReceiptDownloading={isReceiptDownloading}
       />
     </div>
   );

@@ -23,7 +23,9 @@ class cloudinaryOptions {
       fs.unlinkSync(localPath);
       return response;
     } catch {
-      fs.unlinkSync(localPath); // Ensure the local file is removed even if upload fails
+      if (localPath && fs.existsSync(localPath)) {
+        fs.unlinkSync(localPath); // Ensure the local file is removed even if upload fails
+      }
       throw new ApiError(500, "Failed to upload file to Cloudinary.");
     }
   }
