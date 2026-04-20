@@ -94,6 +94,8 @@ const CreateUpdateFoodItem = ({
   const tempImagesRef = useRef<string[]>([]);
   const pendingImageOperationsRef = useRef<Set<Promise<void>>>(new Set());
   const isDialogCleanupInProgressRef = useRef(false);
+  const currentEditingIdRef = useRef<string | undefined>(foodItemDetails?._id);
+  const wasDialogOpenRef = useRef<boolean>(isDialogOpen);
 
   const trackImageOperation = useCallback((operation: Promise<void>) => {
     pendingImageOperationsRef.current.add(operation);
@@ -161,24 +163,43 @@ const CreateUpdateFoodItem = ({
   }, [tempImages]);
 
   useEffect(() => {
-    if (foodItemDetails) {
-      form.reset({
-        foodName: foodItemDetails.foodName || "",
-        price: foodItemDetails.price ?? undefined,
-        discountedPrice: foodItemDetails.discountedPrice ?? undefined,
-        category: foodItemDetails.category ?? undefined,
-        foodType: foodItemDetails.foodType || "veg",
-        description: foodItemDetails.description || "",
-        tags: foodItemDetails.tags || [],
-        imageUrls:
-          tempImagesRef.current.length > 0
-            ? imageUrlsRef.current
-            : foodItemDetails.imageUrls || [],
-        hasVariants: foodItemDetails.hasVariants || false,
-        variants: foodItemDetails.variants || [],
-      });
+    const isNewItem = foodItemDetails?._id !== currentEditingIdRef.current;
+    const justOpened = isDialogOpen && !wasDialogOpenRef.current;
+
+    if (isNewItem || justOpened) {
+      if (foodItemDetails) {
+        form.reset({
+          foodName: foodItemDetails.foodName || "",
+          price: foodItemDetails.price ?? undefined,
+          discountedPrice: foodItemDetails.discountedPrice ?? undefined,
+          category: foodItemDetails.category ?? undefined,
+          foodType: foodItemDetails.foodType || "veg",
+          description: foodItemDetails.description || "",
+          tags: foodItemDetails.tags || [],
+          imageUrls: foodItemDetails.imageUrls || [],
+          hasVariants: foodItemDetails.hasVariants || false,
+          variants: foodItemDetails.variants || [],
+        });
+        currentEditingIdRef.current = foodItemDetails._id;
+      } else if (!isEditing) {
+        form.reset({
+          foodName: "",
+          price: undefined,
+          discountedPrice: undefined,
+          category: undefined,
+          foodType: "veg",
+          description: "",
+          tags: [],
+          imageUrls: [],
+          hasVariants: false,
+          variants: [],
+        });
+        currentEditingIdRef.current = undefined;
+      }
     }
-  }, [foodItemDetails, form]);
+
+    wasDialogOpenRef.current = isDialogOpen;
+  }, [isDialogOpen, foodItemDetails, form, isEditing]);
 
   const cleanupTempImages = useCallback(async () => {
     await waitForPendingImageOperations();
@@ -483,7 +504,8 @@ const CreateUpdateFoodItem = ({
       // Check if the form values have changed
       if (
         !form.formState.isDirty &&
-        Object.keys(form.formState.dirtyFields).length === 0
+        Object.keys(form.formState.dirtyFields).length === 0 &&
+        tempImages.length === 0
       ) {
         toast.error(
           "No changes detected. Please update the form before submitting.",
@@ -522,23 +544,6 @@ const CreateUpdateFoodItem = ({
           // Explicitly set category to undefined if not present in response
           if (!("category" in response.data.data)) {
             updated.category = undefined;
-          }
-          // For variants
-          if (
-            Array.isArray(prev.variants) &&
-            Array.isArray(response.data.data.variants)
-          ) {
-            updated.variants = prev.variants.map((variant, idx) => {
-              const updatedVariant = response.data.data.variants[idx] || {};
-              return {
-                ...variant,
-                ...updatedVariant,
-                discountedPrice:
-                  "discountedPrice" in updatedVariant
-                    ? updatedVariant.discountedPrice
-                    : undefined,
-              };
-            });
           }
           return updated;
         });
@@ -715,7 +720,8 @@ const CreateUpdateFoodItem = ({
                     disabled={
                       formLoading ||
                       (!form.formState.isDirty &&
-                        Object.keys(form.formState.dirtyFields).length === 0)
+                        Object.keys(form.formState.dirtyFields).length === 0 &&
+                        tempImages.length === 0)
                     }
                   >
                     {formLoading ? (

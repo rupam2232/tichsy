@@ -13,7 +13,7 @@ const steps = [
     description:
       "Set up your restaurant in minutes by adding your name and logo. Start for free with no credit card required.",
     video:
-      "https://res.cloudinary.com/rupam-mondal/video/upload/v1775227119/tichsy-create-restaurant_oeulgv.mp4",
+      "https://res.cloudinary.com/rupam-mondal/video/upload/w_700,q_auto/v1775227119/tichsy-create-restaurant_oeulgv.mp4",
     mockup: "browser" as MockupType,
   },
   {
@@ -21,7 +21,7 @@ const steps = [
     description:
       "Add food items, set prices, and create tables. Each table gets a unique QR code ready to print and use.",
     video:
-      "https://res.cloudinary.com/rupam-mondal/video/upload/v1775226832/tichsy-create-table-and-menu_dj4pj5.mp4",
+      "https://res.cloudinary.com/rupam-mondal/video/upload/w_700,q_auto/v1775226832/tichsy-create-table-and-menu_dj4pj5.mp4",
     mockup: "browser" as MockupType,
   },
   {
@@ -30,7 +30,7 @@ const steps = [
       "Customers scan the QR code at their table, browse your menu, and place orders instantly. No app. No login. No waiting.",
     mockup: "phone" as MockupType,
     video:
-      "https://res.cloudinary.com/rupam-mondal/video/upload/v1775228383/tichsy-menu-view_psthwd.mp4",
+      "https://res.cloudinary.com/rupam-mondal/video/upload/w_700,q_auto/v1775228383/tichsy-menu-view_psthwd.mp4",
   },
   {
     title: "Get Orders in Real Time",
@@ -38,7 +38,7 @@ const steps = [
       "Orders appear instantly on your dashboard with table name and items, so your staff can prepare and serve without confusion.",
     mockup: "browser" as MockupType,
     video:
-      "https://res.cloudinary.com/rupam-mondal/video/upload/v1775246873/tichsy-new-order-video_mrfgft.mp4",
+      "https://res.cloudinary.com/rupam-mondal/video/upload/w_700,q_auto/v1775246873/tichsy-new-order-video_mrfgft.mp4",
   },
 ];
 

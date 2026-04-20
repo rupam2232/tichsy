@@ -803,7 +803,7 @@ const FoodDetails = ({
             <SheetFooter className="flex flex-row items-center justify-between">
               <SheetClose asChild ref={sheetCloseRef} />
 
-              {activeRestaurant?.userRole === "owner" && !foodVariant && (
+              {activeRestaurant?.userRole === "owner" && (
                 <>
                   <CreateUpdateFoodItem
                     isEditing={true}

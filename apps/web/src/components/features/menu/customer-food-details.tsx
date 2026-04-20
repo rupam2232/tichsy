@@ -308,7 +308,7 @@ const CustomerFoodDetails = ({
                       {cartItemsFiltered.map((item) => (
                         <div
                           key={item.foodId + (item.variantName || "")}
-                          className="flex justify-between items-start gap-x-4"
+                          className="flex justify-between items-center gap-x-4"
                         >
                           <div>
                             <VegNonVegTooltip
@@ -338,8 +338,8 @@ const CustomerFoodDetails = ({
                             </p>
                           </div>
                           {item.isAvailable ? (
-                            <>
-                              <div className="flex items-center space-x-2 mt-2 dark:border-zinc-600 border rounded-md w-min">
+                            <div className="flex flex-col">
+                              <div className="flex items-center space-x-2 dark:border-zinc-600 border rounded-md w-min">
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -391,7 +391,7 @@ const CustomerFoodDetails = ({
                                     ).toFixed(2)
                                   : (item.price * item.quantity).toFixed(2)}
                               </p>
-                            </>
+                            </div>
                           ) : (
                             <div className="flex flex-col items-center px-3">
                               <p className="text-sm text-muted-foreground font-medium">
